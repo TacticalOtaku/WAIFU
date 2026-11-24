@@ -1,5 +1,5 @@
 <aside class="waifu-sidebar" aria-label="{{localize 'WAIFU.Sidebar.SectionsTitle'}}">
-  <section class="waifu-gauge-card" data-state="{{summary.healthState}}">
+  <section class="waifu-gauge-card" data-state="{{#if hasReport}}{{summary.healthState}}{{else}}idle{{/if}}">
     <div class="waifu-gauge-head">
       <span class="waifu-sidebar-label">{{localize "WAIFU.Sidebar.HealthTitle"}}</span>
       {{#if hasReport}}
@@ -9,19 +9,21 @@
     <div class="waifu-gauge-body">
       {{{charts.healthGaugeSvg}}}
     </div>
-    <div class="waifu-gauge-pills">
-      <span class="waifu-badge {{#if summary.criticalCount}}is-critical{{else}}is-ok{{/if}}">
-        {{localize "WAIFU.Severity.critical"}}: {{summary.criticalCount}}
-      </span>
-      <span class="waifu-badge {{#if summary.warningCount}}is-warning{{else}}is-ok{{/if}}">
-        {{localize "WAIFU.Severity.warning"}}: {{summary.warningCount}}
-      </span>
-      {{#if summary.infoCount}}
-        <span class="waifu-badge is-info">
-          {{localize "WAIFU.Severity.info"}}: {{summary.infoCount}}
+    {{#if hasReport}}
+      <div class="waifu-gauge-pills">
+        <span class="waifu-badge {{#if summary.criticalCount}}is-critical{{else}}is-ok{{/if}}">
+          {{localize "WAIFU.Severity.critical"}}: {{summary.criticalCount}}
         </span>
-      {{/if}}
-    </div>
+        <span class="waifu-badge {{#if summary.warningCount}}is-warning{{else}}is-ok{{/if}}">
+          {{localize "WAIFU.Severity.warning"}}: {{summary.warningCount}}
+        </span>
+        {{#if summary.infoCount}}
+          <span class="waifu-badge is-info">
+            {{localize "WAIFU.Severity.info"}}: {{summary.infoCount}}
+          </span>
+        {{/if}}
+      </div>
+    {{/if}}
   </section>
 
   <div class="waifu-toc-section">

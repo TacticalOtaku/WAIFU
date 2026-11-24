@@ -50,25 +50,29 @@
   </div>
 
   <div class="waifu-toolbar-tools">
+    <label class="waifu-check-pill">
+      <input type="checkbox" data-action="toggleUpdateUuidLabel" {{#if updateUuidLabel}}checked{{/if}}>
+      <span>{{localize "WAIFU.Uuids.UpdateLabelOption"}}</span>
+    </label>
     <button
       type="button"
       class="waifu-btn is-sm is-primary"
       data-action="batchApplyExactUuids"
-      {{#unless uuids.exactMatchCount}}disabled{{/unless}}
+      {{#unless uuidsAutoCount}}disabled{{/unless}}
       {{#if busy}}disabled{{/if}}
     >
       <i class="fa-solid fa-link" aria-hidden="true"></i>
-      {{localize "WAIFU.Uuids.BatchApplyExact"}} ({{uuids.exactMatchCount}})
+      {{localize "WAIFU.Uuids.BatchApplyExact"}} ({{uuidsAutoCount}})
     </button>
     <button
       type="button"
       class="waifu-btn is-sm is-danger"
       data-action="batchUnlinkNoMatch"
-      {{#unless uuids.brokenCount}}disabled{{/unless}}
+      {{#unless uuidsUnmatchedCount}}disabled{{/unless}}
       {{#if busy}}disabled{{/if}}
     >
       <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
-      {{localize "WAIFU.Uuids.BatchUnlinkNoMatch"}}
+      {{localize "WAIFU.Uuids.BatchUnlinkNoMatch"}} ({{uuidsUnmatchedCount}})
     </button>
   </div>
 </div>
@@ -98,16 +102,16 @@
           <tr data-waifu-row="uuid" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
             <th scope="row">
               <div class="waifu-cell-stack">
-                <span class="waifu-ellipsis">{{this.sourceTitle}}</span>
+                <span class="waifu-ellipsis" title="{{this.sourceTitle}}">{{this.sourceTitle}}</span>
                 <span class="waifu-badge {{#if this.isLoreframe}}is-info{{/if}}">{{this.sourceBadge}}</span>
               </div>
             </th>
             <td>
-              <span class="waifu-mono waifu-ellipsis">{{this.fieldPath}}</span>
+              <span class="waifu-mono waifu-ellipsis" title="{{this.fieldPath}}">{{this.fieldPath}}</span>
             </td>
             <td>
               <div class="waifu-cell-stack">
-                <span class="waifu-mono waifu-ellipsis">{{this.rawUuid}}</span>
+                <span class="waifu-mono waifu-ellipsis" title="{{this.rawUuid}}">{{this.rawUuid}}</span>
                 {{#if this.label}}
                   <span>{{this.label}}</span>
                 {{/if}}
@@ -141,6 +145,13 @@
                 <button
                   type="button"
                   class="waifu-btn is-sm"
+                  data-action="pickUuidManual"
+                  data-occ-id="{{this.id}}"
+                  {{#if @root.busy}}disabled{{/if}}
+                >{{localize "WAIFU.Uuids.BtnPickManual"}}</button>
+                <button
+                  type="button"
+                  class="waifu-btn is-sm"
                   data-action="unlinkSingleUuid"
                   data-occ-id="{{this.id}}"
                   {{#if @root.busy}}disabled{{/if}}
@@ -151,6 +162,14 @@
                   data-action="openDocumentSheet"
                   data-uuid="{{this.rootUuid}}"
                 >{{localize "WAIFU.Uuids.BtnOpen"}}</button>
+                <button
+                  type="button"
+                  class="waifu-btn is-sm"
+                  data-action="toggleIgnoreItem"
+                  data-ignore-category="uuids"
+                  data-ignore-id="{{this.id}}"
+                  title="{{#if this.isIgnored}}{{localize 'WAIFU.Ignore.Unignore'}}{{else}}{{localize 'WAIFU.Ignore.Ignore'}}{{/if}}"
+                ><i class="fa-solid {{#if this.isIgnored}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i></button>
               </div>
             </td>
           </tr>

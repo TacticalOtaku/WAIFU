@@ -4,6 +4,7 @@ import {
   buildReportCharts,
   renderDonutChartHtml,
   renderHealthGaugeSvg,
+  renderHealthTrendSvg,
   renderHorizontalBarChartSvg,
   renderStackedBarHtml
 } from "../scripts/core/charts.mjs";
@@ -290,4 +291,16 @@ test("SVG chart helpers handle zero-data and XSS-escaped labels cleanly", () => 
   const xssBar = renderStackedBarHtml([{ label: "<img src=x>", value: 5, tone: "ok" }]);
   assert.match(xssBar, /&lt;img src=x&gt;/);
   assert.doesNotMatch(xssBar, /<img src=x>/);
+
+  const trend = renderHealthTrendSvg([
+    { generatedAt: "2026-11-20T10:00:00Z", healthScore: 62 },
+    { generatedAt: "2026-11-25T10:00:00Z", healthScore: 91 }
+  ]);
+  assert.match(trend, /<polyline/);
+  assert.match(trend, /91%/);
+
+  const idleGauge = renderHealthGaugeSvg(null, "idle", { stateLabel: "PENDING" });
+  assert.match(idleGauge, /—/);
+  assert.doesNotMatch(idleGauge, /%/);
+  assert.match(idleGauge, /PENDING/);
 });

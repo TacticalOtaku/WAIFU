@@ -3,6 +3,7 @@ import { diceSimilarity, normalizeForMatch } from "./utils.mjs";
 
 const ENRICHER_REGEX = /@UUID\[([^\]]+)\](?:\{([^}]*)\})?/g;
 const HTML_DATA_UUID_REGEX = /<a\b[^>]*\bdata-uuid=(["'])([^"']+)\1[^>]*>([\s\S]*?)<\/a>/gi;
+const FROM_UUID_CALL_REGEX = /\bfromUuid(?:Sync)?\(\s*(["'])([^"']+)\1\s*\)/g;
 const KNOWN_DOC_TYPES = new Set([
   "Actor",
   "ActiveEffect",
@@ -292,6 +293,20 @@ export function extractUuidReferencesFromText(text, options = {}) {
     }
   }
 
+  if (options.allowFromUuidCall && text.includes("fromUuid")) {
+    FROM_UUID_CALL_REGEX.lastIndex = 0;
+    let match;
+    while ((match = FROM_UUID_CALL_REGEX.exec(text)) !== null) {
+      refs.push({
+        syntax: "from-uuid",
+        rawMatch: match[0],
+        rawUuid: match[2].trim(),
+        label: "",
+        index: match.index
+      });
+    }
+  }
+
   if (options.allowBareUuid && refs.length === 0) {
     const trimmed = text.trim();
     if (BARE_UUID_REGEX.test(trimmed)) {
@@ -361,8 +376,15 @@ function walkValueStrings(value, basePath, onString, keyHint = false, seen = new
 }
 
 /**
- * Collect all UUID references across normalized JournalEntry and Actor trees.
- * @param {{ journals?: Array<Object>, actors?: Array<Object> }} worldDocs
+ * Collect all UUID references across normalized JournalEntry, Actor, Item, RollTable, Macro, and Scene trees.
+ * @param {{
+ *   journals?: Array<Object>,
+ *   actors?: Array<Object>,
+ *   items?: Array<Object>,
+ *   tables?: Array<Object>,
+ *   macros?: Array<Object>,
+ *   scenes?: Array<Object>
+ * }} worldDocs
  * @returns {Array<Object>}
  */
 export function collectUuidOccurrences(worldDocs) {
@@ -379,17 +401,27 @@ export function collectUuidOccurrences(worldDocs) {
     targetUuid,
     relativeParentUuid,
     baseCategory,
-    branches
+    branches,
+    allowFromUuidCall = false
   }) => {
     for (const [branchKey, branchValue] of branches) {
       if (branchValue === undefined || branchValue === null) continue;
+      const rootHint = UUID_KEY_HINT_REGEX.test(branchKey);
       walkValueStrings(branchValue, [branchKey], (str, pathSegments, keyHint) => {
         const pathText = formatFieldPath(pathSegments);
         const isPathLoreframe = /loreframe/i.test(pathText);
         const isFlags = pathSegments[0] === "flags";
-        const allowBareUuid =
-          (isFlags || pathSegments[0] === "system") && (keyHint || isPathLoreframe);
-        const refs = extractUuidReferencesFromText(str, { allowBareUuid });
+        const isBareAllowedBranch =
+          isFlags ||
+          pathSegments[0] === "system" ||
+          pathSegments[0] === "documentUuid" ||
+          pathSegments[0] === "journalTarget" ||
+          pathSegments[0] === "behaviors";
+        const allowBareUuid = isBareAllowedBranch && (keyHint || isPathLoreframe);
+        const refs = extractUuidReferencesFromText(str, {
+          allowBareUuid,
+          allowFromUuidCall: allowFromUuidCall && pathText === "command"
+        });
         if (!refs.length) return;
 
         const loreframeSpans =
@@ -427,7 +459,7 @@ export function collectUuidOccurrences(worldDocs) {
             ...parsed
           });
         }
-      });
+      }, rootHint);
     }
   };
 
@@ -529,6 +561,144 @@ export function collectUuidOccurrences(worldDocs) {
     }
   }
 
+  for (const item of worldDocs?.items ?? []) {
+    const iUuid = item.uuid ?? `Item.${item.id}`;
+    scanTarget({
+      rootDocType: "Item",
+      rootDocId: item.id,
+      rootDocName: item.name || item.id,
+      rootUuid: iUuid,
+      targetDocType: "Item",
+      targetDocId: item.id,
+      targetDocName: item.name || item.id,
+      targetUuid: iUuid,
+      relativeParentUuid: iUuid,
+      baseCategory: "actor",
+      branches: [
+        ["system", item.system],
+        ["flags", item.flags]
+      ]
+    });
+  }
+
+  for (const table of worldDocs?.tables ?? []) {
+    const tUuid = table.uuid ?? `RollTable.${table.id}`;
+    scanTarget({
+      rootDocType: "RollTable",
+      rootDocId: table.id,
+      rootDocName: table.name || table.id,
+      rootUuid: tUuid,
+      targetDocType: "RollTable",
+      targetDocId: table.id,
+      targetDocName: table.name || table.id,
+      targetUuid: tUuid,
+      relativeParentUuid: tUuid,
+      baseCategory: "other",
+      branches: [
+        ["description", table.description],
+        ["flags", table.flags]
+      ]
+    });
+
+    for (const res of table.results ?? []) {
+      const rUuid = res.uuid ?? `${tUuid}.TableResult.${res.id}`;
+      scanTarget({
+        rootDocType: "RollTable",
+        rootDocId: table.id,
+        rootDocName: table.name || table.id,
+        rootUuid: tUuid,
+        targetDocType: "TableResult",
+        targetDocId: res.id,
+        targetDocName: res.name || res.text || res.id,
+        targetUuid: rUuid,
+        relativeParentUuid: tUuid,
+        baseCategory: "other",
+        branches: [
+          ["documentUuid", res.documentUuid],
+          ["description", res.description]
+        ]
+      });
+    }
+  }
+
+  for (const macro of worldDocs?.macros ?? []) {
+    const mUuid = macro.uuid ?? `Macro.${macro.id}`;
+    scanTarget({
+      rootDocType: "Macro",
+      rootDocId: macro.id,
+      rootDocName: macro.name || macro.id,
+      rootUuid: mUuid,
+      targetDocType: "Macro",
+      targetDocId: macro.id,
+      targetDocName: macro.name || macro.id,
+      targetUuid: mUuid,
+      relativeParentUuid: mUuid,
+      baseCategory: "other",
+      allowFromUuidCall: true,
+      branches: [
+        ["command", macro.command],
+        ["flags", macro.flags]
+      ]
+    });
+  }
+
+  for (const scene of worldDocs?.scenes ?? []) {
+    const sUuid = scene.uuid ?? `Scene.${scene.id}`;
+    scanTarget({
+      rootDocType: "Scene",
+      rootDocId: scene.id,
+      rootDocName: scene.name || scene.id,
+      rootUuid: sUuid,
+      targetDocType: "Scene",
+      targetDocId: scene.id,
+      targetDocName: scene.name || scene.id,
+      targetUuid: sUuid,
+      relativeParentUuid: sUuid,
+      baseCategory: "other",
+      branches: [["flags", scene.flags]]
+    });
+
+    for (const note of scene.notes ?? []) {
+      const nUuid = note.uuid ?? `${sUuid}.Note.${note.id}`;
+      scanTarget({
+        rootDocType: "Scene",
+        rootDocId: scene.id,
+        rootDocName: scene.name || scene.id,
+        rootUuid: sUuid,
+        targetDocType: "Note",
+        targetDocId: note.id,
+        targetDocName: note.label || note.id,
+        targetUuid: nUuid,
+        relativeParentUuid: sUuid,
+        baseCategory: "other",
+        branches: [
+          ["text", note.text],
+          ["journalTarget", note.journalTarget]
+        ]
+      });
+    }
+
+    for (const region of scene.regions ?? []) {
+      const rgUuid = region.uuid ?? `${sUuid}.Region.${region.id}`;
+      scanTarget({
+        rootDocType: "Scene",
+        rootDocId: scene.id,
+        rootDocName: scene.name || scene.id,
+        rootUuid: sUuid,
+        targetDocType: "Region",
+        targetDocId: region.id,
+        targetDocName: region.name || region.id,
+        targetUuid: rgUuid,
+        relativeParentUuid: sUuid,
+        baseCategory: "other",
+        branches: [
+          ["behaviors", region.behaviors],
+          ["flags", region.flags]
+        ]
+      });
+    }
+  }
+
   return occurrences;
 }
 
@@ -539,7 +709,7 @@ export function collectUuidOccurrences(worldDocs) {
  * @param {number} limit
  * @returns {Array<{ uuid: string, name: string, docType: string, sourceLabel: string, score: number, confidence: string }>}
  */
-export function findUuidCandidates(brokenRef, catalog = [], limit = 3) {
+export function findUuidCandidates(brokenRef, catalog = [], limit = 5) {
   const query = (brokenRef.label || brokenRef.anchor || "").trim();
   if (!query || !catalog.length) return [];
 
@@ -599,24 +769,88 @@ export function findUuidCandidates(brokenRef, catalog = [], limit = 3) {
 }
 
 /**
- * Audit collected UUID occurrences using an async document resolver and a candidate catalog.
- * @param {{ journals?: Array<Object>, actors?: Array<Object> }} worldDocs
+ * Search the world + compendium candidate catalog manually by name, UUID, or type.
+ * @param {string} query
+ * @param {Array<Object>} catalog
+ * @param {{ docType?: string | null, limit?: number }} options
+ * @returns {Array<Object>}
+ */
+export function searchUuidCatalog(query, catalog = [], options = {}) {
+  const raw = String(query ?? "").trim().toLowerCase();
+  const normQ = normalizeForMatch(query);
+  const docType = options.docType || null;
+  const limit = Math.max(1, Number(options.limit) || 25);
+  const matches = [];
+
+  for (const entry of catalog ?? []) {
+    if (!entry?.uuid || !entry?.name) continue;
+    if (docType && entry.docType && entry.docType !== docType) continue;
+
+    if (!raw) {
+      matches.push({ ...entry, score: entry.isCompendium ? 0.5 : 0.6 });
+      continue;
+    }
+
+    const nameLower = entry.name.toLowerCase();
+    const uuidLower = entry.uuid.toLowerCase();
+    const normName = normalizeForMatch(entry.name);
+    let score = 0;
+    if (normName === normQ || uuidLower === raw) score = 1;
+    else if (nameLower.includes(raw) || uuidLower.includes(raw)) score = 0.85;
+    else if (normQ) score = diceSimilarity(normQ, normName);
+
+    if (score >= 0.35) {
+      matches.push({ ...entry, score: Number(score.toFixed(3)) });
+    }
+  }
+
+  return matches
+    .toSorted(
+      (a, b) =>
+        b.score - a.score ||
+        Number(Boolean(a.isCompendium)) - Number(Boolean(b.isCompendium)) ||
+        a.name.localeCompare(b.name)
+    )
+    .slice(0, limit);
+}
+
+/**
+ * Audit collected UUID occurrences using an async document resolver, anchor checker, and candidate catalog.
+ * @param {{ journals?: Array<Object>, actors?: Array<Object>, items?: Array<Object>, tables?: Array<Object>, macros?: Array<Object>, scenes?: Array<Object> }} worldDocs
  * @param {{
  *   resolveUuid: (uuid: string) => Promise<boolean>,
+ *   resolveAnchor?: (uuid: string, anchor: string) => Promise<{ valid: boolean, suggestions?: string[] } | boolean | null>,
  *   hasPack?: (packId: string) => boolean,
- *   catalog?: Array<Object>
+ *   catalog?: Array<Object>,
+ *   ignoredOccurrenceIds?: Set<string>,
+ *   minAutoConfidence?: number
  * }} hooks
  * @returns {Promise<Object>}
  */
 export async function auditUuidReferences(worldDocs, hooks) {
   const occurrences = collectUuidOccurrences(worldDocs);
   const resolveCache = new Map();
+  const anchorCache = new Map();
+  const ignoredIds =
+    hooks?.ignoredOccurrenceIds instanceof Set
+      ? hooks.ignoredOccurrenceIds
+      : new Set(hooks?.ignoredOccurrenceIds ?? []);
+  const minAutoConfidence = Math.min(1, Math.max(0.5, Number(hooks?.minAutoConfidence) || 1.0));
   const broken = [];
+  const ignoredBroken = [];
+
+  const pushBroken = (entry) => {
+    if (ignoredIds.has(entry.id)) {
+      ignoredBroken.push({ ...entry, isIgnored: true });
+    } else {
+      broken.push({ ...entry, isIgnored: false });
+    }
+  };
 
   for (const occ of occurrences) {
     if (!occ.validSyntax) {
       const candidates = findUuidCandidates(occ, hooks?.catalog);
-      broken.push({
+      pushBroken({
         ...occ,
         reason: "malformed",
         severity: "warning",
@@ -628,7 +862,7 @@ export async function auditUuidReferences(worldDocs, hooks) {
 
     if (occ.isCompendium && occ.packId && hooks?.hasPack && !hooks.hasPack(occ.packId)) {
       const candidates = findUuidCandidates(occ, hooks?.catalog);
-      broken.push({
+      pushBroken({
         ...occ,
         reason: "missing-pack",
         severity: "critical",
@@ -643,7 +877,40 @@ export async function auditUuidReferences(worldDocs, hooks) {
       exists = Boolean(await hooks.resolveUuid(occ.resolvedUuid));
       resolveCache.set(occ.resolvedUuid, exists);
     }
-    if (exists) continue;
+    if (exists) {
+      if (occ.anchor && typeof hooks?.resolveAnchor === "function") {
+        const anchorKey = `${occ.resolvedUuid}#${occ.anchor}`;
+        let anchorCheck = anchorCache.get(anchorKey);
+        if (anchorCheck === undefined) {
+          anchorCheck = await hooks.resolveAnchor(occ.resolvedUuid, occ.anchor);
+          anchorCache.set(anchorKey, anchorCheck);
+        }
+        const isInvalid =
+          anchorCheck === false ||
+          (anchorCheck && typeof anchorCheck === "object" && anchorCheck.valid === false);
+        if (isInvalid) {
+          const suggestions = Array.isArray(anchorCheck?.suggestions)
+            ? anchorCheck.suggestions
+            : [];
+          const anchorCandidates = suggestions.slice(0, 5).map((slug) => ({
+            uuid: `${occ.baseUuid}#${slug}`,
+            name: `#${slug}`,
+            docType: occ.targetDocType || "JournalEntryPage",
+            sourceLabel: occ.targetDocName || "Anchor",
+            score: 0.9,
+            confidence: "high"
+          }));
+          pushBroken({
+            ...occ,
+            reason: "missing-anchor",
+            severity: "warning",
+            candidates: anchorCandidates,
+            bestCandidate: anchorCandidates[0] ?? null
+          });
+        }
+      }
+      continue;
+    }
 
     let reason = "missing-document";
     if (occ.parentUuid) {
@@ -656,7 +923,7 @@ export async function auditUuidReferences(worldDocs, hooks) {
     }
 
     const candidates = findUuidCandidates(occ, hooks?.catalog);
-    broken.push({
+    pushBroken({
       ...occ,
       reason,
       severity: occ.sourceCategory === "loreframe" || occ.rootDocType === "JournalEntry" ? "critical" : "warning",
@@ -675,6 +942,14 @@ export async function auditUuidReferences(worldDocs, hooks) {
   const exactMatchCount = sortedBroken.filter(
     (item) => item.bestCandidate?.confidence === "exact"
   ).length;
+  const autoMatchCount = sortedBroken.filter(
+    (item) =>
+      item.bestCandidate &&
+      (item.bestCandidate.confidence === "exact" ||
+        (Number(item.bestCandidate.score) || 0) >= minAutoConfidence)
+  ).length;
+  const withCandidateCount = sortedBroken.filter((i) => Boolean(i.bestCandidate)).length;
+  const unmatchedCount = sortedBroken.filter((i) => !i.bestCandidate).length;
 
   return {
     totalScanned: occurrences.length,
@@ -682,8 +957,15 @@ export async function auditUuidReferences(worldDocs, hooks) {
     journalCount: sortedBroken.filter((i) => i.sourceCategory === "journal").length,
     loreframeCount: sortedBroken.filter((i) => i.sourceCategory === "loreframe").length,
     actorCount: sortedBroken.filter((i) => i.sourceCategory === "actor").length,
+    otherDocsCount: sortedBroken.filter((i) => i.sourceCategory === "other").length,
+    missingAnchorCount: sortedBroken.filter((i) => i.reason === "missing-anchor").length,
     exactMatchCount,
-    withCandidateCount: sortedBroken.filter((i) => Boolean(i.bestCandidate)).length,
+    autoMatchCount,
+    minAutoConfidence,
+    withCandidateCount,
+    unmatchedCount,
+    ignoredCount: ignoredBroken.length,
+    ignoredItems: ignoredBroken,
     items: sortedBroken
   };
 }
@@ -692,7 +974,7 @@ export async function auditUuidReferences(worldDocs, hooks) {
  * Rewrite or unlink a specific broken reference inside a text string.
  * @param {string} text
  * @param {{ syntax: string, rawUuid: string, label?: string, rawMatch?: string }} ref
- * @param {{ mode: "replace" | "unlink", newUuid?: string }} action
+ * @param {{ mode: "replace" | "unlink", newUuid?: string, newLabel?: string }} action
  * @returns {string}
  */
 export function patchStringUuidReference(text, ref, action) {
@@ -704,13 +986,28 @@ export function patchStringUuidReference(text, ref, action) {
     return "";
   }
 
+  if (ref.syntax === "from-uuid") {
+    FROM_UUID_CALL_REGEX.lastIndex = 0;
+    return text.replace(FROM_UUID_CALL_REGEX, (full, quote, uuidInside) => {
+      if (uuidInside.trim() !== ref.rawUuid) return full;
+      if (action.mode === "replace" && action.newUuid) {
+        return full.replace(`${quote}${uuidInside}${quote}`, `${quote}${action.newUuid}${quote}`);
+      }
+      return full;
+    });
+  }
+
   if (ref.syntax === "enricher") {
     ENRICHER_REGEX.lastIndex = 0;
     return text.replace(ENRICHER_REGEX, (full, uuidInside, labelInside) => {
       if (uuidInside.trim() !== ref.rawUuid) return full;
       if (action.mode === "replace" && action.newUuid) {
-        return labelInside !== undefined
-          ? `@UUID[${action.newUuid}]{${labelInside}}`
+        const nextLabel =
+          action.newLabel && String(action.newLabel).trim()
+            ? String(action.newLabel).trim()
+            : labelInside;
+        return nextLabel !== undefined
+          ? `@UUID[${action.newUuid}]{${nextLabel}}`
           : `@UUID[${action.newUuid}]`;
       }
       if (action.mode === "unlink") {
@@ -726,10 +1023,20 @@ export function patchStringUuidReference(text, ref, action) {
     return text.replace(HTML_DATA_UUID_REGEX, (full, quote, uuidAttr, innerHtml) => {
       if (uuidAttr.trim() !== ref.rawUuid) return full;
       if (action.mode === "replace" && action.newUuid) {
-        return full.replace(
+        let updated = full.replace(
           `data-uuid=${quote}${uuidAttr}${quote}`,
           `data-uuid=${quote}${action.newUuid}${quote}`
         );
+        if (action.newLabel && String(action.newLabel).trim()) {
+          const safeLabel = String(action.newLabel)
+            .trim()
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;");
+          const iconPrefix = innerHtml.match(/^(\s*<i\b[^>]*>[\s\S]*?<\/i>\s*)/i)?.[1] ?? "";
+          updated = updated.replace(`>${innerHtml}</a>`, `>${iconPrefix}${safeLabel}</a>`);
+        }
+        return updated;
       }
       if (action.mode === "unlink") {
         const plain = stripTags(innerHtml);

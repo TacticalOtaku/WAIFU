@@ -1,9 +1,22 @@
-import { DEFAULT_THRESHOLDS, MODULE_ID, WORLD_FLAG_COLLECTIONS } from "../constants.mjs";
+import {
+  AUDIT_HISTORY_SETTING,
+  DEFAULT_IGNORE_RULES,
+  DEFAULT_THRESHOLDS,
+  IGNORE_RULES_SETTING,
+  MAX_HISTORY_ENTRIES,
+  MODULE_ID,
+  WORLD_FLAG_COLLECTIONS
+} from "../constants.mjs";
 import { createAuditReport } from "../core/report.mjs";
 import { auditScenes, collectSceneImageSlots } from "../core/scene-audit.mjs";
-import { auditDocumentFlags, auditWorldSettings } from "../core/storage-audit.mjs";
+import {
+  auditDocumentFlags,
+  auditWorldHealthExtras,
+  auditWorldSettings
+} from "../core/storage-audit.mjs";
+import { extractJournalAnchors, slugifyAnchor, utf8ByteSize } from "../core/utils.mjs";
 import { auditUuidReferences } from "../core/uuid-audit.mjs";
-import { probeMediaBatch } from "./image-tools.mjs";
+import { findUnusedOptimizedFiles, probeMediaBatch } from "./image-tools.mjs";
 
 const EMBEDDED_FLAG_COLLECTIONS = [
   "levels",
@@ -28,10 +41,12 @@ const EMBEDDED_FLAG_COLLECTIONS = [
  * @returns {Object}
  */
 export function readThresholdSettings() {
-  const readNum = (key, fallback) => {
+  const readNum = (key, fallback, allowZero = false) => {
     try {
       const value = Number(game.settings.get(MODULE_ID, key));
-      return Number.isFinite(value) && value > 0 ? value : fallback;
+      if (!Number.isFinite(value)) return fallback;
+      if (allowZero ? value >= 0 : value > 0) return value;
+      return fallback;
     } catch {
       return fallback;
     }
@@ -47,15 +62,90 @@ export function readThresholdSettings() {
   return {
     maxTextureResolution: readNum("maxTextureResolution", DEFAULT_THRESHOLDS.maxTextureResolution),
     maxMegapixels: readNum("maxMegapixels", DEFAULT_THRESHOLDS.maxMegapixels),
+    maxAssetBytes: readNum("maxAssetBytes", DEFAULT_THRESHOLDS.maxAssetBytes),
     maxWalls: readNum("maxWalls", DEFAULT_THRESHOLDS.maxWalls),
     maxLights: readNum("maxLights", DEFAULT_THRESHOLDS.maxLights),
     maxAnimations: readNum("maxAnimations", DEFAULT_THRESHOLDS.maxAnimations),
+    nearDuplicateWallTolerance: readNum(
+      "nearDuplicateWallTolerance",
+      DEFAULT_THRESHOLDS.nearDuplicateWallTolerance,
+      true
+    ),
     maxSettingBytes: readNum("maxSettingBytes", DEFAULT_THRESHOLDS.maxSettingBytes),
     maxFlagBytes: readNum("maxFlagBytes", DEFAULT_THRESHOLDS.maxFlagBytes),
     webpQuality: readNum("webpQuality", DEFAULT_THRESHOLDS.webpQuality),
     downscaleOnConvert: readBool("downscaleOnConvert", DEFAULT_THRESHOLDS.downscaleOnConvert),
+    skipLargerWebp: readBool("skipLargerWebp", DEFAULT_THRESHOLDS.skipLargerWebp),
+    uuidMinAutoConfidence: readNum(
+      "uuidMinAutoConfidence",
+      DEFAULT_THRESHOLDS.uuidMinAutoConfidence
+    ),
+    maxChatMessages: readNum("maxChatMessages", DEFAULT_THRESHOLDS.maxChatMessages),
     includeChatMessages: readBool("includeChatMessages", false)
   };
+}
+
+/**
+ * Read persisted ignore/whitelist rules from hidden world setting.
+ * @returns {{ scenes: string[], settings: string[], flags: string[], uuids: string[] }}
+ */
+export function readIgnoreRules() {
+  try {
+    const raw = game.settings.get(MODULE_ID, IGNORE_RULES_SETTING) ?? {};
+    return {
+      scenes: Array.isArray(raw.scenes) ? [...raw.scenes] : [],
+      settings: Array.isArray(raw.settings) ? [...raw.settings] : [],
+      flags: Array.isArray(raw.flags) ? [...raw.flags] : [],
+      uuids: Array.isArray(raw.uuids) ? [...raw.uuids] : []
+    };
+  } catch {
+    return { ...DEFAULT_IGNORE_RULES };
+  }
+}
+
+/**
+ * Toggle an ID inside the ignore/whitelist setting for a domain category.
+ * @param {"scenes" | "settings" | "flags" | "uuids"} category
+ * @param {string} id
+ * @returns {Promise<boolean>} true if added, false if removed
+ */
+export async function toggleIgnoreRule(category, id) {
+  const rules = readIgnoreRules();
+  if (!Array.isArray(rules[category]) || !id) return false;
+  const idx = rules[category].indexOf(id);
+  let added = false;
+  if (idx >= 0) {
+    rules[category].splice(idx, 1);
+  } else {
+    rules[category].push(id);
+    added = true;
+  }
+  await game.settings.set(MODULE_ID, IGNORE_RULES_SETTING, rules);
+  return added;
+}
+
+/**
+ * Read persisted compact audit history entries.
+ * @returns {Array<Object>}
+ */
+export function readAuditHistory() {
+  try {
+    const raw = game.settings.get(MODULE_ID, AUDIT_HISTORY_SETTING);
+    return Array.isArray(raw) ? [...raw] : [];
+  } catch {
+    return [];
+  }
+}
+
+async function appendAuditHistorySnapshot(entry) {
+  try {
+    const existing = readAuditHistory();
+    const next = [...existing, entry].slice(-MAX_HISTORY_ENTRIES);
+    await game.settings.set(MODULE_ID, AUDIT_HISTORY_SETTING, next);
+    return next;
+  } catch {
+    return [entry];
+  }
 }
 
 function toPlain(value) {
@@ -111,6 +201,8 @@ function buildSceneSnapshots() {
 
     const tokens = [...(scene.tokens ?? [])].map((token) => ({
       id: token.id,
+      actorId: token.actorId ?? null,
+      actorExists: !token.actorId || Boolean(game.actors?.has?.(token.actorId)),
       textureSrc: token.texture?.src || "",
       lightAnimationType: token.light?.animation?.type || ""
     }));
@@ -118,6 +210,32 @@ function buildSceneSnapshots() {
     const drawings = [...(scene.drawings ?? [])].map((drawing) => ({
       id: drawing.id,
       src: drawing.texture?.src || ""
+    }));
+
+    const sounds = [...(scene.sounds ?? [])].map((s) => ({
+      id: s.id,
+      path: s.path || ""
+    }));
+
+    const notes = [...(scene.notes ?? [])].map((n) => ({
+      id: n.id,
+      uuid: n.uuid,
+      label: n.label || n.text || n.id,
+      text: n.text || "",
+      journalTarget:
+        n.entryId && n.pageId
+          ? `JournalEntry.${n.entryId}.JournalEntryPage.${n.pageId}`
+          : n.entryId
+            ? `JournalEntry.${n.entryId}`
+            : ""
+    }));
+
+    const regions = [...(scene.regions ?? [])].map((r) => ({
+      id: r.id,
+      uuid: r.uuid,
+      name: r.name || r.id,
+      behaviors: [...(r.behaviors ?? [])].map((b) => toPlain(b) ?? {}),
+      flags: foundry.utils.deepClone(r.flags ?? {})
     }));
 
     snapshots.push({
@@ -130,20 +248,22 @@ function buildSceneSnapshots() {
       backgroundSrc: scene.background?.src || "",
       foregroundSrc,
       weather: scene.weather || "",
+      flags: foundry.utils.deepClone(scene.flags ?? {}),
       levels,
       tiles,
       walls,
       lights,
       tokens,
       drawings,
-      sounds: [...(scene.sounds ?? [])].map((s) => ({ id: s.id })),
-      regions: [...(scene.regions ?? [])].map((r) => ({ id: r.id }))
+      sounds,
+      notes,
+      regions
     });
   }
   return snapshots;
 }
 
-function buildJournalAndActorSnapshots() {
+function buildExtendedWorldDocs(sceneSnapshots) {
   const journals = [];
   for (const journal of game.journal ?? []) {
     const pages = [...(journal.pages ?? [])].map((page) => ({
@@ -196,10 +316,106 @@ function buildJournalAndActorSnapshots() {
     });
   }
 
-  return { journals, actors };
+  const items = [...(game.items ?? [])].map((item) => ({
+    id: item.id,
+    uuid: item.uuid,
+    name: item.name || item.id,
+    system: toPlain(item.system) ?? {},
+    flags: foundry.utils.deepClone(item.flags ?? {})
+  }));
+
+  const tables = [...(game.tables ?? [])].map((table) => ({
+    id: table.id,
+    uuid: table.uuid,
+    name: table.name || table.id,
+    description: table.description ?? "",
+    flags: foundry.utils.deepClone(table.flags ?? {}),
+    results: [...(table.results ?? [])].map((r) => ({
+      id: r.id,
+      uuid: r.uuid,
+      name: r.name || r.text || r.id,
+      text: r.text ?? "",
+      description: r.description ?? "",
+      documentUuid: r.documentUuid ?? ""
+    }))
+  }));
+
+  const macros = [...(game.macros ?? [])].map((macro) => ({
+    id: macro.id,
+    uuid: macro.uuid,
+    name: macro.name || macro.id,
+    command: macro.command ?? "",
+    flags: foundry.utils.deepClone(macro.flags ?? {})
+  }));
+
+  return {
+    journals,
+    actors,
+    items,
+    tables,
+    macros,
+    scenes: sceneSnapshots
+  };
 }
 
-function buildCandidateCatalog() {
+function collectExtraMediaEntries(sceneSnapshots) {
+  const entries = [];
+  const referencedPaths = new Set();
+  const track = (docType, docUuid, docName, field, src) => {
+    if (!src || typeof src !== "string") return;
+    referencedPaths.add(src);
+    entries.push({ docType, docUuid, docName, field, src });
+  };
+
+  for (const sc of sceneSnapshots) {
+    for (const slot of collectSceneImageSlots(sc)) {
+      referencedPaths.add(slot.src);
+    }
+    for (const t of sc.tokens ?? []) {
+      if (t.textureSrc) referencedPaths.add(t.textureSrc);
+    }
+    for (const d of sc.drawings ?? []) {
+      if (d.src) referencedPaths.add(d.src);
+    }
+    for (const s of sc.sounds ?? []) {
+      if (s.path) referencedPaths.add(s.path);
+    }
+  }
+
+  for (const actor of game.actors ?? []) {
+    if (actor.img) track("Actor", actor.uuid, actor.name || actor.id, "img", actor.img);
+    const protoSrc = actor.prototypeToken?.texture?.src;
+    if (protoSrc) {
+      track("Actor", actor.uuid, actor.name || actor.id, "prototypeToken.texture.src", protoSrc);
+    }
+  }
+
+  for (const item of game.items ?? []) {
+    if (item.img) track("Item", item.uuid, item.name || item.id, "img", item.img);
+  }
+
+  for (const playlist of game.playlists ?? []) {
+    for (const sound of playlist.sounds ?? []) {
+      if (sound.path) {
+        track(
+          "PlaylistSound",
+          sound.uuid || playlist.uuid,
+          `${playlist.name} › ${sound.name || sound.id}`,
+          "path",
+          sound.path
+        );
+      }
+    }
+  }
+
+  return { entries, referencedPaths };
+}
+
+/**
+ * Build searchable candidate catalog across all world documents and loaded compendium packs.
+ * @returns {Array<Object>}
+ */
+export function buildCandidateCatalog() {
   const catalog = [];
 
   const addWorldCollection = (collection, docType) => {
@@ -323,11 +539,16 @@ function collectWorldFlagEntries(includeChatMessages = false) {
 /**
  * Run a complete Foundry v14 world audit and return the structured report.
  * @param {Partial<typeof DEFAULT_THRESHOLDS> & { includeChatMessages?: boolean }} overrides
+ * @param {{ signal?: AbortSignal, onProgress?: (info: { phase: string, completed?: number, total?: number, detail?: string }) => void, recordHistory?: boolean }} runtimeOptions
  * @returns {Promise<Object>}
  */
-export async function runWorldAudit(overrides = {}) {
+export async function runWorldAudit(overrides = {}, runtimeOptions = {}) {
   const startedAt = performance.now();
   const thresholds = { ...readThresholdSettings(), ...overrides };
+  const ignoreRules = readIgnoreRules();
+  const signal = runtimeOptions?.signal;
+  const onProgress =
+    typeof runtimeOptions?.onProgress === "function" ? runtimeOptions.onProgress : null;
 
   const activeModuleIds = new Set();
   const installedModuleIds = new Set();
@@ -336,20 +557,56 @@ export async function runWorldAudit(overrides = {}) {
     if (mod.active) activeModuleIds.add(mod.id);
   }
 
+  onProgress?.({ phase: "scenes" });
   const sceneSnapshots = buildSceneSnapshots();
+  const extraMedia = collectExtraMediaEntries(sceneSnapshots);
   const uniqueSources = new Set();
   for (const sc of sceneSnapshots) {
     for (const slot of collectSceneImageSlots(sc)) {
       uniqueSources.add(slot.src);
     }
+    for (const t of sc.tokens ?? []) {
+      if (t.textureSrc) uniqueSources.add(t.textureSrc);
+    }
+    for (const d of sc.drawings ?? []) {
+      if (d.src) uniqueSources.add(d.src);
+    }
+    for (const s of sc.sounds ?? []) {
+      if (s.path) uniqueSources.add(s.path);
+    }
   }
-  const assetMetaMap = await probeMediaBatch(uniqueSources);
-  const scenesReport = auditScenes(sceneSnapshots, assetMetaMap, thresholds);
+  for (const entry of extraMedia.entries) {
+    uniqueSources.add(entry.src);
+  }
 
-  const worldDocs = buildJournalAndActorSnapshots();
+  const assetMetaMap = await probeMediaBatch(uniqueSources, {
+    concurrency: 6,
+    signal,
+    onProgress: (info) =>
+      onProgress?.({
+        phase: "media",
+        completed: info.completed,
+        total: info.total,
+        detail: info.src
+      })
+  });
+
+  if (signal?.aborted) {
+    throw new DOMException("Audit aborted", "AbortError");
+  }
+
+  const scenesReport = auditScenes(sceneSnapshots, assetMetaMap, {
+    ...thresholds,
+    ignoredSceneIds: new Set(ignoreRules.scenes)
+  });
+
+  onProgress?.({ phase: "uuids" });
+  const worldDocs = buildExtendedWorldDocs(sceneSnapshots);
   const catalog = buildCandidateCatalog();
   const uuidsReport = await auditUuidReferences(worldDocs, {
     catalog,
+    ignoredOccurrenceIds: new Set(ignoreRules.uuids),
+    minAutoConfidence: thresholds.uuidMinAutoConfidence,
     hasPack: (packId) => Boolean(game.packs?.has?.(packId)),
     resolveUuid: async (uuid) => {
       try {
@@ -358,15 +615,36 @@ export async function runWorldAudit(overrides = {}) {
       } catch {
         return false;
       }
+    },
+    resolveAnchor: async (uuid, anchor) => {
+      try {
+        const doc = await fromUuid(uuid);
+        if (!doc) return null;
+        const html = doc.text?.content ?? "";
+        const md = doc.text?.markdown ?? "";
+        if (!html && !md) return null;
+        const anchors = extractJournalAnchors(html, md);
+        const slug = slugifyAnchor(anchor);
+        if (anchors.has(anchor) || anchors.has(anchor.toLowerCase()) || (slug && anchors.has(slug))) {
+          return true;
+        }
+        const suggestions = [...anchors].filter((a) => a === slugifyAnchor(a) && a.length >= 2);
+        return { valid: false, suggestions };
+      } catch {
+        return null;
+      }
     }
   });
 
+  onProgress?.({ phase: "storage" });
   const packageContext = {
     activeModuleIds,
     installedModuleIds,
     systemId: game.system?.id ?? "",
     maxSettingBytes: thresholds.maxSettingBytes,
-    maxFlagBytes: thresholds.maxFlagBytes
+    maxFlagBytes: thresholds.maxFlagBytes,
+    ignoredSettingKeys: new Set(ignoreRules.settings),
+    ignoredFlagNamespaces: new Set(ignoreRules.flags)
   };
 
   const settingsReport = auditWorldSettings(collectWorldSettingsSnapshot(), packageContext);
@@ -375,9 +653,45 @@ export async function runWorldAudit(overrides = {}) {
     packageContext
   );
 
+  // Extras: Chat Log, Combats, Non-Scene Broken 404 Media, Unused waifu-optimized files
+  const chatMessages = [...(game.messages ?? [])];
+  let chatBytes = 0;
+  for (const msg of chatMessages) {
+    chatBytes += utf8ByteSize(msg.content ?? "") + utf8ByteSize(msg.flags ?? {});
+  }
+  const combats = [...(game.combats ?? [])].map((c) => ({
+    id: c.id,
+    started: Boolean(c.started),
+    round: Number(c.round) || 0,
+    combatantsCount: c.combatants?.size ?? 0,
+    sceneName: c.scene?.name ?? "Global"
+  }));
+  const brokenMedia = [];
+  const seenBroken = new Set();
+  for (const entry of extraMedia.entries) {
+    const meta = assetMetaMap.get(entry.src);
+    if (meta?.missing) {
+      const key = `${entry.docUuid}::${entry.field}::${entry.src}`;
+      if (seenBroken.has(key)) continue;
+      seenBroken.add(key);
+      brokenMedia.push({ ...entry, statusCode: meta.statusCode });
+    }
+  }
+  const worldId = game.world?.id ?? "world";
+  const unusedOptimizedFiles = await findUnusedOptimizedFiles(worldId, extraMedia.referencedPaths);
+
+  const extras = auditWorldHealthExtras({
+    chatMessagesCount: chatMessages.length,
+    chatBytes,
+    maxChatMessages: thresholds.maxChatMessages,
+    combats,
+    brokenMedia,
+    unusedOptimizedFiles
+  });
+
   const durationMs = Math.round(performance.now() - startedAt);
   const meta = {
-    worldId: game.world?.id ?? "world",
+    worldId,
     worldTitle: game.world?.title ?? "Foundry World",
     systemId: game.system?.id ?? "",
     systemVersion: game.system?.version ?? "",
@@ -387,12 +701,36 @@ export async function runWorldAudit(overrides = {}) {
     durationMs
   };
 
-  return createAuditReport({
+  let history = readAuditHistory();
+  const draftReport = createAuditReport({
     meta,
     thresholds,
     scenes: scenesReport,
     uuids: uuidsReport,
     settings: settingsReport,
-    flags: flagsReport
+    flags: flagsReport,
+    extras,
+    history
   });
+
+  if (runtimeOptions?.recordHistory !== false && Object.keys(overrides).length === 0) {
+    history = await appendAuditHistorySnapshot({
+      generatedAt: draftReport.generatedAt,
+      healthScore: draftReport.summary.healthScore,
+      totalIssues: draftReport.summary.totalIssues,
+      reclaimableBytes: draftReport.statistics.storageStats.totalReclaimableBytes
+    });
+    return createAuditReport({
+      meta,
+      thresholds,
+      scenes: scenesReport,
+      uuids: uuidsReport,
+      settings: settingsReport,
+      flags: flagsReport,
+      extras,
+      history
+    });
+  }
+
+  return draftReport;
 }

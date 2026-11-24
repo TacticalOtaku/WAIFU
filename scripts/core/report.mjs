@@ -1,15 +1,15 @@
 import { ACCENT_OPTIONS, THEME_OPTIONS } from "../constants.mjs";
 import { buildReportCharts } from "./charts.mjs";
-import { buildReportStatistics } from "./statistics.mjs";
+import { buildReportStatistics, compareAuditReports } from "./statistics.mjs";
 import { escapeHtml, formatBytes } from "./utils.mjs";
 
 /**
  * Compute overall world health score (0-100) and prioritized auto-fix recommendations.
- * @param {{ scenes: Object, uuids: Object, settings: Object, flags: Object }} sections
+ * @param {{ scenes: Object, uuids: Object, settings: Object, flags: Object, extras?: Object }} sections
  * @returns {Object}
  */
 export function buildAuditSummary(sections) {
-  const { scenes, uuids, settings, flags } = sections;
+  const { scenes, uuids, settings, flags, extras } = sections;
 
   let penalty = 0;
   penalty += scenes.criticalCount * 14 + scenes.warningCount * 5;
@@ -17,6 +17,12 @@ export function buildAuditSummary(sections) {
   penalty += Math.min(35, uuids.brokenCount * 3);
   penalty += Math.min(18, settings.bloatedCount * 4 + settings.orphanedCount * 2);
   penalty += Math.min(20, flags.orphanedNamespacesCount * 4 + flags.bloatedEntriesCount * 3);
+  if (extras?.brokenMediaCount > 0) {
+    penalty += Math.min(12, extras.brokenMediaCount * 2);
+  }
+  if (extras?.chatBloated) {
+    penalty += extras.chatSeverity === "critical" ? 6 : 3;
+  }
 
   const healthScore = Math.max(0, Math.min(100, Math.round(100 - penalty)));
   let healthState = "healthy";
@@ -27,31 +33,40 @@ export function buildAuditSummary(sections) {
     scenes.criticalCount +
     uuids.items.filter((i) => i.severity === "critical").length +
     settings.items.filter((i) => i.severity === "critical").length +
-    flags.groups.filter((g) => g.severity === "critical").length;
+    flags.groups.filter((g) => g.severity === "critical").length +
+    (extras?.brokenMediaCount ?? 0) +
+    (extras?.chatSeverity === "critical" ? 1 : 0);
 
   const warningCount =
     scenes.warningCount +
     uuids.items.filter((i) => i.severity === "warning").length +
     settings.items.filter((i) => i.severity === "warning").length +
-    flags.groups.filter((g) => g.severity === "warning").length;
+    flags.groups.filter((g) => g.severity === "warning").length +
+    (extras?.chatSeverity === "warning" ? 1 : 0) +
+    (extras?.staleCombatsCount ? 1 : 0);
 
   const infoCount =
     settings.items.filter((i) => i.severity === "info").length +
-    flags.groups.filter((g) => g.severity === "info").length;
+    flags.groups.filter((g) => g.severity === "info").length +
+    (extras?.unusedOptimizedCount ? 1 : 0);
 
   const fixableCounts = {
     sceneWebp: scenes.unoptimizedAssetsCount,
     duplicateWalls: scenes.redundantWallsTotal,
+    nearDuplicateWalls: scenes.nearDuplicateWallsTotal ?? 0,
+    orphanedTokens: scenes.orphanedTokensTotal ?? 0,
     uuidExact: uuids.exactMatchCount,
+    uuidAuto: uuids.autoMatchCount ?? uuids.exactMatchCount,
     uuidTotal: uuids.brokenCount,
     orphanSettings: settings.orphanedCount,
-    orphanFlags: flags.orphanedEntriesCount
+    orphanFlags: flags.orphanedEntriesCount,
+    staleCombats: extras?.staleCombatsCount ?? 0
   };
 
   const totalFixable =
     fixableCounts.sceneWebp +
     fixableCounts.duplicateWalls +
-    fixableCounts.uuidExact +
+    fixableCounts.uuidAuto +
     fixableCounts.orphanSettings +
     fixableCounts.orphanFlags;
 
@@ -75,13 +90,31 @@ export function buildAuditSummary(sections) {
       count: fixableCounts.duplicateWalls
     });
   }
-  if (fixableCounts.uuidExact > 0) {
+  if (fixableCounts.nearDuplicateWalls > 0) {
+    recommendations.push({
+      id: "dedupe-near-walls",
+      priority: "low",
+      tab: "scenes",
+      action: "batchDedupeNearWalls",
+      count: fixableCounts.nearDuplicateWalls
+    });
+  }
+  if (fixableCounts.orphanedTokens > 0) {
+    recommendations.push({
+      id: "cleanup-orphaned-tokens",
+      priority: "medium",
+      tab: "scenes",
+      action: "batchCleanOrphanTokens",
+      count: fixableCounts.orphanedTokens
+    });
+  }
+  if (fixableCounts.uuidAuto > 0) {
     recommendations.push({
       id: "apply-exact-uuids",
       priority: "high",
       tab: "uuids",
       action: "batchApplyExactUuids",
-      count: fixableCounts.uuidExact
+      count: fixableCounts.uuidAuto
     });
   }
   if (fixableCounts.orphanSettings > 0 || fixableCounts.orphanFlags > 0) {
@@ -93,6 +126,24 @@ export function buildAuditSummary(sections) {
       count: fixableCounts.orphanSettings + fixableCounts.orphanFlags,
       settingsCount: fixableCounts.orphanSettings,
       flagsCount: fixableCounts.orphanFlags
+    });
+  }
+  if (extras?.chatBloated) {
+    recommendations.push({
+      id: "prune-chat-log",
+      priority: extras.chatSeverity === "critical" ? "high" : "medium",
+      tab: "storage",
+      action: "archiveChatMessages",
+      count: extras.chatMessagesCount
+    });
+  }
+  if (fixableCounts.staleCombats > 0) {
+    recommendations.push({
+      id: "cleanup-stale-combats",
+      priority: "low",
+      tab: "storage",
+      action: "cleanStaleCombats",
+      count: fixableCounts.staleCombats
     });
   }
 
@@ -114,8 +165,18 @@ export function buildAuditSummary(sections) {
  * @param {Object} params
  * @returns {Object}
  */
-export function createAuditReport({ meta, thresholds, scenes, uuids, settings, flags }) {
-  const summary = buildAuditSummary({ scenes, uuids, settings, flags });
+export function createAuditReport({
+  meta,
+  thresholds,
+  scenes,
+  uuids,
+  settings,
+  flags,
+  extras = null,
+  history = [],
+  comparison = null
+}) {
+  const summary = buildAuditSummary({ scenes, uuids, settings, flags, extras });
   const base = {
     schemaVersion: 2,
     generatedAt: new Date().toISOString(),
@@ -125,11 +186,38 @@ export function createAuditReport({ meta, thresholds, scenes, uuids, settings, f
     scenes,
     uuids,
     settings,
-    flags
+    flags,
+    ...(extras ? { extras } : {}),
+    ...(Array.isArray(history) && history.length ? { history } : {}),
+    ...(comparison ? { comparison } : {})
   };
   base.statistics = buildReportStatistics(base);
+  if (!base.comparison && Array.isArray(history) && history.length >= 2) {
+    const prev = history[history.length - 2];
+    if (prev && Number.isFinite(prev.healthScore)) {
+      base.comparison = {
+        previousGeneratedAt: prev.generatedAt ?? null,
+        currentGeneratedAt: base.generatedAt,
+        healthDelta: summary.healthScore - Number(prev.healthScore),
+        previousHealth: Number(prev.healthScore),
+        currentHealth: summary.healthScore,
+        issuesDelta: summary.totalIssues - (Number(prev.totalIssues) || 0),
+        reclaimableBytesDelta:
+          (Number(base.statistics.storageStats.totalReclaimableBytes) || 0) -
+          (Number(prev.reclaimableBytes) || 0),
+        formattedReclaimableDelta: (() => {
+          const d =
+            (Number(base.statistics.storageStats.totalReclaimableBytes) || 0) -
+            (Number(prev.reclaimableBytes) || 0);
+          return d === 0 ? "0 B" : `${d > 0 ? "+" : "-"}${formatBytes(Math.abs(d))}`;
+        })()
+      };
+    }
+  }
   return base;
 }
+
+export { compareAuditReports };
 
 /**
  * Serialize the audit report to pretty JSON.
@@ -499,8 +587,43 @@ export function formatReportMarkdown(report, lang = "en") {
             ? `- **Удаление осиротевших настроек и флагов (с бэкапом JSON):** ${rec.settingsCount} настроек + ${rec.flagsCount} флагов (${storageStats.formattedReclaimableTotal}).`
             : `- **Clean orphaned settings & flags (with JSON backup):** ${rec.settingsCount} setting(s) + ${rec.flagsCount} flag(s) (${storageStats.formattedReclaimableTotal}).`
         );
+      } else if (rec.id === "dedupe-near-walls") {
+        lines.push(
+          ru
+            ? `- **Очистка почти дублирующихся стен:** ${rec.count} сегментов.`
+            : `- **Remove near-duplicate walls:** ${rec.count} segment(s).`
+        );
+      } else if (rec.id === "cleanup-orphaned-tokens") {
+        lines.push(
+          ru
+            ? `- **Удаление осиротевших токенов без актёров:** ${rec.count} токенов.`
+            : `- **Remove orphaned tokens:** ${rec.count} token(s).`
+        );
+      } else if (rec.id === "prune-chat-log") {
+        lines.push(
+          ru
+            ? `- **Архивация и очистка старого лога чата:** ${rec.count} сообщений.`
+            : `- **Archive & prune bloated chat log:** ${rec.count} messages.`
+        );
+      } else if (rec.id === "cleanup-stale-combats") {
+        lines.push(
+          ru
+            ? `- **Удаление незавершённых/пустых боёв:** ${rec.count}.`
+            : `- **Remove stale combats:** ${rec.count}.`
+        );
       }
     }
+  }
+
+  if (report?.extras) {
+    const ex = report.extras;
+    lines.push("");
+    lines.push(ru ? "## 6. Обслуживание мира (чат, бои, 404-медиа)" : "## 6. World Maintenance (Chat, Combats, 404 Media)");
+    lines.push(
+      ru
+        ? `- **Лог чата:** ${ex.chatMessagesCount ?? 0} сообщений (${ex.formattedChatBytes ?? "0 B"}) • **Зависших боёв:** ${ex.staleCombatsCount ?? 0}/${ex.combatsCount ?? 0} • **Битых 404-медиа (вне сцен):** ${ex.brokenMediaCount ?? 0} • **Неиспользуемых файлов в waifu-optimized:** ${ex.unusedOptimizedCount ?? 0}.`
+        : `- **Chat Log:** ${ex.chatMessagesCount ?? 0} messages (${ex.formattedChatBytes ?? "0 B"}) • **Stale Combats:** ${ex.staleCombatsCount ?? 0}/${ex.combatsCount ?? 0} • **Broken 404 Non-Scene Media:** ${ex.brokenMediaCount ?? 0} • **Unused files in waifu-optimized:** ${ex.unusedOptimizedCount ?? 0}.`
+    );
   }
 
   return lines.join("\n");
@@ -766,6 +889,22 @@ export function formatReportHtmlBody(report, options = {}) {
         text = ru
           ? `Очистить ${rec.settingsCount} настроек и ${rec.flagsCount} флагов удалённых модулей (${storageStats.formattedReclaimableTotal})`
           : `Clean ${rec.settingsCount} orphaned settings and ${rec.flagsCount} flags (${storageStats.formattedReclaimableTotal})`;
+      } else if (rec.id === "dedupe-near-walls") {
+        text = ru
+          ? `Удалить ${rec.count} почти дублирующихся сегментов стен`
+          : `Remove ${rec.count} near-duplicate wall segments`;
+      } else if (rec.id === "cleanup-orphaned-tokens") {
+        text = ru
+          ? `Удалить ${rec.count} осиротевших токенов без актёров`
+          : `Remove ${rec.count} orphaned tokens`;
+      } else if (rec.id === "prune-chat-log") {
+        text = ru
+          ? `Архивировать и очистить лог чата (${rec.count} сообщений)`
+          : `Archive & prune bloated chat log (${rec.count} messages)`;
+      } else if (rec.id === "cleanup-stale-combats") {
+        text = ru
+          ? `Удалить ${rec.count} незавершённых/пустых боёв`
+          : `Remove ${rec.count} stale combat encounters`;
       }
       const badgeTone = rec.priority === "high" ? "is-critical" : "is-warning";
       return `<li><span class="waifu-badge ${badgeTone}">${escapeHtml(rec.priority)}</span> <span>${escapeHtml(text)}</span></li>`;
@@ -927,6 +1066,17 @@ export function formatReportHtmlBody(report, options = {}) {
         : `<p class="waifu-empty">${escapeHtml(t.noStorageIssues)}</p>`
     }
   </section>
+  ${
+    report?.extras
+      ? `<section class="waifu-card">
+          <h3><span>${escapeHtml(ru ? "Обслуживание мира (Чат, Бои, 404-медиа)" : "World Maintenance (Chat, Combats, 404 Media)")}</span></h3>
+          <div class="waifu-kv"><span>${escapeHtml(ru ? "Лог чата" : "Chat Log")}</span><b>${report.extras.chatMessagesCount ?? 0} (${escapeHtml(report.extras.formattedChatBytes ?? "0 B")})</b></div>
+          <div class="waifu-kv"><span>${escapeHtml(ru ? "Зависшие / пустые бои" : "Stale Combats")}</span><b>${report.extras.staleCombatsCount ?? 0} / ${report.extras.combatsCount ?? 0}</b></div>
+          <div class="waifu-kv"><span>${escapeHtml(ru ? "Битые 404-медиа (вне сцен)" : "Broken 404 Non-Scene Media")}</span><b>${report.extras.brokenMediaCount ?? 0}</b></div>
+          <div class="waifu-kv"><span>${escapeHtml(ru ? "Неиспользуемые файлы waifu-optimized" : "Unused waifu-optimized Files")}</span><b>${report.extras.unusedOptimizedCount ?? 0}</b></div>
+        </section>`
+      : ""
+  }
 </article>`.trim();
 }
 
@@ -949,6 +1099,16 @@ export function formatReportHtml(report, options = {}) {
   const bodyHtml = formatReportHtmlBody(report, { lang });
 
   const standaloneCss = `
+@font-face {
+  font-family: "WAIFU Display"; font-weight: 400;
+  src: local("Palatino Linotype"), local("PalatinoLinotype-Roman"), local("Book Antiqua"), local("Palatino"), local("Palatino-Roman");
+  unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F;
+}
+@font-face {
+  font-family: "WAIFU Display"; font-weight: 700;
+  src: local("Palatino Linotype Bold"), local("PalatinoLinotype-Bold"), local("Book Antiqua Bold"), local("Palatino Bold"), local("Palatino-Bold");
+  unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F;
+}
 :root { color-scheme: dark; }
 .waifu-root {
   --surface-0: #0e1016; --surface-1: #151821; --surface-2: #1c202c; --surface-3: #252a38;
@@ -963,7 +1123,7 @@ export function formatReportHtml(report, options = {}) {
   --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;
   --font-ui: "Onest Variable", "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Palatino Linotype", "Book Antiqua", Palatino, var(--font-ui);
+  --font-display: "WAIFU Display", var(--font-ui);
   --font-num: "Onest Variable", "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --shadow-1: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 8px 24px rgb(0 0 0 / 0.36);
@@ -985,7 +1145,7 @@ export function formatReportHtml(report, options = {}) {
 .waifu-root[data-accent="frost"] { --accent: var(--acc-frost); }
 .waifu-root[data-accent="rose"] { --accent: var(--acc-rose); }
 * { box-sizing: border-box; }
-body { margin: 0; padding: 28px 20px 48px; background: var(--surface-0); color: var(--text); font: 13.5px/1.5 var(--font-ui); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+body { margin: 0; padding: 28px 20px 48px; background: var(--surface-0); color: var(--text); font: 0.8125rem/1.5 var(--font-ui); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
 svg text { font-family: var(--font-ui); }
 .waifu-standalone-wrap { max-width: 1120px; margin: 0 auto; }
 .waifu-standalone-bar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 14px; }

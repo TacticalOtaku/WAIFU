@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { auditDocumentFlags, auditWorldSettings } from "../scripts/core/storage-audit.mjs";
+import {
+  auditDocumentFlags,
+  auditWorldHealthExtras,
+  auditWorldSettings
+} from "../scripts/core/storage-audit.mjs";
 import { utf8ByteSize } from "../scripts/core/utils.mjs";
 
 test("utf8ByteSize handles multi-byte Cyrillic strings and circular objects safely", () => {
@@ -103,4 +107,50 @@ test("auditDocumentFlags ignores normal active/core flags and groups orphaned mo
   const orphanGroup = report.groups.find((g) => g.namespace === "old-wall-mod");
   assert.equal(orphanGroup.docCount, 2);
   assert.equal(orphanGroup.isOrphaned, true);
+});
+
+test("storage ignore rules and auditWorldHealthExtras handle ignored namespaces and maintenance alerts", () => {
+  const settingsReport = auditWorldSettings(
+    [
+      { key: "gone.cache", value: "y".repeat(3000) },
+      { key: "gone.other", value: "z".repeat(3000) }
+    ],
+    {
+      activeModuleIds: new Set(),
+      installedModuleIds: new Set(),
+      maxSettingBytes: 1024,
+      ignoredSettingKeys: new Set(["gone.cache"])
+    }
+  );
+  assert.equal(settingsReport.flaggedCount, 1);
+  assert.equal(settingsReport.ignoredCount, 1);
+  assert.equal(settingsReport.ignoredItems[0].key, "gone.cache");
+
+  const flagsReport = auditDocumentFlags(
+    [{ docType: "Actor", docId: "a1", docName: "Hero", docUuid: "Actor.a1", namespace: "old-mod", value: { x: 1 } }],
+    {
+      activeModuleIds: new Set(),
+      installedModuleIds: new Set(),
+      ignoredFlagNamespaces: new Set(["old-mod"])
+    }
+  );
+  assert.equal(flagsReport.groupsCount, 0);
+  assert.equal(flagsReport.ignoredGroupsCount, 1);
+
+  const extras = auditWorldHealthExtras({
+    chatMessagesCount: 2500,
+    chatBytes: 5_000_000,
+    maxChatMessages: 1000,
+    combats: [
+      { id: "c1", started: false, round: 0, combatantsCount: 2 },
+      { id: "c2", started: true, round: 3, combatantsCount: 4 }
+    ],
+    brokenMedia: [{ docType: "Actor", docUuid: "Actor.a1", docName: "Hero", field: "img", src: "404.png", statusCode: 404 }],
+    unusedOptimizedFiles: [{ path: "worlds/demo/waifu-optimized/old.webp", filename: "old.webp" }]
+  });
+  assert.equal(extras.chatBloated, true);
+  assert.equal(extras.chatSeverity, "warning");
+  assert.equal(extras.staleCombatsCount, 1);
+  assert.equal(extras.brokenMediaCount, 1);
+  assert.equal(extras.unusedOptimizedCount, 1);
 });

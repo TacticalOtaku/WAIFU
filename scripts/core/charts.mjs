@@ -34,7 +34,8 @@ function clamp01(val) {
  * @returns {string}
  */
 export function renderHealthGaugeSvg(score, state = "healthy", options = {}) {
-  const safeScore = Math.max(0, Math.min(100, Math.round(Number(score) || 0)));
+  const isIdle = score === null || score === undefined || state === "idle";
+  const safeScore = isIdle ? 0 : Math.max(0, Math.min(100, Math.round(Number(score) || 0)));
   const width = Number(options.width) || 136;
   const height = Number(options.height) || 124;
   const cx = 70;
@@ -44,11 +45,16 @@ export function renderHealthGaugeSvg(score, state = "healthy", options = {}) {
   const arcSpan = circumference * 0.75; // 270 degrees; bottom ends sit at y ≈ 86.5
   const filledSpan = (safeScore / 100) * arcSpan;
 
-  const tone =
-    state === "critical" ? "critical" : state === "warning" ? "warning" : "ok";
+  const tone = isIdle
+    ? "muted"
+    : state === "critical"
+      ? "critical"
+      : state === "warning"
+        ? "warning"
+        : "ok";
   const color = resolveToneColor(tone);
   const ariaLabel = escapeHtml(
-    options.ariaLabel || `World Health ${safeScore}%`
+    options.ariaLabel || (isIdle ? "Audit pending" : `World Health ${safeScore}%`)
   );
   const stateLabel = escapeHtml(options.stateLabel || "");
 
@@ -61,16 +67,20 @@ export function renderHealthGaugeSvg(score, state = "healthy", options = {}) {
       ].join("")
     : "";
 
+  const centerText = isIdle
+    ? `<text x="${cx}" y="61" text-anchor="middle" class="waifu-gauge-num">—</text>`
+    : `<text x="${cx}" y="61" text-anchor="middle" class="waifu-gauge-num">${safeScore}<tspan class="waifu-gauge-pct" dx="1.5">%</tspan></text>`;
+
   return [
     `<svg class="waifu-gauge-svg" viewBox="0 0 140 126" width="${width}" height="${height}" role="img" aria-label="${ariaLabel}">`,
     `<title>${ariaLabel}</title>`,
     `<g transform="rotate(135 ${cx} ${cy})">`,
     `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--surface-3)" stroke-width="9" stroke-dasharray="${arcSpan.toFixed(2)} ${circumference.toFixed(2)}" stroke-linecap="round" />`,
-    safeScore > 0
+    !isIdle && safeScore > 0
       ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="9" stroke-dasharray="${filledSpan.toFixed(2)} ${circumference.toFixed(2)}" stroke-linecap="round" />`
       : "",
     `</g>`,
-    `<text x="${cx}" y="61" text-anchor="middle" class="waifu-gauge-num">${safeScore}<tspan class="waifu-gauge-pct" dx="1.5">%</tspan></text>`,
+    centerText,
     statusPill,
     `</svg>`
   ].join("");
@@ -449,6 +459,79 @@ export function getChartLabels(lang = "en") {
 }
 
 /**
+ * Render an inline SVG health score trend sparkline across audit history entries.
+ * @param {Array<{ generatedAt: string, healthScore: number, totalIssues?: number }>} history
+ * @param {{ ariaLabel?: string, emptyLabel?: string }} options
+ * @returns {string}
+ */
+export function renderHealthTrendSvg(history = [], options = {}) {
+  const entries = (history ?? []).filter((e) => Number.isFinite(Number(e?.healthScore)));
+  if (entries.length < 2) {
+    return `<p class="waifu-chart-empty">${escapeHtml(options.emptyLabel || "—")}</p>`;
+  }
+
+  const width = 540;
+  const height = 104;
+  const padX = 28;
+  const padTop = 18;
+  const padBottom = 22;
+  const plotW = width - padX * 2;
+  const plotH = height - padTop - padBottom;
+
+  const scores = entries.map((e) => Math.max(0, Math.min(100, Number(e.healthScore))));
+  const minS = Math.max(0, Math.min(...scores) - 10);
+  const maxS = Math.min(100, Math.max(...scores, minS + 10));
+  const span = Math.max(10, maxS - minS);
+
+  const coords = entries.map((entry, idx) => {
+    const x = padX + (entries.length === 1 ? plotW / 2 : (idx / (entries.length - 1)) * plotW);
+    const ratio = (Math.max(0, Math.min(100, Number(entry.healthScore))) - minS) / span;
+    const y = padTop + (1 - ratio) * plotH;
+    return { x, y, entry };
+  });
+
+  const polylinePts = coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+  const areaPts = `${padX},${padTop + plotH} ${polylinePts} ${(padX + plotW).toFixed(1)},${padTop + plotH}`;
+  const last = coords[coords.length - 1];
+  const lastScore = Math.round(Number(last.entry.healthScore));
+  const tone = lastScore < 60 ? "critical" : lastScore < 85 ? "warning" : "ok";
+  const strokeColor = resolveToneColor(tone);
+
+  const dots = coords
+    .map((c, idx) => {
+      const dateStr = String(c.entry.generatedAt ?? "").slice(0, 16).replace("T", " ");
+      const tip = `${dateStr}: ${Math.round(c.entry.healthScore)}%`;
+      const isEnd = idx === coords.length - 1 || idx === 0;
+      return [
+        `<g>`,
+        `<title>${escapeHtml(tip)}</title>`,
+        `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isEnd ? 4 : 3}" fill="${strokeColor}" stroke="var(--surface-1)" stroke-width="1.5" />`,
+        isEnd
+          ? `<text x="${c.x.toFixed(1)}" y="${Math.max(12, c.y - 7).toFixed(1)}" text-anchor="${idx === 0 ? "start" : "end"}" class="waifu-hbar-val">${Math.round(c.entry.healthScore)}%</text>`
+          : "",
+        `</g>`
+      ].join("");
+    })
+    .join("");
+
+  const ariaLabel = escapeHtml(options.ariaLabel || "World Health Score Trend");
+  const startStamp = String(entries[0].generatedAt ?? "").slice(5, 16).replace("T", " ");
+  const endStamp = String(entries[entries.length - 1].generatedAt ?? "").slice(5, 16).replace("T", " ");
+
+  return [
+    `<svg class="waifu-hbar-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${ariaLabel}">`,
+    `<title>${ariaLabel}</title>`,
+    `<line x1="${padX}" y1="${padTop + plotH}" x2="${padX + plotW}" y2="${padTop + plotH}" stroke="var(--line-strong)" stroke-width="1" />`,
+    `<polygon points="${areaPts}" fill="${strokeColor}" fill-opacity="0.12" />`,
+    `<polyline points="${polylinePts}" fill="none" stroke="${strokeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />`,
+    dots,
+    `<text x="${padX}" y="${height - 4}" text-anchor="start" class="waifu-hbar-limit">${escapeHtml(startStamp)}</text>`,
+    `<text x="${padX + plotW}" y="${height - 4}" text-anchor="end" class="waifu-hbar-limit">${escapeHtml(endStamp)}</text>`,
+    `</svg>`
+  ].join("");
+}
+
+/**
  * Render the complete set of analytical SVG/HTML charts for a given audit report and statistics.
  * @param {Object} report
  * @param {Object} stats
@@ -462,12 +545,17 @@ export function buildReportCharts(report, stats, lang = "en") {
   const { sceneStats, uuidStats, storageStats, domainMatrix, scoreBreakdown } = stats;
 
   // 1. Sidebar / Masthead Health Gauge
+  const hasRealScore = Boolean(report?.generatedAt);
   const healthGaugeSvg = renderHealthGaugeSvg(
-    summary.healthScore ?? 100,
-    summary.healthState ?? "healthy",
+    hasRealScore ? (summary.healthScore ?? 100) : null,
+    hasRealScore ? (summary.healthState ?? "healthy") : "idle",
     {
-      stateLabel: L.healthStates[summary.healthState ?? "healthy"],
-      ariaLabel: `${summary.healthScore ?? 100}%`
+      stateLabel: hasRealScore
+        ? L.healthStates[summary.healthState ?? "healthy"]
+        : lang === "ru"
+          ? "ОЖИДАНИЕ"
+          : "PENDING",
+      ariaLabel: hasRealScore ? `${summary.healthScore ?? 100}%` : "Pending audit"
     }
   );
 
@@ -631,6 +719,14 @@ export function buildReportCharts(report, stats, lang = "en") {
     { emptyLabel: L.emptyStorage }
   );
 
+  // 11. Optional Audit History Sparkline
+  const healthTrendSvg =
+    Array.isArray(report?.history) && report.history.length >= 2
+      ? renderHealthTrendSvg(report.history, {
+          ariaLabel: lang === "ru" ? "Динамика индекса здоровья" : "Health Score Trend"
+        })
+      : "";
+
   return {
     healthGaugeSvg,
     domainMatrixHtml,
@@ -644,6 +740,7 @@ export function buildReportCharts(report, stats, lang = "en") {
     uuidTopDocsSvg,
     storageDonutHtml,
     storageStateBarHtml,
-    topNamespacesSvg
+    topNamespacesSvg,
+    healthTrendSvg
   };
 }

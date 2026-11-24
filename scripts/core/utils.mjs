@@ -1,4 +1,5 @@
 import {
+  AUDIO_EXTENSIONS,
   PNG_EXTENSIONS,
   PROTECTED_UPLOAD_PREFIXES,
   UNOPTIMIZED_RASTER_EXTENSIONS,
@@ -84,6 +85,68 @@ export function isWebpAsset(src) {
 
 export function isVideoAsset(src) {
   return VIDEO_EXTENSIONS.has(getMediaExtension(src));
+}
+
+export function isAudioAsset(src) {
+  return AUDIO_EXTENSIONS.has(getMediaExtension(src));
+}
+
+/**
+ * Slugify heading text into a Foundry-compatible journal anchor slug.
+ * @param {string} text
+ * @returns {string}
+ */
+export function slugifyAnchor(text) {
+  return String(text ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s_-]+/gu, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Extract explicit element IDs and heading slugs from Journal HTML or Markdown text.
+ * @param {string} html
+ * @param {string} markdown
+ * @returns {Set<string>}
+ */
+export function extractJournalAnchors(html = "", markdown = "") {
+  const anchors = new Set();
+  const addAnchor = (raw) => {
+    const clean = String(raw ?? "").trim().replace(/^#/, "");
+    if (!clean) return;
+    anchors.add(clean);
+    anchors.add(clean.toLowerCase());
+    const slug = slugifyAnchor(clean);
+    if (slug) anchors.add(slug);
+  };
+
+  if (typeof html === "string" && html) {
+    const idRegex = /\b(?:id|name)=(["'])([^"']+)\1/gi;
+    let match;
+    while ((match = idRegex.exec(html)) !== null) {
+      addAnchor(match[2]);
+    }
+
+    const headingRegex = /<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
+    while ((match = headingRegex.exec(html)) !== null) {
+      const plain = match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      addAnchor(plain);
+    }
+  }
+
+  if (typeof markdown === "string" && markdown) {
+    const mdHeadingRegex = /^\s{0,3}#{1,6}\s+(.+?)\s*#*$/gm;
+    let match;
+    while ((match = mdHeadingRegex.exec(markdown)) !== null) {
+      addAnchor(match[1]);
+    }
+  }
+
+  return anchors;
 }
 
 export function isDataOrExternalUrl(src) {

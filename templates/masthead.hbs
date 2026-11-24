@@ -6,7 +6,9 @@
     <div class="waifu-brand-text">
       <div class="waifu-brand-row">
         <h1 class="waifu-name">{{localize "WAIFU.ModuleTitle"}}</h1>
-        <span class="waifu-badge is-{{summary.healthStateBadge}}">{{summary.healthScore}}%</span>
+        {{#if hasReport}}
+          <span class="waifu-badge is-{{summary.healthStateBadge}}">{{summary.healthScore}}%</span>
+        {{/if}}
       </div>
       <div class="waifu-meta-line">
         <span>{{worldLine}}</span>
@@ -43,16 +45,6 @@
     <button
       type="button"
       class="waifu-btn is-sm"
-      data-action="backupStorage"
-      {{#unless hasReport}}disabled{{/unless}}
-    >
-      <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
-      <span>{{localize "WAIFU.Masthead.Backup"}}</span>
-    </button>
-
-    <button
-      type="button"
-      class="waifu-btn is-sm"
       data-action="selectTab"
       data-tab="report"
       {{#unless hasReport}}disabled{{/unless}}
@@ -60,6 +52,43 @@
       <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
       <span>{{localize "WAIFU.Masthead.ExportReport"}}</span>
     </button>
+
+    <span class="waifu-tool-sep" aria-hidden="true"></span>
+
+    <button
+      type="button"
+      class="waifu-ibtn"
+      data-action="backupStorage"
+      aria-label="{{localize 'WAIFU.Masthead.Backup'}}"
+      title="{{localize 'WAIFU.Masthead.Backup'}}"
+      {{#unless hasReport}}disabled{{/unless}}
+    >
+      <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
+    </button>
+
+    <button
+      type="button"
+      class="waifu-ibtn"
+      data-action="restoreBackup"
+      aria-label="{{localize 'WAIFU.Masthead.Restore'}}"
+      title="{{localize 'WAIFU.Masthead.Restore'}}"
+      {{#if busy}}disabled{{/if}}
+    >
+      <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+    </button>
+
+    {{#if totalIgnoredCount}}
+      <button
+        type="button"
+        class="waifu-ibtn"
+        data-action="manageIgnoreRules"
+        aria-label="{{localize 'WAIFU.Ignore.ManageTitle'}} ({{totalIgnoredCount}})"
+        title="{{localize 'WAIFU.Ignore.ManageTitle'}} ({{totalIgnoredCount}})"
+      >
+        <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+        <span class="waifu-ibtn-count">{{totalIgnoredCount}}</span>
+      </button>
+    {{/if}}
 
     <div class="waifu-menu-wrap">
       <button

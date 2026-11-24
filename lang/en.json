@@ -50,6 +50,26 @@
         "Name": "Scan Chat Messages for Orphaned Flags",
         "Hint": "Include game.messages when scanning for orphaned module flags (may take longer in huge worlds)."
       },
+      "MaxAssetBytes": {
+        "Name": "Max Texture File Size (bytes)",
+        "Hint": "Flag scene/tile textures whose HTTP file size exceeds this byte limit."
+      },
+      "NearDuplicateWallTolerance": {
+        "Name": "Near-Duplicate Wall Snap Tolerance (px)",
+        "Hint": "Flag matching walls whose endpoints differ by at most this pixel distance (0 disables)."
+      },
+      "SkipLargerWebp": {
+        "Name": "Skip WebP Upload If Larger Than Original",
+        "Hint": "When not downscaling, skip replacing an image if the re-encoded WebP is larger than the source file."
+      },
+      "UuidMinAutoConfidence": {
+        "Name": "Minimum Confidence for Batch @UUID Replace",
+        "Hint": "Minimum candidate match score (0.75–1.00) included in batch @UUID replacement."
+      },
+      "MaxChatMessages": {
+        "Name": "Chat Log Warning Threshold (messages)",
+        "Hint": "Flag the world chat log when total stored messages exceed this count."
+      },
       "Theme": {
         "Name": "WAIFU Window Theme",
         "Hint": "Visual theme for the WAIFU audit window.",
@@ -76,7 +96,45 @@
       "RunAudit": "Run Audit",
       "AutoFix": "Auto-Fix Safe",
       "Backup": "Backup JSON",
+      "Restore": "Restore JSON",
       "ExportReport": "Report & Export"
+    },
+    "Ignore": {
+      "ManageTitle": "Ignored Audit Rules",
+      "BtnLabel": "Ignored",
+      "FilterChip": "Ignored",
+      "Ignore": "Ignore in Audit",
+      "Unignore": "Restore to Audit"
+    },
+    "History": {
+      "Title": "Health Trend & Report Comparison",
+      "CompareBtn": "Compare JSON Report",
+      "ClearCompare": "Clear Comparison",
+      "HealthDelta": "Health",
+      "IssuesDelta": "Issues",
+      "BrokenUuidDelta": "Broken @UUID",
+      "StorageDelta": "Reclaimable",
+      "NeedTwoScans": "Run at least two audits or load a saved JSON report to compare trends."
+    },
+    "Extras": {
+      "Title": "World Maintenance (Chat, Combats & Broken Media)",
+      "ChatTitle": "Chat Message Log",
+      "LimitLabel": "limit",
+      "BtnPruneChat": "Archive & Prune Chat",
+      "StaleCombatsTitle": "Stale / Empty Combats",
+      "StaleCombatsHint": "Unstarted or zero-combatant encounters still in database",
+      "BtnCleanCombats": "Clean Stale Combats",
+      "BrokenMediaTitle": "Broken 404 Non-Scene Media",
+      "BrokenMediaHint": "Missing Actor, Token, Item, or Playlist audio files returning HTTP 404",
+      "UnusedOptimizedTitle": "Unreferenced Files in waifu-optimized",
+      "UnusedOptimizedHint": "These generated WebP files in the world folder are no longer referenced by any audited document."
+    },
+    "Progress": {
+      "Scanning": "Scanning world...",
+      "ProbingMedia": "Probing media assets",
+      "ScanningUuids": "Auditing @UUID links & anchors...",
+      "ScanningStorage": "Auditing settings, flags & chat..." ,
+      "ConvertingWebp": "Converting textures to WebP"
     },
     "Sidebar": {
       "HealthTitle": "World Integrity Index",
@@ -194,7 +252,9 @@
       "RunFirst": "Click \"Run Audit\" to inspect scenes, journals (including Loreframe), actors, world settings, and flags.",
       "ApplySceneWebp": "Convert {count} PNG/Raster Maps to WebP",
       "ApplyWallCleanup": "Remove {count} Duplicate/Zero Walls",
-      "ApplyUuidExact": "Auto-Replace {count} Exact @UUID Matches",
+      "ApplyNearWallCleanup": "Clean {count} Near-Duplicate Walls",
+      "ApplyOrphanTokenCleanup": "Remove {count} Orphaned Tokens",
+      "ApplyUuidExact": "Auto-Replace {count} Matched @UUIDs",
       "ApplyOrphanCleanup": "Clean {count} Orphaned Settings & Flags",
       "OpenTab": "Inspect Details"
     },
@@ -204,8 +264,11 @@
       "FilterHeavy": "Issues Only",
       "FilterPng": "PNG / Raster",
       "FilterGeometry": "Walls / Lights / Anim",
+      "FilterMissing": "404 / Heavy Size",
       "BatchWebp": "Convert All PNG/Raster -> WebP",
       "BatchDedupeWalls": "Deduplicate Zero/Dup Walls",
+      "BatchNearWalls": "Clean Near-Dup Walls",
+      "BatchOrphanTokens": "Clean Orphan Tokens",
       "ColScene": "Scene",
       "ColScore": "Load",
       "ColMaxRes": "Max Res",
@@ -224,8 +287,13 @@
       "AnimsTag": "{count} animations",
       "BtnConvertWebp": "-> WebP",
       "BtnDedupeWalls": "Clean Walls",
+      "BtnNearWalls": "Clean ~Dup",
+      "BtnOrphanTokens": "Orphan Tokens",
       "BtnStopLightAnims": "Disable Light Anim",
-      "BtnOpenScene": "Configure Scene"
+      "BtnFocusCanvas": "Focus on Canvas",
+      "BtnOpenScene": "Configure Scene",
+      "ExtraMissingMedia": "missing token/drawing/sound 404",
+      "MoreAssets": "more assets"
     },
     "Uuids": {
       "SearchPlaceholder": "Filter by document, UUID, or label...",
@@ -233,8 +301,10 @@
       "FilterJournals": "Journals",
       "FilterLoreframe": "Flags / Loreframe",
       "FilterActors": "Actors & Items",
+      "FilterOther": "Tables / Macros / Scenes",
       "FilterWithMatch": "With Candidate",
-      "BatchApplyExact": "Apply High-Confidence Matches",
+      "UpdateLabelOption": "Update {label} on replace",
+      "BatchApplyExact": "Apply Auto Matches",
       "BatchUnlinkNoMatch": "Unlink Unmatched",
       "ColSource": "Source Document",
       "ColPath": "Field / Path",
@@ -245,12 +315,16 @@
       "Empty": "No broken @UUID references match the current filter.",
       "NoCandidate": "No automatic match found",
       "BtnApply": "Replace",
+      "BtnPickManual": "Pick...",
+      "ManualSearchPlaceholder": "Search world & compendium documents by name or UUID...",
+      "AnyTypeLabel": "All types",
       "BtnUnlink": "Unlink",
       "BtnOpen": "Open Sheet",
       "Reason": {
         "missing-document": "Document missing",
         "missing-pack": "Compendium missing",
         "missing-embedded": "Embedded doc missing",
+        "missing-anchor": "Heading #anchor missing",
         "malformed": "Malformed UUID"
       }
     },
@@ -309,16 +383,33 @@
       "ConfirmDeleteOrphanFlags": "Remove flag namespace \"{namespace}\" from {count} world documents ({size})?",
       "ConfirmDeleteAllOrphanFlags": "Remove all orphaned module flag namespaces across {count} document flag entries? Disabled modules will NOT be touched.",
       "DownloadBackupLabel": "Download JSON backup before deleting (Recommended)",
-      "InspectTitle": "Inspect Storage Payload"
+      "InspectTitle": "Inspect Storage Payload",
+      "ThresholdsTitle": "WAIFU Audit Thresholds & Options",
+      "BtnSaveAndAudit": "Save & Re-Audit",
+      "BtnFoundrySettings": "All Foundry Settings",
+      "ConfirmNearWalls": "Remove {count} near-duplicate wall segments from \"{scene}\"?",
+      "ConfirmOrphanTokens": "Delete {count} orphaned tokens with missing Actor links from \"{scene}\"?",
+      "ManualPickerTitle": "Select Replacement Document",
+      "TruncatedNote": "Showing first 40,000 of {total} characters (Copy copies full JSON).",
+      "BtnCopyJson": "Copy Full JSON",
+      "ActiveModuleWarning": "Warning: this module is currently ACTIVE — deleting its setting may reset live configuration!",
+      "ConfirmRestoreBackup": "Restore {settings} world setting(s), {flags} document flag(s), {scenes} scene texture path(s), and {walls} wall(s) from this backup?",
+      "ConfirmPruneChat": "Archive and remove older messages from {total} total chat messages?",
+      "KeepMessagesLabel": "Keep newest messages count",
+      "ExportChatArchiveLabel": "Download HTML chat archive before deleting",
+      "ConfirmCleanCombats": "Delete {count} stale/empty combat encounters?"
     },
     "Notifications": {
       "AuditComplete": "WAIFU audit complete in {duration} ms: {issues} issues found.",
+      "Cancelled": "WAIFU operation cancelled.",
       "Exported": "Exported WAIFU report: {filename}",
-      "Copied": "Markdown report copied to clipboard.",
+      "Copied": "Copied to clipboard.",
       "JournalCreated": "Created Journal Entry \"{name}\" with the WAIFU audit report.",
       "WebpConverted": "Converted {count} image(s) to WebP ({saved} saved).",
+      "WebpSkippedLarger": "Skipped {count} image(s) whose WebP output was larger than the original.",
       "WebpFailed": "Failed to convert {src} to WebP: {error}",
       "WallsCleaned": "Removed {count} duplicate/zero-length walls from \"{scene}\".",
+      "OrphanTokensCleaned": "Removed {count} orphaned tokens from \"{scene}\".",
       "LightAnimsCleared": "Disabled animations on {count} light(s) in \"{scene}\".",
       "UuidReplaced": "Replaced broken @UUID in \"{doc}\".",
       "UuidBatchReplaced": "Updated {count} @UUID reference(s).",
@@ -327,6 +418,11 @@
       "SettingsBatchDeleted": "Deleted {count} orphaned world settings.",
       "FlagsDeleted": "Removed {count} orphaned flag namespace entries.",
       "BackupDownloaded": "Saved JSON backup: {filename}",
+      "BackupRestored": "Restored {settings} setting(s), {flags} flag(s), {scenes} scene path(s), {walls} wall(s).",
+      "IgnoreAdded": "Added \"{id}\" to WAIFU ignore rules.",
+      "IgnoreRemoved": "Removed \"{id}\" from WAIFU ignore rules.",
+      "ChatPruned": "Removed {count} older chat messages.",
+      "CombatsCleaned": "Deleted {count} stale combat encounters.",
       "NothingToFix": "No matching auto-fix items available."
     }
   }

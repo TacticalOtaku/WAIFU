@@ -59,10 +59,10 @@ WAIFU uses a dedicated **report-first workspace** (`Masthead` + `Report Outline 
 
 | Section | Purpose |
 | --- | --- |
-| **Executive Overview** | 4 executive KPI cards, Health Score penalty breakdown, Domain Severity Matrix, Texture Format Donut, Heaviest Scenes, Top Storage Namespaces, `@UUID` Integrity Donut, Scene Metric Distributions (`Min / Avg / Median / P95 / Max`), and prioritized 1-click Auto-Fixes. |
-| **Scenes & Media** | Texture format mix bar, Megapixels vs Limit chart, search/filter chips (`All`, `Issues Only`, `PNG / Raster`, `Walls / Lights / Anim`), sortable scene table, and per-asset or batch WebP conversion & wall cleanup. |
-| **`@UUID` Integrity** | Link validity bar, top offending documents chart, filters (`All`, `Journals`, `Flags / Loreframe`, `Actors & Items`, `With Candidate`), ranked fuzzy replacement selector, 1-click replace, and safe unlink. |
-| **Settings & Flags** | Database allocation donut & reclaimable space bar, top namespaces chart, World Settings & Document Flags tables with JSON payload inspection, backup snapshots, and orphan deletion. |
+| **Executive Overview** | 4 executive KPI cards, Health Score penalty breakdown, Health Trend Sparkline & JSON Report Comparison, World Maintenance alerts (Chat/Combats/404 Media), Domain Severity Matrix, Texture Format Donut, Heaviest Scenes, Top Storage Namespaces, `@UUID` Integrity Donut, Scene Metric Distributions (`Min / Avg / Median / P95 / Max`), and prioritized 1-click Auto-Fixes with Dry-Run previews. |
+| **Scenes & Media** | Texture format mix bar, Megapixels vs Limit chart, file byte weights, 404 missing media detection, search/filter chips (`All`, `Issues Only`, `PNG / Raster`, `Walls / Lights / Anim`, `404 / Heavy Size`, `Ignored`), sortable scene table, canvas focus/ping, orphaned token cleanup, near-duplicate wall deduplication, and per-asset or batch WebP conversion (skipping larger outputs). |
+| **`@UUID` Integrity** | Link validity bar, top offending documents chart, extended coverage (`JournalEntry`, `Loreframe`, `Actor`, `Item`, `RollTable`, `Macro`, `Scene`), `#anchor` verification, filters, ranked fuzzy replacement selector, manual catalog picker, optional `{label}` sync, 1-click replace, and safe unlink. |
+| **Settings & Flags** | Database allocation donut & reclaimable space bar, top namespaces chart, World Settings & Document Flags tables with interactive JSON inspection, per-document flag deletion, backup snapshots & **JSON Restore**, ignore rules, and Chat/Combat maintenance. |
 | **Full Report** | Interactive switcher between **Visual Report (Charts)**, **Markdown**, and **Journal Preview**, plus exports to `.html`, `.md`, `.json`, clipboard, and Foundry `JournalEntry`. |
 
 ### Themes & Typography
@@ -143,13 +143,18 @@ States: **Healthy** (`85–100%`), **Attention / Warning** (`60–84%`), **Criti
 | --- | --- | --- |
 | `maxTextureResolution` | `4096` px | Flag map/tile textures exceeding this pixel edge |
 | `maxMegapixels` | `18` MP | Flag textures exceeding `width × height / 1,000,000` |
+| `maxAssetBytes` | `15728640` B (15 MB) | Flag scene/tile textures whose HTTP size exceeds this byte limit |
 | `maxWalls` | `300` | Flag scenes with more wall segments |
 | `maxLights` | `40` | Flag scenes with more ambient light sources |
 | `maxAnimations` | `15` | Flag scenes exceeding combined animated lights, video tiles/art, animated tokens, and weather |
+| `nearDuplicateWallTolerance` | `2` px | Flag matching walls within this endpoint snap distance (`0` disables) |
 | `maxSettingBytes` | `16384` B (16 KB) | Flag oversized world settings |
 | `maxFlagBytes` | `32768` B (32 KB) | Flag oversized document flag namespaces |
 | `webpQuality` | `0.85` | WebP encoding quality (`0.50–1.00`) |
 | `downscaleOnConvert` | `false` | Proportionally downscale oversized textures to `maxTextureResolution` during WebP conversion |
+| `skipLargerWebp` | `true` | Skip uploading WebP when encoded bytes exceed original file size (when not downscaling) |
+| `uuidMinAutoConfidence` | `1.0` | Minimum match confidence (`0.75–1.00`) for batch `@UUID` replacement |
+| `maxChatMessages` | `1000` | Flag bloated world chat logs exceeding this message count |
 | `includeChatMessages` | `false` | Also scan `game.messages` for orphaned module flags |
 
 ### Public Macro / Module API
@@ -188,4 +193,4 @@ npm run release   # Run checks and build release archive
 Bug reports and feature suggestions are welcome via [GitHub Issues](https://github.com/TacticalOtaku/WAIFU/issues).
 
 Created by [TacticalOtaku](https://github.com/TacticalOtaku) · Licensed under the **MIT License** ([module.json](module.json)).  
-Bundled UI typeface: [Onest Variable](assets/fonts/OFL-onest.txt) (`SIL Open Font License 1.1`).
+Bundled UI typeface (`SIL Open Font License 1.1`): [Onest Variable](assets/fonts/OFL-onest.txt).

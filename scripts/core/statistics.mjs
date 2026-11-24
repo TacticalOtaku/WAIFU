@@ -239,11 +239,16 @@ export function buildReportStatistics(report) {
 
   const sceneStats = {
     totalScenes,
+    ignoredCount: Number(scenes.ignoredCount) || 0,
     healthyScenes,
     warningScenes,
     criticalScenes,
     healthyPercent: totalScenes > 0 ? pct(healthyScenes, totalScenes) : 100,
     heavyScenesCount: Number(scenes.heavyScenesCount) || criticalScenes + warningScenes,
+    missingMediaTotal: Number(scenes.missingMediaTotal) || 0,
+    heavyBytesAssetsTotal: Number(scenes.heavyBytesAssetsTotal) || 0,
+    nearDuplicateWallsTotal: Number(scenes.nearDuplicateWallsTotal) || 0,
+    orphanedTokensTotal: Number(scenes.orphanedTokensTotal) || 0,
     assetFormats: {
       totalAssets,
       rasterAssetsCount,
@@ -300,12 +305,14 @@ export function buildReportStatistics(report) {
     "missing-document": 0,
     "missing-pack": 0,
     "missing-embedded": 0,
+    "missing-anchor": 0,
     malformed: 0
   };
   const bySyntax = {
     enricher: 0,
     "html-link": 0,
-    "bare-uuid": 0
+    "bare-uuid": 0,
+    "from-uuid": 0
   };
   const docTypeCounts = new Map();
   const rootDocCounts = new Map();
@@ -356,12 +363,14 @@ export function buildReportStatistics(report) {
     totalScanned,
     validCount,
     brokenCount,
+    ignoredCount: Number(uuids.ignoredCount) || 0,
     validPercent: totalScanned > 0 ? pct(validCount, totalScanned) : 100,
     brokenPercent: totalScanned > 0 ? pct(brokenCount, totalScanned) : 0,
     byCategory: {
       journal: Number(uuids.journalCount) || 0,
       loreframe: Number(uuids.loreframeCount) || 0,
-      actor: Number(uuids.actorCount) || 0
+      actor: Number(uuids.actorCount) || 0,
+      other: Number(uuids.otherDocsCount) || 0
     },
     byFixability: {
       exact: exactCount,
@@ -608,5 +617,51 @@ export function buildReportStatistics(report) {
       infoCount: Number(summary.infoCount) || 0,
       totalFixable: Number(summary.totalFixable) || 0
     }
+  };
+}
+
+/**
+ * Compare two audit reports (current vs previous) and produce structured deltas.
+ * @param {Object} currentReport
+ * @param {Object} previousReport
+ * @returns {Object | null}
+ */
+export function compareAuditReports(currentReport, previousReport) {
+  if (!currentReport || !previousReport) return null;
+  const curSum = currentReport.summary ?? {};
+  const prevSum = previousReport.summary ?? {};
+  const curScenes = currentReport.scenes ?? {};
+  const prevScenes = previousReport.scenes ?? {};
+  const curUuids = currentReport.uuids ?? {};
+  const prevUuids = previousReport.uuids ?? {};
+  const curStats = currentReport.statistics ?? buildReportStatistics(currentReport);
+  const prevStats = previousReport.statistics ?? buildReportStatistics(previousReport);
+  const curReclaim = Number(curStats.storageStats?.totalReclaimableBytes) || 0;
+  const prevReclaim = Number(prevStats.storageStats?.totalReclaimableBytes) || 0;
+  const reclaimDelta = curReclaim - prevReclaim;
+
+  return {
+    previousGeneratedAt: previousReport.generatedAt ?? null,
+    currentGeneratedAt: currentReport.generatedAt ?? null,
+    previousWorldTitle: previousReport.meta?.worldTitle ?? "",
+    healthDelta: (Number(curSum.healthScore) || 100) - (Number(prevSum.healthScore) || 100),
+    previousHealth: Number(prevSum.healthScore) || 100,
+    currentHealth: Number(curSum.healthScore) || 100,
+    issuesDelta: (Number(curSum.totalIssues) || 0) - (Number(prevSum.totalIssues) || 0),
+    criticalDelta: (Number(curSum.criticalCount) || 0) - (Number(prevSum.criticalCount) || 0),
+    warningDelta: (Number(curSum.warningCount) || 0) - (Number(prevSum.warningCount) || 0),
+    heavyScenesDelta: (Number(curScenes.heavyScenesCount) || 0) - (Number(prevScenes.heavyScenesCount) || 0),
+    pngDelta: (Number(curScenes.pngAssetsCount) || 0) - (Number(prevScenes.pngAssetsCount) || 0),
+    redundantWallsDelta:
+      (Number(curScenes.redundantWallsTotal) || 0) - (Number(prevScenes.redundantWallsTotal) || 0),
+    brokenUuidsDelta: (Number(curUuids.brokenCount) || 0) - (Number(prevUuids.brokenCount) || 0),
+    reclaimableBytesDelta: reclaimDelta,
+    formattedReclaimableDelta:
+      reclaimDelta === 0
+        ? "0 B"
+        : `${reclaimDelta > 0 ? "+" : "-"}${formatBytes(Math.abs(reclaimDelta))}`,
+    chatMessagesDelta:
+      (Number(currentReport.extras?.chatMessagesCount) || 0) -
+      (Number(previousReport.extras?.chatMessagesCount) || 0)
   };
 }

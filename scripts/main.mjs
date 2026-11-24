@@ -1,7 +1,21 @@
 import { WaifuAuditApp } from "./app/audit-app.mjs";
-import { ACCENT_OPTIONS, DEFAULT_THRESHOLDS, MODULE_ID, THEME_OPTIONS } from "./constants.mjs";
-import { formatReportHtml, formatReportJson, formatReportMarkdown } from "./core/report.mjs";
-import { runWorldAudit } from "./foundry/world-audit-runner.mjs";
+import {
+  ACCENT_OPTIONS,
+  AUDIT_HISTORY_SETTING,
+  DEFAULT_IGNORE_RULES,
+  DEFAULT_THRESHOLDS,
+  IGNORE_RULES_SETTING,
+  MODULE_ID,
+  THEME_OPTIONS
+} from "./constants.mjs";
+import {
+  compareAuditReports,
+  formatReportHtml,
+  formatReportJson,
+  formatReportMarkdown
+} from "./core/report.mjs";
+import { parseBackupPayload, restoreBackupPayload } from "./foundry/auto-fixer.mjs";
+import { buildCandidateCatalog, runWorldAudit } from "./foundry/world-audit-runner.mjs";
 
 function registerModuleSettings() {
   game.settings.registerMenu(MODULE_ID, "openAuditDashboard", {
@@ -104,6 +118,67 @@ function registerModuleSettings() {
     default: false
   });
 
+  game.settings.register(MODULE_ID, "maxAssetBytes", {
+    name: "WAIFU.Settings.MaxAssetBytes.Name",
+    hint: "WAIFU.Settings.MaxAssetBytes.Hint",
+    scope: "world",
+    config: true,
+    type: Number,
+    default: DEFAULT_THRESHOLDS.maxAssetBytes
+  });
+
+  game.settings.register(MODULE_ID, "nearDuplicateWallTolerance", {
+    name: "WAIFU.Settings.NearDuplicateWallTolerance.Name",
+    hint: "WAIFU.Settings.NearDuplicateWallTolerance.Hint",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 0, max: 10, step: 1 },
+    default: DEFAULT_THRESHOLDS.nearDuplicateWallTolerance
+  });
+
+  game.settings.register(MODULE_ID, "skipLargerWebp", {
+    name: "WAIFU.Settings.SkipLargerWebp.Name",
+    hint: "WAIFU.Settings.SkipLargerWebp.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: DEFAULT_THRESHOLDS.skipLargerWebp
+  });
+
+  game.settings.register(MODULE_ID, "uuidMinAutoConfidence", {
+    name: "WAIFU.Settings.UuidMinAutoConfidence.Name",
+    hint: "WAIFU.Settings.UuidMinAutoConfidence.Hint",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 0.75, max: 1.0, step: 0.05 },
+    default: DEFAULT_THRESHOLDS.uuidMinAutoConfidence
+  });
+
+  game.settings.register(MODULE_ID, "maxChatMessages", {
+    name: "WAIFU.Settings.MaxChatMessages.Name",
+    hint: "WAIFU.Settings.MaxChatMessages.Hint",
+    scope: "world",
+    config: true,
+    type: Number,
+    default: DEFAULT_THRESHOLDS.maxChatMessages
+  });
+
+  game.settings.register(MODULE_ID, IGNORE_RULES_SETTING, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: DEFAULT_IGNORE_RULES
+  });
+
+  game.settings.register(MODULE_ID, AUDIT_HISTORY_SETTING, {
+    scope: "world",
+    config: false,
+    type: Array,
+    default: []
+  });
+
   game.settings.register(MODULE_ID, "theme", {
     name: "WAIFU.Settings.Theme.Name",
     hint: "WAIFU.Settings.Theme.Hint",
@@ -133,12 +208,17 @@ function registerModuleSettings() {
 function createPublicApi() {
   return Object.freeze({
     open: (report = null) => WaifuAuditApp.openWindow(report),
-    runAudit: (overrides = {}) => runWorldAudit(overrides),
+    runAudit: (overrides = {}, runtimeOptions = {}) => runWorldAudit(overrides, runtimeOptions),
     exportReport: (report, format = "markdown", lang = "en") => {
       if (format === "json") return formatReportJson(report);
       if (format === "html") return formatReportHtml(report, { lang });
       return formatReportMarkdown(report, lang);
-    }
+    },
+    compareReports: (currentReport, previousReport) =>
+      compareAuditReports(currentReport, previousReport),
+    parseBackup: (rawJson) => parseBackupPayload(rawJson),
+    restoreBackup: (payload) => restoreBackupPayload(payload),
+    buildCandidateCatalog: () => buildCandidateCatalog()
   });
 }
 

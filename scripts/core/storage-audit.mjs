@@ -44,6 +44,9 @@ export function splitSettingKey(fullKey) {
  */
 export function auditWorldSettings(entries, context) {
   const maxSettingBytes = context.maxSettingBytes ?? DEFAULT_THRESHOLDS.maxSettingBytes;
+  const ignoredKeys = context.ignoredSettingKeys instanceof Set
+    ? context.ignoredSettingKeys
+    : new Set(context.ignoredSettingKeys ?? []);
   const analyzed = [];
   let totalBytes = 0;
 
@@ -54,6 +57,7 @@ export function auditWorldSettings(entries, context) {
     totalBytes += bytes;
 
     const moduleState = classifyNamespace(namespace, context);
+    const isIgnored = ignoredKeys.has(entry.key);
     const isBloated = bytes > maxSettingBytes;
     const isOrphaned = moduleState === "orphaned";
     const isInactive = moduleState === "inactive";
@@ -84,18 +88,22 @@ export function auditWorldSettings(entries, context) {
       isBloated,
       isOrphaned,
       isInactive,
+      isIgnored,
       canDelete: isOrphaned || isBloated
     });
   }
 
   const flagged = analyzed
-    .filter((item) => item.status !== "ok")
+    .filter((item) => item.status !== "ok" && !item.isIgnored)
     .toSorted(
       (a, b) =>
         SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
         b.bytes - a.bytes ||
         a.key.localeCompare(b.key)
     );
+  const ignoredItems = analyzed
+    .filter((item) => item.status !== "ok" && item.isIgnored)
+    .toSorted((a, b) => b.bytes - a.bytes || a.key.localeCompare(b.key));
 
   const byNamespaceMap = Object.groupBy(analyzed, (item) => item.namespace);
   const byNamespace = Object.entries(byNamespaceMap)
@@ -112,8 +120,8 @@ export function auditWorldSettings(entries, context) {
     })
     .toSorted((a, b) => b.bytes - a.bytes);
 
-  const orphanedItems = analyzed.filter((i) => i.isOrphaned);
-  const bloatedItems = analyzed.filter((i) => i.isBloated);
+  const orphanedItems = flagged.filter((i) => i.isOrphaned);
+  const bloatedItems = flagged.filter((i) => i.isBloated);
 
   return {
     totalSettingsCount: analyzed.length,
@@ -123,7 +131,9 @@ export function auditWorldSettings(entries, context) {
     bloatedCount: bloatedItems.length,
     orphanedCount: orphanedItems.length,
     orphanedBytes: orphanedItems.reduce((sum, i) => sum + i.bytes, 0),
-    inactiveCount: analyzed.filter((i) => i.isInactive).length,
+    inactiveCount: flagged.filter((i) => i.isInactive).length,
+    ignoredCount: ignoredItems.length,
+    ignoredItems,
     items: flagged,
     allItems: analyzed.toSorted((a, b) => b.bytes - a.bytes),
     byNamespace
@@ -152,7 +162,11 @@ export function auditWorldSettings(entries, context) {
  */
 export function auditDocumentFlags(flagEntries, context) {
   const maxFlagBytes = context.maxFlagBytes ?? DEFAULT_THRESHOLDS.maxFlagBytes;
+  const ignoredNamespaces = context.ignoredFlagNamespaces instanceof Set
+    ? context.ignoredFlagNamespaces
+    : new Set(context.ignoredFlagNamespaces ?? []);
   const analyzed = [];
+  const ignoredAnalyzed = [];
 
   for (const entry of flagEntries ?? []) {
     if (!entry?.namespace || entry.namespace === "waifu") continue;
@@ -161,6 +175,7 @@ export function auditDocumentFlags(flagEntries, context) {
     const isBloated = bytes > maxFlagBytes;
     const isOrphaned = moduleState === "orphaned";
     const isInactive = moduleState === "inactive";
+    const isIgnored = ignoredNamespaces.has(entry.namespace);
 
     // Core/system flags are only reported if severely bloated
     if (moduleState === "core" && !isBloated) continue;
@@ -179,7 +194,7 @@ export function auditDocumentFlags(flagEntries, context) {
       severity = "info";
     }
 
-    analyzed.push({
+    const row = {
       id: `${entry.docUuid}::${entry.namespace}`,
       docType: entry.docType,
       docId: entry.docId,
@@ -195,43 +210,52 @@ export function auditDocumentFlags(flagEntries, context) {
       severity,
       isBloated,
       isOrphaned,
-      isInactive
-    });
+      isInactive,
+      isIgnored
+    };
+
+    if (isIgnored) ignoredAnalyzed.push(row);
+    else analyzed.push(row);
   }
 
-  const groupedByNs = Object.groupBy(analyzed, (item) => `${item.namespace}::${item.status}`);
-  const groups = Object.values(groupedByNs)
-    .map((entries) => {
-      const first = entries[0];
-      const groupBytes = entries.reduce((sum, i) => sum + i.bytes, 0);
-      const maxSeverity = entries.reduce(
-        (best, i) => (SEVERITY_ORDER[i.severity] > SEVERITY_ORDER[best] ? i.severity : best),
-        "info"
+  const buildGroups = (rows, isIgnored) => {
+    const groupedByNs = Object.groupBy(rows, (item) => `${item.namespace}::${item.status}`);
+    return Object.values(groupedByNs)
+      .map((entries) => {
+        const first = entries[0];
+        const groupBytes = entries.reduce((sum, i) => sum + i.bytes, 0);
+        const maxSeverity = entries.reduce(
+          (best, i) => (SEVERITY_ORDER[i.severity] > SEVERITY_ORDER[best] ? i.severity : best),
+          "info"
+        );
+        const docTypes = [...new Set(entries.map((e) => e.docType))].sort();
+        return {
+          id: `${first.namespace}::${first.status}`,
+          namespace: first.namespace,
+          moduleState: first.moduleState,
+          status: first.status,
+          severity: maxSeverity,
+          isOrphaned: first.isOrphaned,
+          isInactive: first.isInactive,
+          isBloated: entries.some((e) => e.isBloated),
+          isIgnored,
+          docCount: entries.length,
+          docTypes,
+          bytes: groupBytes,
+          formattedSize: formatBytes(groupBytes),
+          targets: entries.toSorted((a, b) => b.bytes - a.bytes)
+        };
+      })
+      .toSorted(
+        (a, b) =>
+          SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
+          b.bytes - a.bytes ||
+          a.namespace.localeCompare(b.namespace)
       );
-      const docTypes = [...new Set(entries.map((e) => e.docType))].sort();
-      return {
-        id: `${first.namespace}::${first.status}`,
-        namespace: first.namespace,
-        moduleState: first.moduleState,
-        status: first.status,
-        severity: maxSeverity,
-        isOrphaned: first.isOrphaned,
-        isInactive: first.isInactive,
-        isBloated: entries.some((e) => e.isBloated),
-        docCount: entries.length,
-        docTypes,
-        bytes: groupBytes,
-        formattedSize: formatBytes(groupBytes),
-        targets: entries.toSorted((a, b) => b.bytes - a.bytes)
-      };
-    })
-    .toSorted(
-      (a, b) =>
-        SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
-        b.bytes - a.bytes ||
-        a.namespace.localeCompare(b.namespace)
-    );
+  };
 
+  const groups = buildGroups(analyzed, false);
+  const ignoredGroups = buildGroups(ignoredAnalyzed, true);
   const orphanedEntries = analyzed.filter((i) => i.isOrphaned);
 
   return {
@@ -243,7 +267,58 @@ export function auditDocumentFlags(flagEntries, context) {
     formattedOrphanedSize: formatBytes(orphanedEntries.reduce((sum, i) => sum + i.bytes, 0)),
     inactiveEntriesCount: analyzed.filter((i) => i.isInactive).length,
     bloatedEntriesCount: analyzed.filter((i) => i.isBloated).length,
+    ignoredGroupsCount: ignoredGroups.length,
+    ignoredGroups,
     groups,
     items: analyzed.toSorted((a, b) => b.bytes - a.bytes)
+  };
+}
+
+/**
+ * Audit additional world maintenance health signals: Chat log size, stale Combats,
+ * broken 404 non-scene media, and unreferenced files in `waifu-optimized`.
+ * @param {{
+ *   chatMessagesCount?: number,
+ *   chatBytes?: number,
+ *   maxChatMessages?: number,
+ *   combats?: Array<{ id: string, round?: number, started?: boolean, combatantsCount?: number, sceneName?: string }>,
+ *   brokenMedia?: Array<{ docType: string, docUuid: string, docName: string, field: string, src: string, statusCode?: number | null }>,
+ *   unusedOptimizedFiles?: Array<{ path: string, filename: string }>
+ * }} input
+ * @returns {Object}
+ */
+export function auditWorldHealthExtras(input = {}) {
+  const chatMessagesCount = Number(input.chatMessagesCount) || 0;
+  const chatBytes = Number(input.chatBytes) || 0;
+  const maxChatMessages = Number(input.maxChatMessages) || DEFAULT_THRESHOLDS.maxChatMessages;
+
+  let chatSeverity = "ok";
+  if (chatMessagesCount > maxChatMessages * 3) chatSeverity = "critical";
+  else if (chatMessagesCount > maxChatMessages) chatSeverity = "warning";
+
+  const combats = Array.isArray(input.combats) ? input.combats : [];
+  const staleCombats = combats.filter(
+    (c) => !c.started || Number(c.round) === 0 || (Number(c.combatantsCount) || 0) === 0
+  );
+
+  const brokenMedia = Array.isArray(input.brokenMedia) ? input.brokenMedia : [];
+  const unusedOptimizedFiles = Array.isArray(input.unusedOptimizedFiles)
+    ? input.unusedOptimizedFiles
+    : [];
+
+  return {
+    chatMessagesCount,
+    chatBytes,
+    formattedChatBytes: formatBytes(chatBytes),
+    maxChatMessages,
+    chatSeverity,
+    chatBloated: chatMessagesCount > maxChatMessages,
+    combatsCount: combats.length,
+    staleCombatsCount: staleCombats.length,
+    staleCombats,
+    brokenMediaCount: brokenMedia.length,
+    brokenMedia,
+    unusedOptimizedCount: unusedOptimizedFiles.length,
+    unusedOptimizedFiles
   };
 }

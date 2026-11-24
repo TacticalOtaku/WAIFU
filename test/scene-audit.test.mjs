@@ -146,3 +146,51 @@ test("auditScenes sorts heaviest critical scenes first", () => {
   assert.equal(report.heavyScenesCount, 1);
   assert.equal(report.items[0].id, "bad");
 });
+
+test("analyzeScene detects 404 missing media, heavy asset bytes, orphaned tokens, and near-duplicate walls", () => {
+  const scene = {
+    id: "s-broken",
+    name: "Broken Manor",
+    levels: [{ id: "l1", backgroundSrc: "worlds/demo/missing.webp", width: 2048, height: 2048 }],
+    tiles: [{ id: "t1", src: "worlds/demo/huge.webp", width: 2048, height: 2048 }],
+    walls: [
+      { id: "w1", c: [0, 0, 100, 0], move: 20, sight: 20, door: 0 },
+      { id: "w2", c: [1.5, 0.5, 99.5, -0.5], move: 20, sight: 20, door: 0 },
+      { id: "w3", c: [0, 0, 0, 100], move: 20, sight: 20, door: 0 }
+    ],
+    tokens: [
+      { id: "tok1", actorId: "dead-actor", actorExists: false, textureSrc: "worlds/demo/tok.webp" },
+      { id: "tok2", actorId: "ok-actor", actorExists: true, textureSrc: "worlds/demo/tok-404.png" }
+    ],
+    lights: [],
+    drawings: []
+  };
+
+  const meta = new Map([
+    ["worlds/demo/missing.webp", { width: 0, height: 0, byteSize: null, missing: true, statusCode: 404 }],
+    ["worlds/demo/huge.webp", { width: 2048, height: 2048, byteSize: 22 * 1024 * 1024, missing: false }],
+    ["worlds/demo/tok-404.png", { width: 0, height: 0, byteSize: null, missing: true, statusCode: 404 }]
+  ]);
+
+  const res = analyzeScene(scene, meta, {
+    maxAssetBytes: 15 * 1024 * 1024,
+    nearDuplicateWallTolerance: 2
+  });
+
+  assert.equal(res.severity, "critical");
+  assert.equal(res.flags.hasMissingAsset, true);
+  assert.equal(res.missingMediaCount, 2);
+  assert.equal(res.assets[0].isMissing, true);
+  assert.equal(res.assets[0].canAutoConvert, false);
+  assert.equal(res.assets[1].isHeavyBytes, true);
+  assert.equal(res.flags.hasHeavyBytes, true);
+  assert.deepEqual(res.nearDuplicateWallIds, ["w2"]);
+  assert.deepEqual(res.orphanedTokenIds, ["tok1"]);
+
+  const audited = auditScenes([scene], meta, {
+    ignoredSceneIds: new Set(["s-broken"])
+  });
+  assert.equal(audited.totalScenes, 0);
+  assert.equal(audited.ignoredCount, 1);
+  assert.equal(audited.ignoredItems[0].isIgnored, true);
+});

@@ -50,6 +50,26 @@
         "Name": "Проверять сообщения чата на осиротевшие флаги",
         "Hint": "Включать game.messages в поиск осиротевших флагов модулей (может замедлить аудит в крупных мирах)."
       },
+      "MaxAssetBytes": {
+        "Name": "Макс. вес файла текстуры (байты)",
+        "Hint": "Отмечать текстуры сцен и тайлов, чей размер по HTTP превышает этот порог."
+      },
+      "NearDuplicateWallTolerance": {
+        "Name": "Допуск склейки почти дублирующихся стен (px)",
+        "Hint": "Находить совпадающие стены с отклонением концов не более указанного числа пикселей (0 — выкл.)."
+      },
+      "SkipLargerWebp": {
+        "Name": "Пропускать WebP, если он тяжелее оригинала",
+        "Hint": "Без уменьшения разрешения не заменять исходник, если сжатый WebP оказался больше по байтам."
+      },
+      "UuidMinAutoConfidence": {
+        "Name": "Мин. уверенность для пакетной замены @UUID",
+        "Hint": "Минимальный порог совпадения (0.75–1.00) для автозамены ссылок пакетом."
+      },
+      "MaxChatMessages": {
+        "Name": "Порог предупреждения лога чата (сообщений)",
+        "Hint": "Отмечать лог чата, когда количество сообщений в базе превышает этот предел."
+      },
       "Theme": {
         "Name": "Тема окна WAIFU",
         "Hint": "Визуальная тема окна статистики и аудита WAIFU.",
@@ -76,7 +96,45 @@
       "RunAudit": "Запустить аудит",
       "AutoFix": "Автофикс",
       "Backup": "Бэкап JSON",
+      "Restore": "Восстановить JSON",
       "ExportReport": "Отчёт и экспорт"
+    },
+    "Ignore": {
+      "ManageTitle": "Список исключений аудита",
+      "BtnLabel": "Исключения",
+      "FilterChip": "Исключённые",
+      "Ignore": "Исключить из аудита",
+      "Unignore": "Вернуть в аудит"
+    },
+    "History": {
+      "Title": "Динамика здоровья и сравнение отчётов",
+      "CompareBtn": "Сравнить с JSON-отчётом",
+      "ClearCompare": "Сбросить сравнение",
+      "HealthDelta": "Здоровье",
+      "IssuesDelta": "Проблемы",
+      "BrokenUuidDelta": "Битые @UUID",
+      "StorageDelta": "Очистка БД",
+      "NeedTwoScans": "Выполните минимум два аудита или загрузите прошлый JSON-отчёт для сравнения динамики."
+    },
+    "Extras": {
+      "Title": "Обслуживание мира (чат, бои и битые медиа)",
+      "ChatTitle": "Лог сообщений чата",
+      "LimitLabel": "лимит",
+      "BtnPruneChat": "Архивировать и очистить чат",
+      "StaleCombatsTitle": "Зависшие / пустые бои",
+      "StaleCombatsHint": "Незапущенные бои или бои без участников в базе мира",
+      "BtnCleanCombats": "Удалить пустые бои",
+      "BrokenMediaTitle": "Битые 404-медиа вне сцен",
+      "BrokenMediaHint": "Отсутствующие портреты актёров, токенов, предметов и аудио в плейлистах (HTTP 404)",
+      "UnusedOptimizedTitle": "Неиспользуемые файлы в waifu-optimized",
+      "UnusedOptimizedHint": "Эти WebP-файлы в папке мира больше не используются ни одним проверенным документом."
+    },
+    "Progress": {
+      "Scanning": "Сканирование мира...",
+      "ProbingMedia": "Проверка медиафайлов",
+      "ScanningUuids": "Аудит ссылок @UUID и якорей...",
+      "ScanningStorage": "Аудит настроек, флагов и чата...",
+      "ConvertingWebp": "Конвертация текстур в WebP"
     },
     "Sidebar": {
       "HealthTitle": "Индекс целостности",
@@ -194,7 +252,9 @@
       "RunFirst": "Нажмите «Запустить аудит» для проверки сцен, журналов (включая Loreframe), актёров, настроек и флагов.",
       "ApplySceneWebp": "Конвертировать {count} PNG/растровых карт в WebP",
       "ApplyWallCleanup": "Удалить {count} дублирующихся/нулевых стен",
-      "ApplyUuidExact": "Заменить {count} точных совпадений @UUID",
+      "ApplyNearWallCleanup": "Очистить {count} почти дублирующихся стен",
+      "ApplyOrphanTokenCleanup": "Удалить {count} осиротевших токенов",
+      "ApplyUuidExact": "Заменить {count} найденных @UUID",
       "ApplyOrphanCleanup": "Очистить {count} осиротевших настроек и флагов",
       "OpenTab": "Подробнее"
     },
@@ -204,8 +264,11 @@
       "FilterHeavy": "Только с проблемами",
       "FilterPng": "PNG / Растр",
       "FilterGeometry": "Стены / Свет / Анимации",
+      "FilterMissing": "404 / Большой вес",
       "BatchWebp": "Конвертировать все PNG/Растр -> WebP",
       "BatchDedupeWalls": "Очистить дубли/нулевые стены",
+      "BatchNearWalls": "Очистить ~дубли стен",
+      "BatchOrphanTokens": "Очистить осиротевшие токены",
       "ColScene": "Сцена",
       "ColScore": "Нагрузка",
       "ColMaxRes": "Макс. разр.",
@@ -224,8 +287,13 @@
       "AnimsTag": "{count} анимаций",
       "BtnConvertWebp": "-> WebP",
       "BtnDedupeWalls": "Очистить стены",
+      "BtnNearWalls": "Очистить ~дубли",
+      "BtnOrphanTokens": "Осирот. токены",
       "BtnStopLightAnims": "Убрать аним. света",
-      "BtnOpenScene": "Настроить сцену"
+      "BtnFocusCanvas": "Фокус на холсте",
+      "BtnOpenScene": "Настроить сцену",
+      "ExtraMissingMedia": "битых токен/рис./звук 404",
+      "MoreAssets": "ещё текстур"
     },
     "Uuids": {
       "SearchPlaceholder": "Фильтр по документу, UUID или тексту...",
@@ -233,9 +301,11 @@
       "FilterJournals": "Журналы",
       "FilterLoreframe": "Флаги / Loreframe",
       "FilterActors": "Актёры и предметы",
+      "FilterOther": "Таблицы / Макросы / Сцены",
       "FilterWithMatch": "С кандидатом",
-      "BatchApplyExact": "Заменить точные совпадения",
-      "BatchUnlinkNoMatch": "Убрать битые ссылки (оставить текст)",
+      "UpdateLabelOption": "Обновлять {текст} при замене",
+      "BatchApplyExact": "Заменить авто-совпадения",
+      "BatchUnlinkNoMatch": "Убрать ненайденные ссылки",
       "ColSource": "Источник",
       "ColPath": "Поле / Путь",
       "ColBroken": "Битая ссылка",
@@ -245,12 +315,16 @@
       "Empty": "Нет битых ссылок @UUID для выбранного фильтра.",
       "NoCandidate": "Подходящая замена не найдена",
       "BtnApply": "Заменить",
+      "BtnPickManual": "Выбрать...",
+      "ManualSearchPlaceholder": "Поиск документов мира и компендиумов по имени или UUID...",
+      "AnyTypeLabel": "Все типы",
       "BtnUnlink": "Отвязать",
       "BtnOpen": "Открыть лист",
       "Reason": {
         "missing-document": "Документ не найден",
         "missing-pack": "Компендиум не найден",
         "missing-embedded": "Вложенный объект удалён",
+        "missing-anchor": "Заголовок #якорь не найден",
         "malformed": "Некорректный формат UUID"
       }
     },
@@ -309,16 +383,33 @@
       "ConfirmDeleteOrphanFlags": "Удалить пространство флагов «{namespace}» из {count} документов мира ({size})?",
       "ConfirmDeleteAllOrphanFlags": "Удалить все осиротевшие флаги удалённых модулей ({count} записей)? Флаги временно отключённых модулей затронуты не будут.",
       "DownloadBackupLabel": "Скачать JSON-бэкап перед удалением (рекомендуется)",
-      "InspectTitle": "Просмотр содержимого"
+      "InspectTitle": "Просмотр содержимого",
+      "ThresholdsTitle": "Пороги и параметры аудита WAIFU",
+      "BtnSaveAndAudit": "Сохранить и пересчитать",
+      "BtnFoundrySettings": "Все настройки Foundry",
+      "ConfirmNearWalls": "Удалить {count} почти дублирующихся сегментов стен со сцены «{scene}»?",
+      "ConfirmOrphanTokens": "Удалить {count} осиротевших токенов без актёров со сцены «{scene}»?",
+      "ManualPickerTitle": "Выбор документа для замены",
+      "TruncatedNote": "Показаны первые 40 000 из {total} символов (кнопка копирует весь JSON).",
+      "BtnCopyJson": "Скопировать весь JSON",
+      "ActiveModuleWarning": "Внимание: этот модуль сейчас АКТИВЕН — удаление его настройки может сбросить рабочие данные!",
+      "ConfirmRestoreBackup": "Восстановить из бэкапа: настроек — {settings}, флагов — {flags}, текстур сцен — {scenes}, стен — {walls}?",
+      "ConfirmPruneChat": "Архивировать и удалить старые сообщения из {total} сообщений чата?",
+      "KeepMessagesLabel": "Сколько последних сообщений оставить",
+      "ExportChatArchiveLabel": "Скачать HTML-архив чата перед удалением",
+      "ConfirmCleanCombats": "Удалить {count} незавершённых/пустых боёв?"
     },
     "Notifications": {
       "AuditComplete": "Аудит WAIFU завершён за {duration} мс: найдено проблем — {issues}.",
+      "Cancelled": "Операция WAIFU отменена.",
       "Exported": "Отчёт WAIFU выгружен: {filename}",
-      "Copied": "Отчёт Markdown скопирован в буфер обмена.",
+      "Copied": "Скопировано в буфер обмена.",
       "JournalCreated": "Создана запись журнала «{name}» с отчётом аудита WAIFU.",
       "WebpConverted": "Конвертировано в WebP: {count} файл(ов) (сэкономлено {saved}).",
+      "WebpSkippedLarger": "Пропущено {count} файл(ов), так как WebP оказался тяжелее оригинала.",
       "WebpFailed": "Не удалось конвертировать {src} в WebP: {error}",
       "WallsCleaned": "Удалено {count} дублирующихся/нулевых стен со сцены «{scene}».",
+      "OrphanTokensCleaned": "Удалено {count} осиротевших токенов со сцены «{scene}».",
       "LightAnimsCleared": "Отключены анимации у {count} источников света на сцене «{scene}».",
       "UuidReplaced": "Заменена битая ссылка @UUID в документе «{doc}».",
       "UuidBatchReplaced": "Обновлено ссылок @UUID: {count}.",
@@ -327,6 +418,11 @@
       "SettingsBatchDeleted": "Удалено осиротевших настроек мира: {count}.",
       "FlagsDeleted": "Удалено записей осиротевших флагов: {count}.",
       "BackupDownloaded": "JSON-бэкап сохранён: {filename}",
+      "BackupRestored": "Восстановлено: настроек — {settings}, флагов — {flags}, путей сцен — {scenes}, стен — {walls}.",
+      "IgnoreAdded": "Правило «{id}» добавлено в исключения WAIFU.",
+      "IgnoreRemoved": "Правило «{id}» возвращено в аудит WAIFU.",
+      "ChatPruned": "Удалено старых сообщений чата: {count}.",
+      "CombatsCleaned": "Удалено незавершённых/пустых боёв: {count}.",
       "NothingToFix": "Нет подходящих элементов для автоисправления."
     }
   }

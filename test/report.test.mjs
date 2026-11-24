@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  compareAuditReports,
   createAuditReport,
   formatReportHtml,
   formatReportJournalHtml,
@@ -135,4 +136,49 @@ test("createAuditReport builds health summary, statistics, and exports MD, HTML,
   assert.match(standaloneHtml, /<svg/);
   assert.match(standaloneHtml, /Curse &lt;of&gt; Strahd/);
   assert.doesNotMatch(standaloneHtml, /Curse <of> Strahd/);
+});
+
+test("compareAuditReports calculates deltas and reports render extras maintenance block", () => {
+  const previous = createAuditReport({
+    meta: { worldId: "w", worldTitle: "World" },
+    thresholds: {},
+    scenes: { totalScenes: 2, heavyScenesCount: 1, criticalCount: 1, warningCount: 0, pngAssetsCount: 1, unoptimizedAssetsCount: 1, oversizedAssetsCount: 0, redundantWallsTotal: 2, items: [] },
+    uuids: { totalScanned: 10, brokenCount: 2, journalCount: 2, loreframeCount: 0, actorCount: 0, exactMatchCount: 0, withCandidateCount: 0, items: [] },
+    settings: { totalSettingsCount: 1, totalBytes: 5000, flaggedCount: 1, bloatedCount: 0, orphanedCount: 1, orphanedBytes: 5000, items: [] },
+    flags: { groupsCount: 0, orphanedEntriesCount: 0, orphanedNamespacesCount: 0, bloatedEntriesCount: 0, groups: [] }
+  });
+
+  const current = createAuditReport({
+    meta: { worldId: "w", worldTitle: "World" },
+    thresholds: {},
+    scenes: { totalScenes: 2, heavyScenesCount: 0, criticalCount: 0, warningCount: 0, pngAssetsCount: 0, unoptimizedAssetsCount: 0, oversizedAssetsCount: 0, redundantWallsTotal: 0, items: [] },
+    uuids: { totalScanned: 10, brokenCount: 0, journalCount: 0, loreframeCount: 0, actorCount: 0, exactMatchCount: 0, withCandidateCount: 0, items: [] },
+    settings: { totalSettingsCount: 0, totalBytes: 0, flaggedCount: 0, bloatedCount: 0, orphanedCount: 0, orphanedBytes: 0, items: [] },
+    flags: { groupsCount: 0, orphanedEntriesCount: 0, orphanedNamespacesCount: 0, bloatedEntriesCount: 0, groups: [] },
+    extras: {
+      chatMessagesCount: 1200,
+      chatBytes: 400_000,
+      formattedChatBytes: "390.6 KB",
+      maxChatMessages: 1000,
+      chatBloated: true,
+      chatSeverity: "warning",
+      combatsCount: 1,
+      staleCombatsCount: 1,
+      staleCombats: [{ id: "c1" }],
+      brokenMediaCount: 0,
+      brokenMedia: [],
+      unusedOptimizedCount: 0,
+      unusedOptimizedFiles: []
+    }
+  });
+
+  const delta = compareAuditReports(current, previous);
+  assert.ok(delta.healthDelta > 0);
+  assert.equal(delta.brokenUuidsDelta, -2);
+  assert.equal(delta.reclaimableBytesDelta, -5000);
+
+  const md = formatReportMarkdown(current, "en");
+  assert.match(md, /World Maintenance/);
+  const html = formatReportHtml(current, { lang: "ru" });
+  assert.match(html, /Обслуживание мира/);
 });

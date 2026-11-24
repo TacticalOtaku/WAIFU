@@ -6,8 +6,10 @@ import {
   collectUuidOccurrences,
   findUuidCandidates,
   parseFoundryUuid,
-  patchStringUuidReference
+  patchStringUuidReference,
+  searchUuidCatalog
 } from "../scripts/core/uuid-audit.mjs";
+import { extractJournalAnchors, slugifyAnchor } from "../scripts/core/utils.mjs";
 
 test("parseFoundryUuid parses world, embedded, compendium, relative, and anchor UUIDs", () => {
   const page = parseFoundryUuid("JournalEntry.abc12345.JournalEntryPage.page9999#lore-top");
@@ -229,4 +231,123 @@ test("findUuidCandidates scores fuzzy matches and patch helpers rewrite/unlink c
     { mode: "unlink" }
   );
   assert.deepEqual(unlinkedArray.links, ["Actor.ok12345678"]);
+});
+
+test("collectUuidOccurrences scans world items, roll tables, macros, and scene notes/regions", () => {
+  const occurrences = collectUuidOccurrences({
+    items: [
+      {
+        id: "it1",
+        uuid: "Item.it1",
+        name: "Wand",
+        system: { description: { value: "@UUID[JournalEntry.lost1]{Lore}" } },
+        flags: {}
+      }
+    ],
+    tables: [
+      {
+        id: "rt1",
+        uuid: "RollTable.rt1",
+        name: "Loot",
+        description: "",
+        flags: {},
+        results: [
+          { id: "r1", uuid: "RollTable.rt1.TableResult.r1", documentUuid: "Item.missingSword1234", text: "Sword" }
+        ]
+      }
+    ],
+    macros: [
+      {
+        id: "m1",
+        uuid: "Macro.m1",
+        name: "Open Boss",
+        command: 'const d = await fromUuid("Actor.missingBoss123");',
+        flags: {}
+      }
+    ],
+    scenes: [
+      {
+        id: "sc1",
+        uuid: "Scene.sc1",
+        name: "Tavern",
+        flags: {},
+        notes: [
+          { id: "n1", uuid: "Scene.sc1.Note.n1", label: "Pin", text: "", journalTarget: "JournalEntry.missingJrn123" }
+        ],
+        regions: []
+      }
+    ]
+  });
+
+  assert.equal(occurrences.length, 4);
+  assert.equal(occurrences.some((o) => o.syntax === "from-uuid" && o.rawUuid === "Actor.missingBoss123"), true);
+  assert.equal(occurrences.some((o) => o.rootDocType === "RollTable"), true);
+  assert.equal(occurrences.some((o) => o.rootDocType === "Scene"), true);
+});
+
+test("extractJournalAnchors, missing-anchor detection, catalog search, and label/fromUuid patching work", async () => {
+  const anchors = extractJournalAnchors(
+    '<h2 id="sec-one">Глава Первая</h2><h3>Boss Fight!</h3>',
+    "# Secret Room"
+  );
+  assert.equal(anchors.has("sec-one"), true);
+  assert.equal(anchors.has(slugifyAnchor("Глава Первая")), true);
+  assert.equal(anchors.has("boss-fight"), true);
+  assert.equal(anchors.has("secret-room"), true);
+
+  const report = await auditUuidReferences(
+    {
+      journals: [
+        {
+          id: "j1",
+          uuid: "JournalEntry.j1",
+          name: "Index",
+          flags: {},
+          pages: [
+            {
+              id: "p1",
+              uuid: "JournalEntry.j1.JournalEntryPage.p1",
+              name: "Links",
+              text: {
+                content: "@UUID[JournalEntry.j1.JournalEntryPage.p2#old-heading]{Section}",
+                markdown: ""
+              },
+              system: {},
+              flags: {}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      resolveUuid: async () => true,
+      resolveAnchor: async () => ({ valid: false, suggestions: ["new-heading"] })
+    }
+  );
+
+  assert.equal(report.brokenCount, 1);
+  assert.equal(report.missingAnchorCount, 1);
+  assert.equal(report.items[0].reason, "missing-anchor");
+  assert.equal(report.items[0].bestCandidate.uuid, "JournalEntry.j1.JournalEntryPage.p2#new-heading");
+
+  const catalogHits = searchUuidCatalog("king", [
+    { uuid: "Actor.k1", name: "King Aldric", docType: "Actor", sourceLabel: "World" },
+    { uuid: "Item.s1", name: "Short Sword", docType: "Item", sourceLabel: "World" }
+  ]);
+  assert.equal(catalogHits.length, 1);
+  assert.equal(catalogHits[0].uuid, "Actor.k1");
+
+  const renamedEnricher = patchStringUuidReference(
+    "Talk to @UUID[Actor.old]{Old Name}",
+    { syntax: "enricher", rawUuid: "Actor.old" },
+    { mode: "replace", newUuid: "Actor.new", newLabel: "New Name" }
+  );
+  assert.equal(renamedEnricher, "Talk to @UUID[Actor.new]{New Name}");
+
+  const patchedMacro = patchStringUuidReference(
+    'await fromUuid("Actor.old");',
+    { syntax: "from-uuid", rawUuid: "Actor.old" },
+    { mode: "replace", newUuid: "Actor.new" }
+  );
+  assert.equal(patchedMacro, 'await fromUuid("Actor.new");');
 });

@@ -1,50 +1,88 @@
-import { isVideoAsset, suggestWebpTarget } from "../core/utils.mjs";
+import { isAudioAsset, isDataOrExternalUrl, isVideoAsset, suggestWebpTarget } from "../core/utils.mjs";
 
 /**
- * Probe image or video dimensions and byte size for a single asset path.
+ * Probe image, video, or audio dimensions, byte size, and missing (404) status for a single asset path.
  * @param {string} src
  * @param {number} timeoutMs
- * @returns {Promise<{ width: number, height: number, byteSize: number | null, estimated: boolean }>}
+ * @param {{ signal?: AbortSignal }} options
+ * @returns {Promise<{ width: number, height: number, byteSize: number | null, estimated: boolean, missing: boolean, statusCode: number | null }>}
  */
-export async function probeMediaAsset(src, timeoutMs = 4000) {
+export async function probeMediaAsset(src, timeoutMs = 4000, options = {}) {
   if (!src || typeof src !== "string") {
-    return { width: 0, height: 0, byteSize: null, estimated: true };
+    return { width: 0, height: 0, byteSize: null, estimated: true, missing: false, statusCode: null };
   }
 
-  const [dimensions, byteSize] = await Promise.all([
-    isVideoAsset(src) ? probeVideoDimensions(src, timeoutMs) : probeImageDimensions(src, timeoutMs),
-    probeByteSize(src, timeoutMs)
+  const audio = isAudioAsset(src);
+  const video = !audio && isVideoAsset(src);
+  const [dimensions, headInfo] = await Promise.all([
+    audio
+      ? Promise.resolve({ width: 0, height: 0, errored: false, timedOut: false })
+      : video
+        ? probeVideoDimensions(src, timeoutMs)
+        : probeImageDimensions(src, timeoutMs),
+    probeResourceHead(src, timeoutMs, options?.signal)
   ]);
+
+  const external = isDataOrExternalUrl(src);
+  const httpMissing = headInfo.statusCode === 404 || headInfo.statusCode === 410;
+  const mediaMissing =
+    !external &&
+    !audio &&
+    dimensions.errored &&
+    !dimensions.timedOut &&
+    headInfo.statusCode !== 200;
+  const missing = Boolean(httpMissing || mediaMissing);
 
   return {
     width: dimensions.width,
     height: dimensions.height,
-    byteSize,
-    estimated: dimensions.width === 0
+    byteSize: headInfo.byteSize,
+    estimated: audio ? false : dimensions.width === 0,
+    missing,
+    statusCode: headInfo.statusCode
   };
 }
 
 /**
- * Probe multiple unique media paths with bounded concurrency.
+ * Probe multiple unique media paths with bounded concurrency, progress reporting, and cancellation.
  * @param {Iterable<string>} sources
- * @param {number} concurrency
- * @returns {Promise<Map<string, { width: number, height: number, byteSize: number | null, estimated: boolean }>>}
+ * @param {number | { concurrency?: number, signal?: AbortSignal, onProgress?: (info: { completed: number, total: number, src: string }) => void }} optionsOrConcurrency
+ * @returns {Promise<Map<string, { width: number, height: number, byteSize: number | null, estimated: boolean, missing: boolean, statusCode: number | null }>>}
  */
-export async function probeMediaBatch(sources, concurrency = 6) {
+export async function probeMediaBatch(sources, optionsOrConcurrency = 6) {
+  const opts =
+    typeof optionsOrConcurrency === "number"
+      ? { concurrency: optionsOrConcurrency }
+      : optionsOrConcurrency ?? {};
+  const concurrency = Math.max(1, Number(opts.concurrency) || 6);
+  const signal = opts.signal;
+  const onProgress = typeof opts.onProgress === "function" ? opts.onProgress : null;
+
   const unique = [...new Set([...sources].filter(Boolean))];
   const results = new Map();
   let cursor = 0;
+  let completed = 0;
 
   async function worker() {
     while (cursor < unique.length) {
+      if (signal?.aborted) break;
       const idx = cursor;
       cursor += 1;
       const src = unique[idx];
       try {
-        results.set(src, await probeMediaAsset(src));
+        results.set(src, await probeMediaAsset(src, 4000, { signal }));
       } catch {
-        results.set(src, { width: 0, height: 0, byteSize: null, estimated: true });
+        results.set(src, {
+          width: 0,
+          height: 0,
+          byteSize: null,
+          estimated: true,
+          missing: false,
+          statusCode: null
+        });
       }
+      completed += 1;
+      onProgress?.({ completed, total: unique.length, src });
     }
   }
 
@@ -60,19 +98,19 @@ function probeImageDimensions(src, timeoutMs) {
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
-      resolve({ width: 0, height: 0 });
+      resolve({ width: 0, height: 0, errored: false, timedOut: true });
     }, timeoutMs);
 
-    const finish = (width, height) => {
+    const finish = (width, height, errored = false) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      resolve({ width, height });
+      resolve({ width, height, errored, timedOut: false });
     };
 
     img.decoding = "async";
-    img.onload = () => finish(img.naturalWidth || 0, img.naturalHeight || 0);
-    img.onerror = () => finish(0, 0);
+    img.onload = () => finish(img.naturalWidth || 0, img.naturalHeight || 0, false);
+    img.onerror = () => finish(0, 0, true);
     img.src = src;
   });
 }
@@ -86,44 +124,52 @@ function probeVideoDimensions(src, timeoutMs) {
       settled = true;
       video.removeAttribute("src");
       video.load();
-      resolve({ width: 0, height: 0 });
+      resolve({ width: 0, height: 0, errored: false, timedOut: true });
     }, timeoutMs);
 
-    const finish = (width, height) => {
+    const finish = (width, height, errored = false) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       video.removeAttribute("src");
       video.load();
-      resolve({ width, height });
+      resolve({ width, height, errored, timedOut: false });
     };
 
     video.preload = "metadata";
     video.muted = true;
-    video.onloadedmetadata = () => finish(video.videoWidth || 0, video.videoHeight || 0);
-    video.onerror = () => finish(0, 0);
+    video.onloadedmetadata = () => finish(video.videoWidth || 0, video.videoHeight || 0, false);
+    video.onerror = () => finish(0, 0, true);
     video.src = src;
   });
 }
 
-async function probeByteSize(src, timeoutMs) {
+async function probeResourceHead(src, timeoutMs, externalSignal = null) {
   // Only issue HEAD for relative/same-origin URLs so remote hosts without CORS do not fail noisily.
   if (/^https?:\/\//i.test(src) && !src.startsWith(window.location.origin)) {
-    return null;
+    return { byteSize: null, statusCode: null };
   }
-  if (src.startsWith("data:") || src.startsWith("blob:")) return null;
+  if (src.startsWith("data:") || src.startsWith("blob:")) {
+    return { byteSize: null, statusCode: null };
+  }
 
   try {
-    const response = await fetch(src, {
-      method: "HEAD",
-      signal: AbortSignal.timeout(timeoutMs)
-    });
-    if (!response.ok) return null;
+    const timeoutSig = AbortSignal.timeout(timeoutMs);
+    const signal =
+      externalSignal && typeof AbortSignal.any === "function"
+        ? AbortSignal.any([timeoutSig, externalSignal])
+        : timeoutSig;
+    const response = await fetch(src, { method: "HEAD", signal });
+    const statusCode = response.status;
+    if (!response.ok) return { byteSize: null, statusCode };
     const len = response.headers.get("content-length");
     const parsed = len ? Number.parseInt(len, 10) : NaN;
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    return {
+      byteSize: Number.isFinite(parsed) && parsed > 0 ? parsed : null,
+      statusCode
+    };
   } catch {
-    return null;
+    return { byteSize: null, statusCode: null };
   }
 }
 
@@ -137,8 +183,13 @@ export async function encodeAssetToWebp(src, options = {}) {
   const quality = Math.min(1, Math.max(0.5, Number(options.quality) || 0.85));
   const maxResolution = Number(options.maxResolution) || 4096;
   const downscale = Boolean(options.downscale);
+  const timeoutSig = AbortSignal.timeout(30_000);
+  const signal =
+    options.signal && typeof AbortSignal.any === "function"
+      ? AbortSignal.any([timeoutSig, options.signal])
+      : timeoutSig;
 
-  const response = await fetch(src, { signal: AbortSignal.timeout(30_000) });
+  const response = await fetch(src, { signal });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} while loading ${src}`);
   }
@@ -243,14 +294,30 @@ async function resolveNonCollidingFilename(directory, filename) {
 }
 
 /**
- * Convert an image asset to WebP and upload it via Foundry FilePicker.
+ * Convert an image asset to WebP and upload it via Foundry FilePicker, skipping if larger when configured.
  * @param {string} src
- * @param {{ worldId: string, quality?: number, maxResolution?: number, downscale?: boolean }} options
- * @returns {Promise<{ targetPath: string, originalBytes: number, webpBytes: number, width: number, height: number }>}
+ * @param {{ worldId: string, quality?: number, maxResolution?: number, downscale?: boolean, skipIfLarger?: boolean, signal?: AbortSignal }} options
+ * @returns {Promise<{ skipped?: boolean, reason?: string, targetPath: string, originalBytes: number, webpBytes: number, width: number, height: number }>}
  */
 export async function convertAndUploadWebp(src, options) {
+  if (options?.signal?.aborted) {
+    throw new DOMException("Conversion aborted", "AbortError");
+  }
   const FilePickerImpl = getFilePickerImpl();
   const encoded = await encodeAssetToWebp(src, options);
+  const skipIfLarger = options?.skipIfLarger !== false;
+  if (skipIfLarger && !options?.downscale && encoded.webpBytes >= encoded.originalBytes) {
+    return {
+      skipped: true,
+      reason: "larger-than-original",
+      targetPath: src,
+      originalBytes: encoded.originalBytes,
+      webpBytes: encoded.webpBytes,
+      width: encoded.width,
+      height: encoded.height
+    };
+  }
+
   const plan = suggestWebpTarget(src, options.worldId);
 
   await ensureDataDirectory(plan.directory);
@@ -267,10 +334,56 @@ export async function convertAndUploadWebp(src, options) {
 
   const uploadedPath = uploadResult?.path || `${plan.directory}/${finalFilename}`;
   return {
+    skipped: false,
     targetPath: uploadedPath,
     originalBytes: encoded.originalBytes,
     webpBytes: encoded.webpBytes,
     width: encoded.width,
     height: encoded.height
   };
+}
+
+/**
+ * List files inside `worlds/<worldId>/waifu-optimized` not referenced by active world documents.
+ * @param {string} worldId
+ * @param {Set<string>} referencedPaths
+ * @returns {Promise<Array<{ path: string, filename: string }>>}
+ */
+export async function findUnusedOptimizedFiles(worldId, referencedPaths) {
+  const FilePickerImpl = getFilePickerImpl();
+  if (!FilePickerImpl) return [];
+  const dir = `worlds/${worldId}/waifu-optimized`;
+  try {
+    const listing = await FilePickerImpl.browse("data", dir);
+    const normalizedRefs = new Set(
+      [...(referencedPaths ?? [])].map((p) => {
+        const clean = String(p ?? "").trim().split(/[?#]/, 1)[0].replace(/^\/+/, "");
+        try {
+          return decodeURIComponent(clean);
+        } catch {
+          return clean;
+        }
+      })
+    );
+
+    const unused = [];
+    for (const filePath of listing?.files ?? []) {
+      const clean = String(filePath ?? "").trim().replace(/^\/+/, "");
+      let decoded = clean;
+      try {
+        decoded = decodeURIComponent(clean);
+      } catch {
+        // Keep clean string
+      }
+      if (!normalizedRefs.has(clean) && !normalizedRefs.has(decoded)) {
+        unused.push({
+          path: clean,
+          filename: clean.split("/").pop() || clean
+        });
+      }
+    }
+    return unused;
+  } catch {
+    return [];
+  }
 }

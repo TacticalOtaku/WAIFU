@@ -1,6 +1,16 @@
 <main class="waifu-main">
   <div class="waifu-sr-only" role="status" aria-live="polite" data-waifu-status>{{statusMessage}}</div>
 
+  <div class="waifu-progress" data-waifu-progress {{#unless busy}}hidden{{/unless}}>
+    <div class="waifu-progress-bar">
+      <div class="waifu-progress-fill" data-waifu-progress-fill style="width:{{progressPercent}}%"></div>
+    </div>
+    <span class="waifu-mono waifu-ellipsis" data-waifu-progress-label>{{progressLabel}}</span>
+    <button type="button" class="waifu-btn is-sm is-danger" data-action="cancelOperation">
+      {{localize "Cancel"}}
+    </button>
+  </div>
+
   <div class="waifu-panels">
     <section
       class="waifu-panel"

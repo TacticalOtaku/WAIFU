@@ -49,6 +49,10 @@
       <i class="fa-solid fa-download" aria-hidden="true"></i>
       {{localize "WAIFU.Storage.BtnBackup"}}
     </button>
+    <button type="button" class="waifu-btn is-sm" data-action="restoreBackup" {{#if busy}}disabled{{/if}}>
+      <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+      {{localize "WAIFU.Masthead.Restore"}}
+    </button>
   </div>
 </div>
 
@@ -86,9 +90,9 @@
       </thead>
       <tbody>
         {{#each settingRows}}
-          <tr data-waifu-row="setting" data-search="{{this.searchText}}" data-category="{{this.status}}">
+          <tr data-waifu-row="setting" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
             <th scope="row"><span class="waifu-mono">{{this.namespace}}</span></th>
-            <td><span class="waifu-mono waifu-ellipsis">{{this.settingKey}}</span></td>
+            <td><span class="waifu-mono waifu-ellipsis" title="{{this.settingKey}}">{{this.settingKey}}</span></td>
             <td><span class="waifu-badge is-{{this.severity}}">{{this.statusLabel}}</span></td>
             <td data-value="{{this.bytes}}"><strong>{{this.formattedSize}}</strong></td>
             <td>
@@ -96,6 +100,14 @@
                 <button type="button" class="waifu-btn is-sm" data-action="inspectSetting" data-setting-key="{{this.key}}">
                   {{localize "WAIFU.Storage.BtnInspect"}}
                 </button>
+                <button
+                  type="button"
+                  class="waifu-btn is-sm"
+                  data-action="toggleIgnoreItem"
+                  data-ignore-category="settings"
+                  data-ignore-id="{{this.key}}"
+                  title="{{#if this.isIgnored}}{{localize 'WAIFU.Ignore.Unignore'}}{{else}}{{localize 'WAIFU.Ignore.Ignore'}}{{/if}}"
+                ><i class="fa-solid {{#if this.isIgnored}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i></button>
                 <button
                   type="button"
                   class="waifu-btn is-sm is-danger"
@@ -149,7 +161,7 @@
       </thead>
       <tbody>
         {{#each flagGroupRows}}
-          <tr data-waifu-row="flag-group" data-search="{{this.searchText}}" data-category="{{this.status}}">
+          <tr data-waifu-row="flag-group" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
             <th scope="row"><span class="waifu-mono">{{this.namespace}}</span></th>
             <td><span class="waifu-mono waifu-ellipsis">{{this.docTypesLabel}}</span></td>
             <td data-value="{{this.docCount}}">{{this.docCount}}</td>
@@ -160,6 +172,14 @@
                 <button type="button" class="waifu-btn is-sm" data-action="inspectFlagGroup" data-group-id="{{this.id}}">
                   {{localize "WAIFU.Storage.BtnInspect"}}
                 </button>
+                <button
+                  type="button"
+                  class="waifu-btn is-sm"
+                  data-action="toggleIgnoreItem"
+                  data-ignore-category="flags"
+                  data-ignore-id="{{this.namespace}}"
+                  title="{{#if this.isIgnored}}{{localize 'WAIFU.Ignore.Unignore'}}{{else}}{{localize 'WAIFU.Ignore.Ignore'}}{{/if}}"
+                ><i class="fa-solid {{#if this.isIgnored}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i></button>
                 <button
                   type="button"
                   class="waifu-btn is-sm is-danger"
@@ -176,4 +196,35 @@
   </div>
 {{else}}
   <p class="waifu-empty">{{localize "WAIFU.Storage.EmptyFlags"}}</p>
+{{/if}}
+
+{{#if hasReport}}
+  <section class="waifu-card">
+    <h3>
+      <span>{{localize "WAIFU.Extras.Title"}}</span>
+      <span class="waifu-mono">{{extras.chatMessagesCount}} / {{extras.combatsCount}}</span>
+    </h3>
+    <div class="waifu-rec-list">
+      <div class="waifu-rec-item">
+        <div class="waifu-cell-stack">
+          <strong>{{localize "WAIFU.Extras.ChatTitle"}} ({{extras.chatMessagesCount}})</strong>
+          <span class="waifu-mono">{{extras.formattedChatBytes}} • {{localize "WAIFU.Extras.LimitLabel"}} {{extras.maxChatMessages}}</span>
+        </div>
+        <button type="button" class="waifu-btn is-sm" data-action="archiveChatMessages" {{#unless extras.chatMessagesCount}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>
+          <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
+          {{localize "WAIFU.Extras.BtnPruneChat"}}
+        </button>
+      </div>
+      <div class="waifu-rec-item">
+        <div class="waifu-cell-stack">
+          <strong>{{localize "WAIFU.Extras.StaleCombatsTitle"}} ({{extras.staleCombatsCount}} / {{extras.combatsCount}})</strong>
+          <span class="waifu-mono">{{localize "WAIFU.Extras.StaleCombatsHint"}}</span>
+        </div>
+        <button type="button" class="waifu-btn is-sm is-danger" data-action="cleanStaleCombats" {{#unless extras.staleCombatsCount}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+          {{localize "WAIFU.Extras.BtnCleanCombats"}}
+        </button>
+      </div>
+    </div>
+  </section>
 {{/if}}
