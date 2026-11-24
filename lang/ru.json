@@ -1,7 +1,7 @@
 {
   "WAIFU": {
     "ModuleTitle": "WAIFU: Аудит и целостность мира",
-    "WindowTitle": "WAIFU — Аудит и целостность мира",
+    "WindowTitle": "WAIFU — Отчёт аудита и целостности мира",
     "Controls": {
       "OpenAudit": "WAIFU: Аудит и целостность мира",
       "SettingsButton": "Открыть аудит мира (WAIFU)",
@@ -72,11 +72,31 @@
       "Rose": "Роза",
       "Appearance": "Оформление"
     },
+    "Masthead": {
+      "RunAudit": "Запустить аудит",
+      "AutoFix": "Автофикс",
+      "Backup": "Бэкап JSON",
+      "ExportReport": "Отчёт и экспорт"
+    },
+    "Sidebar": {
+      "HealthTitle": "Индекс целостности",
+      "SectionsTitle": "Разделы отчёта",
+      "ThresholdsTitle": "Активные лимиты",
+      "LimitTex": "Макс. карта",
+      "LimitScene": "Стены/Свет/Аним.",
+      "LimitDb": "Settings / Flags",
+      "Reclaimable": "Можно очистить",
+      "TabSubOverview": "Графики и сводка",
+      "TabSubScenes": "{heavy}/{total} тяж. • {png} PNG",
+      "TabSubUuids": "{broken}/{scanned} битых",
+      "TabSubStorage": "{size} • {orphans} сирот",
+      "TabSubReport": "HTML • MD • JSON"
+    },
     "Header": {
       "HealthLabel": "Здоровье мира",
       "WorldMeta": "{world} • {system} {systemVersion}",
-      "ModulesMeta": "Активно {active} / установлено {installed} модулей",
-      "ScanMeta": "Последний аудит: {time} ({duration} мс)",
+      "ModulesMeta": "Активно {active}/{installed} модулей",
+      "ScanMeta": "Скан: {time} ({duration} мс)",
       "NeverScanned": "Аудит ещё не запускался",
       "Rescan": "Запустить аудит",
       "Thresholds": "Настройки",
@@ -99,11 +119,38 @@
       "FixableSub": "Готово к исправлению в 1 клик"
     },
     "Tabs": {
-      "Overview": "Обзор",
-      "Scenes": "Сцены",
+      "Overview": "Сводка и графики",
+      "Scenes": "Сцены и медиа",
       "Uuids": "Ссылки @UUID",
       "Storage": "Настройки и флаги",
-      "Report": "Отчёт"
+      "Report": "Сформированный отчёт"
+    },
+    "Charts": {
+      "PenaltyBreakdown": "Слагаемые штрафов к индексу здоровья",
+      "DomainMatrix": "Матрица проблем по доменам",
+      "IssuesLabel": "проблем",
+      "TextureFormats": "Форматы текстур сцен",
+      "HeavyScenes": "Топ тяжёлых сцен (нагрузка)",
+      "SceneResolution": "Разрешение карт (MP и порог)",
+      "StorageNamespaces": "Крупнейшие модули (Settings + Flags)",
+      "StorageState": "Структура БД и очистка",
+      "UuidIntegrity": "Целостность @UUID и автофикс",
+      "UuidTopDocs": "Документы с битыми @UUID"
+    },
+    "Stats": {
+      "Metric": "Метрика",
+      "Min": "Мин",
+      "Avg": "Средн.",
+      "Median": "Медиана",
+      "P95": "P95",
+      "Max": "Макс",
+      "Total": "Сумма",
+      "Levels": "Уровней",
+      "Tiles": "Тайлов",
+      "MetricRes": "Разрешение (MP)",
+      "MetricWalls": "Стены",
+      "MetricLights": "Источники света",
+      "MetricAnims": "Анимации"
     },
     "Rail": {
       "HealthTitle": "Целостность мира",
@@ -129,6 +176,15 @@
       "ok": "Норма"
     },
     "Overview": {
+      "ExecHealth": "Здоровье и штрафы",
+      "ExecScenes": "Сцены в норме",
+      "ExecUuids": "Валидность @UUID",
+      "ExecStorage": "Можно очистить",
+      "ExecHealthSub": "{critical} критич. • {warning} предупр. (-{deduction} б.)",
+      "ExecScenesSub": "{healthy}/{total} чистых • {webp}% WebP",
+      "ExecUuidsSub": "{broken} битых • {exact} точных замен",
+      "ExecStorageSub": "{percent}% из {total} учтённых в БД",
+      "DistributionsTitle": "Распределение метрик сцен",
       "RecommendationsTitle": "Предложения по автоисправлению",
       "NoIssues": "Проблем не обнаружено. Мир в отличном состоянии!",
       "TopScenesTitle": "Самые тяжёлые сцены",
@@ -151,6 +207,7 @@
       "BatchWebp": "Конвертировать все PNG/Растр -> WebP",
       "BatchDedupeWalls": "Очистить дубли/нулевые стены",
       "ColScene": "Сцена",
+      "ColScore": "Нагрузка",
       "ColMaxRes": "Макс. разр.",
       "ColAssets": "Текстуры",
       "ColWalls": "Стены",
@@ -226,13 +283,19 @@
       "BtnDelete": "Удалить"
     },
     "Report": {
-      "Title": "Отчёт аудита и экспорт",
-      "Subtitle": "Выгрузка структурированного отчёта для архива, отладки или передачи команде.",
+      "Title": "Сформированный отчёт и экспорт",
+      "Subtitle": "Детальные SVG-графики, статистика распределений и выгрузка в HTML, Markdown, JSON или журнал мира.",
+      "BtnDownloadHtml": "Скачать HTML-отчёт (.html)",
       "BtnDownloadMd": "Скачать Markdown (.md)",
       "BtnDownloadJson": "Скачать JSON (.json)",
       "BtnCopyMd": "Скопировать Markdown",
       "BtnCreateJournal": "Сохранить в журнал мира",
-      "PreviewHeading": "Предпросмотр отчёта Markdown"
+      "ViewModeLabel": "Режим просмотра отчёта",
+      "ModeVisual": "Визуальный отчёт (графики)",
+      "ModeMarkdown": "Markdown",
+      "ModeJournal": "Предпросмотр журнала",
+      "PreviewHeading": "Предпросмотр отчёта Markdown",
+      "JournalPreviewHeading": "Предпросмотр HTML для журнала Foundry"
     },
     "Dialogs": {
       "ConfirmTitle": "Подтверждение автоисправления WAIFU",

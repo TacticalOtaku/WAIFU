@@ -1,9 +1,13 @@
 import { ACCENT_OPTIONS, MODULE_ID, SEVERITY_ORDER, THEME_OPTIONS } from "../constants.mjs";
+import { buildReportCharts } from "../core/charts.mjs";
 import {
+  formatReportHtml,
+  formatReportHtmlBody,
   formatReportJournalHtml,
   formatReportJson,
   formatReportMarkdown
 } from "../core/report.mjs";
+import { buildReportStatistics } from "../core/statistics.mjs";
 import { escapeHtml, formatBytes, interpolate } from "../core/utils.mjs";
 import {
   batchPatchUuidOccurrences,
@@ -23,13 +27,14 @@ const { ApplicationV2, DialogV2, HandlebarsApplicationMixin } = foundry.applicat
 const TEXT_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 /**
- * AIM-styled Foundry v14 ApplicationV2 dashboard for world auditing and safe auto-fixes.
+ * Foundry v14 ApplicationV2 diagnostic report workspace for world auditing and safe auto-fixes.
  */
 export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(options = {}) {
     super(options);
     this._report = options.report ?? null;
     this._activeTab = "overview";
+    this._reportMode = "visual";
     this._busy = false;
     this._appearanceOpen = false;
     this._statusMessage = "";
@@ -56,12 +61,13 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       minimizable: true
     },
     position: {
-      width: 1100,
-      height: 740
+      width: 1180,
+      height: 780
     },
     actions: {
       runAudit: WaifuAuditApp.#onRunAudit,
       selectTab: WaifuAuditApp.#onSelectTab,
+      setReportMode: WaifuAuditApp.#onSetReportMode,
       toggleAppearanceMenu: WaifuAuditApp.#onToggleAppearanceMenu,
       setTheme: WaifuAuditApp.#onSetTheme,
       setAccent: WaifuAuditApp.#onSetAccent,
@@ -85,8 +91,10 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       inspectFlagGroup: WaifuAuditApp.#onInspectFlagGroup,
       deleteFlagGroup: WaifuAuditApp.#onDeleteFlagGroup,
       deleteAllOrphanFlags: WaifuAuditApp.#onDeleteAllOrphanFlags,
+      cleanupAllOrphans: WaifuAuditApp.#onCleanupAllOrphans,
       fixAllRecommended: WaifuAuditApp.#onFixAllRecommended,
       backupStorage: WaifuAuditApp.#onBackupStorage,
+      exportHtml: WaifuAuditApp.#onExportHtml,
       exportMarkdown: WaifuAuditApp.#onExportMarkdown,
       exportJson: WaifuAuditApp.#onExportJson,
       copyMarkdown: WaifuAuditApp.#onCopyMarkdown,
@@ -96,9 +104,12 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
   };
 
   static PARTS = {
-    rail: {
-      template: `modules/${MODULE_ID}/templates/rail.hbs`,
-      scrollable: [".waifu-rail"]
+    masthead: {
+      template: `modules/${MODULE_ID}/templates/masthead.hbs`
+    },
+    sidebar: {
+      template: `modules/${MODULE_ID}/templates/sidebar.hbs`,
+      scrollable: [".waifu-sidebar"]
     },
     main: {
       template: `modules/${MODULE_ID}/templates/main.hbs`,
@@ -154,6 +165,7 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const report = this._report;
     const { theme, accent } = this.#getAppearance();
     const thresholds = report?.thresholds ?? readThresholdSettings();
+    const lang = this.#getLang();
 
     const emptyScenes = {
       totalScenes: 0,
@@ -213,32 +225,85 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const uuids = report?.uuids ?? emptyUuids;
     const settings = report?.settings ?? emptySettings;
     const flags = report?.flags ?? emptyFlags;
-    const summary = report?.summary ?? emptySummary;
+    const summaryRaw = report?.summary ?? emptySummary;
+    const summary = {
+      ...summaryRaw,
+      healthStateBadge: summaryRaw.healthState === "healthy" ? "ok" : summaryRaw.healthState
+    };
+
+    const effectiveReport = report ?? {
+      meta: {},
+      thresholds,
+      summary,
+      scenes,
+      uuids,
+      settings,
+      flags
+    };
+    const stats = report?.statistics ?? buildReportStatistics(effectiveReport);
+    const charts = buildReportCharts(effectiveReport, stats, lang);
 
     const activeModules = [...(game.modules ?? [])].filter((m) => m.active).length;
     const installedModules = game.modules?.size ?? 0;
 
+    const storageIssuesTotal = settings.flaggedCount + flags.groupsCount;
     const navTabs = [
-      { id: "overview", label: this.#t("WAIFU.Tabs.Overview"), badge: 0, hasBadge: false },
+      {
+        id: "overview",
+        icon: "fa-solid fa-chart-line",
+        label: this.#t("WAIFU.Tabs.Overview"),
+        subline: this.#t("WAIFU.Sidebar.TabSubOverview"),
+        badge: 0,
+        hasBadge: false,
+        badgeTone: ""
+      },
       {
         id: "scenes",
+        icon: "fa-solid fa-layer-group",
         label: this.#t("WAIFU.Tabs.Scenes"),
+        subline: this.#t("WAIFU.Sidebar.TabSubScenes", {
+          heavy: scenes.heavyScenesCount,
+          total: scenes.totalScenes,
+          png: scenes.pngAssetsCount
+        }),
         badge: scenes.heavyScenesCount,
-        hasBadge: scenes.heavyScenesCount > 0
+        hasBadge: scenes.heavyScenesCount > 0,
+        badgeTone: scenes.criticalCount > 0 ? "critical" : "warning"
       },
       {
         id: "uuids",
+        icon: "fa-solid fa-link-slash",
         label: this.#t("WAIFU.Tabs.Uuids"),
+        subline: this.#t("WAIFU.Sidebar.TabSubUuids", {
+          broken: uuids.brokenCount,
+          scanned: uuids.totalScanned
+        }),
         badge: uuids.brokenCount,
-        hasBadge: uuids.brokenCount > 0
+        hasBadge: uuids.brokenCount > 0,
+        badgeTone: "critical"
       },
       {
         id: "storage",
+        icon: "fa-solid fa-database",
         label: this.#t("WAIFU.Tabs.Storage"),
-        badge: settings.flaggedCount + flags.groupsCount,
-        hasBadge: settings.flaggedCount + flags.groupsCount > 0
+        subline: this.#t("WAIFU.Sidebar.TabSubStorage", {
+          size: settings.formattedTotalSize,
+          orphans: settings.orphanedCount + flags.orphanedNamespacesCount
+        }),
+        badge: storageIssuesTotal,
+        hasBadge: storageIssuesTotal > 0,
+        badgeTone:
+          settings.orphanedCount + flags.orphanedNamespacesCount > 0 ? "warning" : ""
       },
-      { id: "report", label: this.#t("WAIFU.Tabs.Report"), badge: 0, hasBadge: false }
+      {
+        id: "report",
+        icon: "fa-solid fa-file-waveform",
+        label: this.#t("WAIFU.Tabs.Report"),
+        subline: this.#t("WAIFU.Sidebar.TabSubReport"),
+        badge: 0,
+        hasBadge: false,
+        badgeTone: ""
+      }
     ].map((tab) => ({ ...tab, active: tab.id === this._activeTab }));
 
     const sceneRows = scenes.items.map((scene) => {
@@ -339,12 +404,21 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return {
         ...rec,
         label: this.#t("WAIFU.Overview.ApplyOrphanCleanup", { count: rec.count }),
-        detail: `Settings: ${rec.settingsCount} • Flags: ${rec.flagsCount}`
+        detail: `Settings: ${rec.settingsCount} • Flags: ${rec.flagsCount} (${stats.storageStats.formattedReclaimableTotal})`
       };
     });
 
-    const lang = this.#getLang();
+    const d = stats.sceneStats.distributions;
+    const sceneDistributionRows = [
+      { label: this.#t("WAIFU.Stats.MetricRes"), ...d.megapixels },
+      { label: this.#t("WAIFU.Stats.MetricWalls"), ...d.walls },
+      { label: this.#t("WAIFU.Stats.MetricLights"), ...d.lights },
+      { label: this.#t("WAIFU.Stats.MetricAnims"), ...d.animations }
+    ];
+
     const markdownPreview = report ? formatReportMarkdown(report, lang) : "";
+    const visualReportHtml = report ? formatReportHtmlBody(report, { lang }) : "";
+    const journalPreviewHtml = report ? formatReportJournalHtml(report, lang) : "";
 
     return {
       ...context,
@@ -359,13 +433,16 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
         active: id === accent
       })),
       summary,
-      healthShare: Number((summary.healthScore / 100).toFixed(2)),
+      stats,
+      charts,
+      uuidMissingPackCount: stats.uuidStats.byReason["missing-pack"] ?? 0,
       scenes,
       uuids,
       settings,
       flags,
       thresholds,
       formattedThresholdBytes: formatBytes(thresholds.maxSettingBytes),
+      formattedFlagThresholdBytes: formatBytes(thresholds.maxFlagBytes),
       worldLine: this.#t("WAIFU.Header.WorldMeta", {
         world: game.world?.title ?? "World",
         system: game.system?.id ?? "",
@@ -381,22 +458,25 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
             duration: report.meta?.durationMs ?? 0
           })
         : this.#t("WAIFU.Header.NeverScanned"),
-      kpiSub: {
-        heavyScenes: this.#t("WAIFU.Kpi.HeavyScenesSub", { count: scenes.totalScenes }),
-        pngAssets: this.#t("WAIFU.Kpi.PngAssetsSub", { count: scenes.unoptimizedAssetsCount }),
-        brokenUuids: this.#t("WAIFU.Kpi.BrokenUuidsSub", { count: uuids.totalScanned }),
-        bloatedSettings: this.#t("WAIFU.Kpi.BloatedSettingsSub", {
-          size: settings.formattedTotalSize
+      execSub: {
+        health: this.#t("WAIFU.Overview.ExecHealthSub", {
+          critical: summary.criticalCount,
+          warning: summary.warningCount,
+          deduction: stats.scoreBreakdown.totalDeduction
         }),
-        orphanedFlags: this.#t("WAIFU.Kpi.OrphanedFlagsSub", { size: flags.formattedOrphanedSize })
-      },
-      meters: {
-        settingsShare: Math.min(1, settings.totalBytes / (512 * 1024)).toFixed(2),
-        flagsShare: Math.min(1, flags.orphanedBytes / (256 * 1024)).toFixed(2),
-        mediaShare: Math.min(
-          1,
-          scenes.unoptimizedAssetsCount / Math.max(1, scenes.totalScenes * 2)
-        ).toFixed(2)
+        scenes: this.#t("WAIFU.Overview.ExecScenesSub", {
+          healthy: stats.sceneStats.healthyScenes,
+          total: stats.sceneStats.totalScenes,
+          webp: stats.sceneStats.assetFormats.webpRasterPercent
+        }),
+        uuids: this.#t("WAIFU.Overview.ExecUuidsSub", {
+          broken: stats.uuidStats.brokenCount,
+          exact: stats.uuidStats.byFixability.exact
+        }),
+        storage: this.#t("WAIFU.Overview.ExecStorageSub", {
+          percent: stats.storageStats.reclaimablePercent,
+          total: stats.storageStats.formattedTrackedSize
+        })
       },
       hasAnyFixable: summary.totalFixable > 0,
       navTabs,
@@ -405,6 +485,9 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       isUuidsActive: this._activeTab === "uuids",
       isStorageActive: this._activeTab === "storage",
       isReportActive: this._activeTab === "report",
+      isReportVisual: this._reportMode === "visual",
+      isReportMarkdown: this._reportMode === "markdown",
+      isReportJournal: this._reportMode === "journal",
       filters: this._filters,
       sceneFilterChips: [
         { id: "all", label: this.#t("WAIFU.Scenes.FilterAll") },
@@ -429,10 +512,11 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       uuidRows,
       settingRows,
       flagGroupRows,
+      sceneDistributionRows,
       recommendations,
-      topScenes: sceneRows.filter((s) => s.hasIssues).slice(0, 5),
-      topNamespaces: settings.byNamespace.slice(0, 5),
       markdownPreview,
+      visualReportHtml,
+      journalPreviewHtml,
       statusMessage: this._statusMessage
     };
   }
@@ -470,9 +554,9 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
   #bindLayoutObserver() {
     if (this._resizeObserver) this._resizeObserver.disconnect();
     const updateWidthState = (width) => {
-      this.element.dataset.layout = width < 840 ? "narrow" : "standard";
+      this.element.dataset.layout = width < 860 ? "narrow" : "standard";
     };
-    updateWidthState(this.element.getBoundingClientRect().width || 1100);
+    updateWidthState(this.element.getBoundingClientRect().width || 1180);
     this._resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         updateWidthState(entry.contentRect.width);
@@ -483,6 +567,8 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   #bindFilterInputs() {
     for (const input of this.element.querySelectorAll("[data-filter-input]")) {
+      if (input.dataset.waifuBound) continue;
+      input.dataset.waifuBound = "1";
       input.addEventListener("input", (event) => {
         const kind = event.currentTarget.dataset.filterInput;
         const val = event.currentTarget.value ?? "";
@@ -496,17 +582,24 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   #bindTabKeyboard() {
     const tablist = this.element.querySelector('[role="tablist"]');
-    if (!tablist) return;
+    if (!tablist || tablist.dataset.waifuBound) return;
+    tablist.dataset.waifuBound = "1";
+
     tablist.addEventListener("keydown", (event) => {
       const tabs = [...tablist.querySelectorAll('[role="tab"]')];
       const currentIdx = tabs.indexOf(document.activeElement);
       if (currentIdx < 0) return;
 
       let nextIdx = -1;
-      if (event.key === "ArrowRight") nextIdx = (currentIdx + 1) % tabs.length;
-      else if (event.key === "ArrowLeft") nextIdx = (currentIdx - 1 + tabs.length) % tabs.length;
-      else if (event.key === "Home") nextIdx = 0;
-      else if (event.key === "End") nextIdx = tabs.length - 1;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        nextIdx = (currentIdx + 1) % tabs.length;
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        nextIdx = (currentIdx - 1 + tabs.length) % tabs.length;
+      } else if (event.key === "Home") {
+        nextIdx = 0;
+      } else if (event.key === "End") {
+        nextIdx = tabs.length - 1;
+      }
       if (nextIdx < 0) return;
 
       event.preventDefault();
@@ -525,7 +618,7 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       const wrap = this.element.querySelector(".waifu-menu-wrap");
       if (wrap && !wrap.contains(event.target)) {
         this._appearanceOpen = false;
-        this.render({ parts: ["main"] });
+        this.render({ parts: ["masthead"] });
       }
     };
     document.addEventListener("pointerdown", this._docClickListener);
@@ -638,9 +731,16 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.#switchTab(target.dataset.tab);
   }
 
+  static #onSetReportMode(_event, target) {
+    const mode = target.dataset.mode;
+    if (!["visual", "markdown", "journal"].includes(mode) || this._reportMode === mode) return;
+    this._reportMode = mode;
+    this.render({ parts: ["main"] });
+  }
+
   static #onToggleAppearanceMenu() {
     this._appearanceOpen = !this._appearanceOpen;
-    this.render({ parts: ["main"] });
+    this.render({ parts: ["masthead"] });
   }
 
   static async #onSetTheme(_event, target) {
@@ -648,7 +748,7 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!THEME_OPTIONS.includes(theme)) return;
     await game.settings.set(MODULE_ID, "theme", theme);
     this.element.dataset.theme = theme;
-    this.render({ parts: ["main"] });
+    this.render({ parts: ["masthead"] });
   }
 
   static async #onSetAccent(_event, target) {
@@ -656,7 +756,7 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!ACCENT_OPTIONS.includes(accent)) return;
     await game.settings.set(MODULE_ID, "accent", accent);
     this.element.dataset.accent = accent;
-    this.render({ parts: ["main"] });
+    this.render({ parts: ["masthead"] });
   }
 
   static #onOpenModuleSettings() {
@@ -1016,6 +1116,45 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     await this.executeAudit({ silent: true });
   }
 
+  static async #onCleanupAllOrphans() {
+    if (!this._report || this._busy) return;
+    const orphanSettings = this._report.settings.items.filter((s) => s.isOrphaned);
+    const orphanGroups = this._report.flags.groups.filter((g) => g.isOrphaned);
+    const totalCount = orphanSettings.length + this._report.flags.orphanedEntriesCount;
+    if (!totalCount) {
+      ui.notifications.info(this.#t("WAIFU.Notifications.NothingToFix"));
+      return;
+    }
+
+    const res = await this.#confirmAction(
+      this.#t("WAIFU.Overview.ApplyOrphanCleanup", { count: totalCount }),
+      { withBackupOption: true }
+    );
+    if (!res?.confirmed) return;
+    if (res.backupFirst) downloadStorageBackup(this._report);
+
+    this._busy = true;
+    this.render({ force: false });
+    try {
+      if (orphanSettings.length) {
+        const deletedSettings = await deleteWorldSettingsBatch(orphanSettings.map((s) => s.key));
+        ui.notifications.info(
+          this.#t("WAIFU.Notifications.SettingsBatchDeleted", { count: deletedSettings })
+        );
+      }
+      if (orphanGroups.length) {
+        let deletedFlags = 0;
+        for (const grp of orphanGroups) {
+          deletedFlags += await deleteFlagGroup(grp);
+        }
+        ui.notifications.info(this.#t("WAIFU.Notifications.FlagsDeleted", { count: deletedFlags }));
+      }
+    } finally {
+      this._busy = false;
+    }
+    await this.executeAudit({ silent: true });
+  }
+
   static async #onFixAllRecommended() {
     if (!this._report || this._busy) return;
     const summary = this._report.summary;
@@ -1072,6 +1211,20 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!this._report) return;
     const filename = downloadStorageBackup(this._report);
     ui.notifications.info(this.#t("WAIFU.Notifications.BackupDownloaded", { filename }));
+  }
+
+  static #onExportHtml() {
+    if (!this._report) return;
+    const { theme, accent } = this.#getAppearance();
+    const html = formatReportHtml(this._report, {
+      lang: this.#getLang(),
+      theme,
+      accent
+    });
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const filename = `waifu-audit-${this._report.meta.worldId}-${stamp}.html`;
+    foundry.utils.saveDataToFile(html, "text/html", filename);
+    ui.notifications.info(this.#t("WAIFU.Notifications.Exported", { filename }));
   }
 
   static #onExportMarkdown() {

@@ -34,7 +34,7 @@ if (path.basename(targetDir) !== mod.id) {
 fs.rmSync(targetDir, { recursive: true, force: true });
 fs.mkdirSync(targetDir, { recursive: true });
 
-const runtimeEntries = ["module.json", "README.md", "lang", "scripts", "styles", "templates"];
+const runtimeEntries = ["module.json", "README.md", "assets", "lang", "scripts", "styles", "templates"];
 for (const entry of runtimeEntries) {
   const src = path.join(ROOT, entry);
   if (!fs.existsSync(src)) continue;

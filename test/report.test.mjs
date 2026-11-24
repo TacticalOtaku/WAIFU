@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createAuditReport,
+  formatReportHtml,
   formatReportJournalHtml,
   formatReportJson,
   formatReportMarkdown
 } from "../scripts/core/report.mjs";
 
-test("createAuditReport builds health summary and exports MD, JSON, and escaped HTML", () => {
+test("createAuditReport builds health summary, statistics, and exports MD, HTML, JSON, and escaped Journal HTML", () => {
   const report = createAuditReport({
     meta: {
       worldId: "barovia",
@@ -19,7 +20,7 @@ test("createAuditReport builds health summary and exports MD, JSON, and escaped 
       installedModulesCount: 15,
       durationMs: 42
     },
-    thresholds: { maxTextureResolution: 4096 },
+    thresholds: { maxTextureResolution: 4096, maxMegapixels: 18 },
     scenes: {
       totalScenes: 3,
       heavyScenesCount: 1,
@@ -35,6 +36,7 @@ test("createAuditReport builds health summary and exports MD, JSON, and escaped 
           name: "Ravenloft | Crypt",
           severity: "critical",
           hasIssues: true,
+          heavinessScore: 170,
           maxResolution: { width: 8192, height: 6144, megapixels: 50.33 },
           pngCount: 1,
           wallsCount: 410,
@@ -103,19 +105,34 @@ test("createAuditReport builds health summary and exports MD, JSON, and escaped 
   assert.ok(report.summary.healthScore < 100);
   assert.equal(report.summary.totalFixable, 9);
   assert.equal(report.summary.recommendations.length, 4);
+  assert.ok(report.statistics);
+  assert.equal(report.statistics.sceneStats.distributions.walls.max, 410);
 
   const mdRu = formatReportMarkdown(report, "ru");
   assert.match(mdRu, /Отчёт аудита мира/);
   assert.match(mdRu, /Ravenloft \\\| Crypt/);
+  assert.match(mdRu, /Сводная статистика/);
+  assert.match(mdRu, /Статистика распределения метрик сцен/);
 
   const mdEn = formatReportMarkdown(report, "en");
   assert.match(mdEn, /World Audit Report/);
+  assert.match(mdEn, /Executive Statistics & Health Breakdown/);
   assert.match(mdEn, /Recommended Auto-Fixes/);
 
   const parsedJson = JSON.parse(formatReportJson(report));
   assert.equal(parsedJson.meta.worldId, "barovia");
+  assert.equal(parsedJson.schemaVersion, 2);
 
   const html = formatReportJournalHtml(report, "en");
   assert.match(html, /Curse &lt;of&gt; Strahd/);
   assert.doesNotMatch(html, /Curse <of> Strahd/);
+  assert.match(html, /Domain Summary Statistics/);
+
+  const standaloneHtml = formatReportHtml(report, { lang: "ru", theme: "parchment", accent: "arcane" });
+  assert.match(standaloneHtml, /<!doctype html>/i);
+  assert.match(standaloneHtml, /data-theme="parchment"/);
+  assert.match(standaloneHtml, /data-accent="arcane"/);
+  assert.match(standaloneHtml, /<svg/);
+  assert.match(standaloneHtml, /Curse &lt;of&gt; Strahd/);
+  assert.doesNotMatch(standaloneHtml, /Curse <of> Strahd/);
 });

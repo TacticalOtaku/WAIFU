@@ -1,112 +1,161 @@
 {{#unless hasReport}}
-  <p class="waifu-empty">{{localize "WAIFU.Overview.RunFirst"}}</p>
+  <div class="waifu-card waifu-empty-card">
+    <p class="waifu-empty">{{localize "WAIFU.Overview.RunFirst"}}</p>
+    <button type="button" class="waifu-btn is-primary" data-action="runAudit" {{#if busy}}disabled{{/if}}>
+      <i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i>
+      {{localize "WAIFU.Masthead.RunAudit"}}
+    </button>
+  </div>
 {{else}}
-  <div class="waifu-overview">
-    <section class="waifu-card is-wide">
+  <div class="waifu-exec-grid">
+    <button type="button" class="waifu-exec-card" data-action="selectTab" data-tab="overview" data-tone="{{summary.healthStateBadge}}">
+      <span class="waifu-exec-k">{{localize "WAIFU.Overview.ExecHealth"}}</span>
+      <strong class="waifu-exec-v">{{summary.healthScore}}<small>%</small></strong>
+      <span class="waifu-exec-sub">{{execSub.health}}</span>
+    </button>
+
+    <button type="button" class="waifu-exec-card" data-action="selectTab" data-tab="scenes" data-tone="{{#if scenes.criticalCount}}critical{{else if scenes.heavyScenesCount}}warning{{else}}ok{{/if}}">
+      <span class="waifu-exec-k">{{localize "WAIFU.Overview.ExecScenes"}}</span>
+      <strong class="waifu-exec-v">{{stats.sceneStats.healthyPercent}}<small>%</small></strong>
+      <span class="waifu-exec-sub">{{execSub.scenes}}</span>
+    </button>
+
+    <button type="button" class="waifu-exec-card" data-action="selectTab" data-tab="uuids" data-tone="{{#if uuids.brokenCount}}critical{{else}}ok{{/if}}">
+      <span class="waifu-exec-k">{{localize "WAIFU.Overview.ExecUuids"}}</span>
+      <strong class="waifu-exec-v">{{stats.uuidStats.validPercent}}<small>%</small></strong>
+      <span class="waifu-exec-sub">{{execSub.uuids}}</span>
+    </button>
+
+    <button type="button" class="waifu-exec-card" data-action="selectTab" data-tab="storage" data-tone="{{#if stats.storageStats.totalReclaimableBytes}}warning{{else}}ok{{/if}}">
+      <span class="waifu-exec-k">{{localize "WAIFU.Overview.ExecStorage"}}</span>
+      <strong class="waifu-exec-v">{{stats.storageStats.formattedReclaimableTotal}}</strong>
+      <span class="waifu-exec-sub">{{execSub.storage}}</span>
+    </button>
+  </div>
+
+  {{#if charts.penaltyBarHtml}}
+    <section class="waifu-card">
       <h3>
-        <span>{{localize "WAIFU.Overview.RecommendationsTitle"}}</span>
-        {{#if summary.totalFixable}}
-          <span class="waifu-badge is-info">{{summary.totalFixable}}</span>
-        {{/if}}
+        <span>{{localize "WAIFU.Charts.PenaltyBreakdown"}}</span>
+        <span class="waifu-mono">-{{stats.scoreBreakdown.totalDeduction}} / 100 pts</span>
       </h3>
-      {{#if recommendations.length}}
-        <div class="waifu-rec-list">
-          {{#each recommendations}}
-            <div class="waifu-rec-item">
-              <div class="waifu-cell-stack">
-                <strong>{{this.label}}</strong>
-                <span class="waifu-mono">{{this.detail}}</span>
-              </div>
-              <div class="waifu-row-actions">
-                <button type="button" class="waifu-btn is-sm is-primary" data-action="{{this.action}}" {{#if @root.busy}}disabled{{/if}}>
-                  {{localize "WAIFU.Kpi.Fixable"}}
-                </button>
-                <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="{{this.tab}}">
-                  {{localize "WAIFU.Overview.OpenTab"}}
-                </button>
-              </div>
-            </div>
-          {{/each}}
-        </div>
-      {{else}}
-        <p class="waifu-empty">{{localize "WAIFU.Overview.NoIssues"}}</p>
-      {{/if}}
+      {{{charts.penaltyBarHtml}}}
+    </section>
+  {{/if}}
+
+  <div class="waifu-chart-grid">
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Charts.DomainMatrix"}}</span>
+        <span class="waifu-mono">{{summary.totalIssues}} {{localize "WAIFU.Charts.IssuesLabel"}}</span>
+      </h3>
+      {{{charts.domainMatrixHtml}}}
     </section>
 
     <section class="waifu-card">
       <h3>
-        <span>{{localize "WAIFU.Overview.TopScenesTitle"}}</span>
-        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="scenes">{{localize "WAIFU.Overview.OpenTab"}}</button>
+        <span>{{localize "WAIFU.Charts.TextureFormats"}}</span>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="scenes">
+          {{localize "WAIFU.Overview.OpenTab"}}
+        </button>
       </h3>
-      {{#if topScenes.length}}
-        {{#each topScenes}}
-          <div class="waifu-kv">
-            <span class="waifu-ellipsis">{{this.name}}</span>
-            <b>
-              <span class="waifu-badge is-{{this.severity}}">{{this.severityLabel}}</span>
-              {{#if this.maxResolution.width}} {{this.maxResolution.width}}×{{this.maxResolution.height}}{{/if}}
-            </b>
-          </div>
-        {{/each}}
-      {{else}}
-        <p class="waifu-empty">{{localize "WAIFU.Overview.NoIssues"}}</p>
-      {{/if}}
+      {{{charts.assetFormatDonutHtml}}}
     </section>
 
     <section class="waifu-card">
       <h3>
-        <span>{{localize "WAIFU.Overview.TopUuidsTitle"}}</span>
-        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="uuids">{{localize "WAIFU.Overview.OpenTab"}}</button>
+        <span>{{localize "WAIFU.Charts.HeavyScenes"}}</span>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="scenes">
+          {{localize "WAIFU.Overview.OpenTab"}}
+        </button>
       </h3>
-      <div class="waifu-kv">
-        <span>{{localize "WAIFU.Uuids.FilterJournals"}}</span>
-        <b>{{uuids.journalCount}}</b>
-      </div>
-      <div class="waifu-kv">
-        <span>{{localize "WAIFU.Uuids.FilterLoreframe"}}</span>
-        <b>{{uuids.loreframeCount}}</b>
-      </div>
-      <div class="waifu-kv">
-        <span>{{localize "WAIFU.Uuids.FilterActors"}}</span>
-        <b>{{uuids.actorCount}}</b>
-      </div>
-      <div class="waifu-kv">
-        <span>{{localize "WAIFU.Uuids.FilterWithMatch"}}</span>
-        <b>{{uuids.withCandidateCount}} ({{uuids.exactMatchCount}} exact)</b>
-      </div>
+      {{{charts.heavySceneBarsSvg}}}
     </section>
 
     <section class="waifu-card">
       <h3>
-        <span>{{localize "WAIFU.Overview.TopStorageTitle"}}</span>
-        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="storage">{{localize "WAIFU.Overview.OpenTab"}}</button>
+        <span>{{localize "WAIFU.Charts.StorageNamespaces"}}</span>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="storage">
+          {{localize "WAIFU.Overview.OpenTab"}}
+        </button>
       </h3>
-      {{#each topNamespaces}}
-        <div class="waifu-kv">
-          <span class="waifu-mono waifu-ellipsis">{{this.namespace}} ({{this.count}})</span>
-          <b>{{this.formattedSize}} ({{this.sharePercent}}%)</b>
-        </div>
-      {{/each}}
+      {{{charts.topNamespacesSvg}}}
     </section>
 
     <section class="waifu-card">
-      <h3><span>{{localize "WAIFU.Overview.EnvironmentTitle"}}</span></h3>
-      <div class="waifu-kv">
-        <span>{{localize "WAIFU.Settings.MaxTextureResolution.Name"}}</span>
-        <b>{{thresholds.maxTextureResolution}} px / {{thresholds.maxMegapixels}} MP</b>
-      </div>
-      <div class="waifu-kv">
-        <span>{{localize "WAIFU.Settings.MaxWalls.Name"}}</span>
-        <b>{{thresholds.maxWalls}}</b>
-      </div>
-      <div class="waifu-kv">
-        <span>{{localize "WAIFU.Settings.MaxLights.Name"}} / {{localize "WAIFU.Settings.MaxAnimations.Name"}}</span>
-        <b>{{thresholds.maxLights}} / {{thresholds.maxAnimations}}</b>
-      </div>
-      <div class="waifu-kv">
-        <span>{{localize "WAIFU.Settings.MaxSettingBytes.Name"}}</span>
-        <b>{{formattedThresholdBytes}}</b>
+      <h3>
+        <span>{{localize "WAIFU.Charts.UuidIntegrity"}}</span>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="uuids">
+          {{localize "WAIFU.Overview.OpenTab"}}
+        </button>
+      </h3>
+      {{{charts.uuidDonutHtml}}}
+    </section>
+
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Overview.DistributionsTitle"}}</span>
+        <span class="waifu-mono">{{scenes.totalScenes}} {{localize "WAIFU.Tabs.Scenes"}}</span>
+      </h3>
+      <div class="waifu-table-wrap">
+        <table class="waifu-table waifu-stats-table">
+          <thead>
+            <tr>
+              <th>{{localize "WAIFU.Stats.Metric"}}</th>
+              <th>{{localize "WAIFU.Stats.Min"}}</th>
+              <th>{{localize "WAIFU.Stats.Avg"}}</th>
+              <th>{{localize "WAIFU.Stats.Median"}}</th>
+              <th>{{localize "WAIFU.Stats.P95"}}</th>
+              <th>{{localize "WAIFU.Stats.Max"}}</th>
+              <th>{{localize "WAIFU.Stats.Total"}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each sceneDistributionRows}}
+              <tr>
+                <th scope="row">{{this.label}}</th>
+                <td>{{this.min}}</td>
+                <td>{{this.avg}}</td>
+                <td>{{this.median}}</td>
+                <td>{{this.p95}}</td>
+                <td><strong>{{this.max}}</strong></td>
+                <td>{{this.total}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
       </div>
     </section>
   </div>
+
+  <section class="waifu-card">
+    <h3>
+      <span>{{localize "WAIFU.Overview.RecommendationsTitle"}}</span>
+      {{#if summary.totalFixable}}
+        <span class="waifu-badge is-info">{{summary.totalFixable}}</span>
+      {{/if}}
+    </h3>
+    {{#if recommendations.length}}
+      <div class="waifu-rec-list">
+        {{#each recommendations}}
+          <div class="waifu-rec-item">
+            <div class="waifu-cell-stack">
+              <strong>{{this.label}}</strong>
+              <span class="waifu-mono">{{this.detail}}</span>
+            </div>
+            <div class="waifu-row-actions">
+              <button type="button" class="waifu-btn is-sm is-primary" data-action="{{this.action}}" {{#if @root.busy}}disabled{{/if}}>
+                {{localize "WAIFU.Kpi.Fixable"}}
+              </button>
+              <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="{{this.tab}}">
+                {{localize "WAIFU.Overview.OpenTab"}}
+              </button>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{else}}
+      <p class="waifu-empty">{{localize "WAIFU.Overview.NoIssues"}}</p>
+    {{/if}}
+  </section>
 {{/unless}}

@@ -1,6 +1,6 @@
 import { WaifuAuditApp } from "./app/audit-app.mjs";
 import { ACCENT_OPTIONS, DEFAULT_THRESHOLDS, MODULE_ID, THEME_OPTIONS } from "./constants.mjs";
-import { formatReportJson, formatReportMarkdown } from "./core/report.mjs";
+import { formatReportHtml, formatReportJson, formatReportMarkdown } from "./core/report.mjs";
 import { runWorldAudit } from "./foundry/world-audit-runner.mjs";
 
 function registerModuleSettings() {
@@ -134,8 +134,11 @@ function createPublicApi() {
   return Object.freeze({
     open: (report = null) => WaifuAuditApp.openWindow(report),
     runAudit: (overrides = {}) => runWorldAudit(overrides),
-    exportReport: (report, format = "markdown", lang = "en") =>
-      format === "json" ? formatReportJson(report) : formatReportMarkdown(report, lang)
+    exportReport: (report, format = "markdown", lang = "en") => {
+      if (format === "json") return formatReportJson(report);
+      if (format === "html") return formatReportHtml(report, { lang });
+      return formatReportMarkdown(report, lang);
+    }
   });
 }
 
@@ -144,6 +147,9 @@ Hooks.once("init", () => {
   const loadTemplatesFn =
     foundry.applications?.handlebars?.loadTemplates ?? globalThis.loadTemplates;
   loadTemplatesFn?.([
+    `modules/${MODULE_ID}/templates/masthead.hbs`,
+    `modules/${MODULE_ID}/templates/sidebar.hbs`,
+    `modules/${MODULE_ID}/templates/main.hbs`,
     `modules/${MODULE_ID}/templates/partials/tab-overview.hbs`,
     `modules/${MODULE_ID}/templates/partials/tab-scenes.hbs`,
     `modules/${MODULE_ID}/templates/partials/tab-uuids.hbs`,

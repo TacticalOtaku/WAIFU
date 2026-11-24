@@ -1,3 +1,24 @@
+{{#if hasReport}}
+  <div class="waifu-analytics-strip">
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Charts.StorageState"}}</span>
+        <span class="waifu-mono">{{stats.storageStats.formattedTrackedSize}}</span>
+      </h3>
+      {{{charts.storageDonutHtml}}}
+      {{{charts.storageStateBarHtml}}}
+    </section>
+
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Charts.StorageNamespaces"}}</span>
+        <span class="waifu-mono">{{stats.storageStats.reclaimablePercent}}% {{localize "WAIFU.Sidebar.Reclaimable"}}</span>
+      </h3>
+      {{{charts.topNamespacesSvg}}}
+    </section>
+  </div>
+{{/if}}
+
 <div class="waifu-toolbar">
   <div class="waifu-search">
     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>

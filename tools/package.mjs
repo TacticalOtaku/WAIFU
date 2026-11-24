@@ -11,7 +11,7 @@ const zipPath = path.join(distDir, zipName);
 fs.mkdirSync(distDir, { recursive: true });
 if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
 
-const entriesToPack = ["module.json", "README.md", "lang", "scripts", "styles", "templates"].filter(
+const entriesToPack = ["module.json", "README.md", "assets", "lang", "scripts", "styles", "templates"].filter(
   (entry) => fs.existsSync(path.join(ROOT, entry))
 );
 

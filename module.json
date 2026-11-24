@@ -18,6 +18,7 @@
     "scripts/main.mjs"
   ],
   "styles": [
+    "styles/fonts.css",
     "styles/tokens.css",
     "styles/waifu.css"
   ],

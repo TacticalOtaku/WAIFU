@@ -1,7 +1,7 @@
 {
   "WAIFU": {
     "ModuleTitle": "WAIFU: World Audit & Integrity",
-    "WindowTitle": "WAIFU — World Audit & Integrity",
+    "WindowTitle": "WAIFU — World Audit & Integrity Report",
     "Controls": {
       "OpenAudit": "WAIFU: World Audit & Integrity",
       "SettingsButton": "Open World Audit (WAIFU)",
@@ -72,11 +72,31 @@
       "Rose": "Rose",
       "Appearance": "Appearance"
     },
+    "Masthead": {
+      "RunAudit": "Run Audit",
+      "AutoFix": "Auto-Fix Safe",
+      "Backup": "Backup JSON",
+      "ExportReport": "Report & Export"
+    },
+    "Sidebar": {
+      "HealthTitle": "World Integrity Index",
+      "SectionsTitle": "Report Sections",
+      "ThresholdsTitle": "Active Limits",
+      "LimitTex": "Max Map",
+      "LimitScene": "Walls/Light/Anim",
+      "LimitDb": "Settings / Flags",
+      "Reclaimable": "Reclaimable",
+      "TabSubOverview": "Charts & summary",
+      "TabSubScenes": "{heavy}/{total} heavy • {png} PNG",
+      "TabSubUuids": "{broken}/{scanned} broken",
+      "TabSubStorage": "{size} • {orphans} orphans",
+      "TabSubReport": "HTML • MD • JSON"
+    },
     "Header": {
       "HealthLabel": "World Health",
       "WorldMeta": "{world} • {system} {systemVersion}",
-      "ModulesMeta": "{active} active / {installed} installed modules",
-      "ScanMeta": "Last audit: {time} ({duration} ms)",
+      "ModulesMeta": "{active}/{installed} active modules",
+      "ScanMeta": "Scanned {time} ({duration} ms)",
       "NeverScanned": "Audit not run yet",
       "Rescan": "Run Audit",
       "Thresholds": "Settings",
@@ -95,15 +115,42 @@
       "BloatedSettingsSub": "{size} total world settings",
       "OrphanedFlags": "Orphaned Flags",
       "OrphanedFlagsSub": "{size} in deleted modules",
-      "Fixable": "Auto-Fixable",
+      "Fixable": "Auto-Fix",
       "FixableSub": "Ready for 1-click repair"
     },
     "Tabs": {
-      "Overview": "Overview",
-      "Scenes": "Scenes",
-      "Uuids": "@UUID Links",
+      "Overview": "Executive Overview",
+      "Scenes": "Scenes & Media",
+      "Uuids": "@UUID Integrity",
       "Storage": "Settings & Flags",
-      "Report": "Report"
+      "Report": "Full Report"
+    },
+    "Charts": {
+      "PenaltyBreakdown": "Health Score Deductions",
+      "DomainMatrix": "Domain Severity Matrix",
+      "IssuesLabel": "issues",
+      "TextureFormats": "Scene Texture Formats",
+      "HeavyScenes": "Heaviest Scenes (Load Score)",
+      "SceneResolution": "Map Megapixels vs Limit",
+      "StorageNamespaces": "Top Namespaces (Settings + Flags)",
+      "StorageState": "Database Allocation & Reclaimable",
+      "UuidIntegrity": "@UUID Link Integrity & Fixability",
+      "UuidTopDocs": "Top Documents with Broken @UUID"
+    },
+    "Stats": {
+      "Metric": "Metric",
+      "Min": "Min",
+      "Avg": "Avg",
+      "Median": "Median",
+      "P95": "P95",
+      "Max": "Max",
+      "Total": "Total",
+      "Levels": "Levels",
+      "Tiles": "Tiles",
+      "MetricRes": "Resolution (MP)",
+      "MetricWalls": "Walls",
+      "MetricLights": "Ambient Lights",
+      "MetricAnims": "Animations"
     },
     "Rail": {
       "HealthTitle": "World Integrity",
@@ -129,6 +176,15 @@
       "ok": "Healthy"
     },
     "Overview": {
+      "ExecHealth": "Health & Deductions",
+      "ExecScenes": "Healthy Scenes",
+      "ExecUuids": "Valid @UUID Links",
+      "ExecStorage": "Reclaimable Data",
+      "ExecHealthSub": "{critical} critical • {warning} warnings (-{deduction} pts)",
+      "ExecScenesSub": "{healthy}/{total} clean • {webp}% WebP raster",
+      "ExecUuidsSub": "{broken} broken • {exact} exact auto-fix",
+      "ExecStorageSub": "{percent}% of {total} tracked DB",
+      "DistributionsTitle": "Scene Metric Distributions",
       "RecommendationsTitle": "Recommended Auto-Fixes",
       "NoIssues": "No issues detected in this world. Everything looks clean!",
       "TopScenesTitle": "Heaviest Scenes",
@@ -151,6 +207,7 @@
       "BatchWebp": "Convert All PNG/Raster -> WebP",
       "BatchDedupeWalls": "Deduplicate Zero/Dup Walls",
       "ColScene": "Scene",
+      "ColScore": "Load",
       "ColMaxRes": "Max Res",
       "ColAssets": "Assets",
       "ColWalls": "Walls",
@@ -226,13 +283,19 @@
       "BtnDelete": "Delete"
     },
     "Report": {
-      "Title": "Audit Report & Export",
-      "Subtitle": "Export structured diagnostics for documentation, backup, or team debugging.",
+      "Title": "Generated Audit Report & Export",
+      "Subtitle": "Visual charts, statistical distributions, and exportable diagnostics in HTML, Markdown, JSON, or Journal.",
+      "BtnDownloadHtml": "Download HTML Report (.html)",
       "BtnDownloadMd": "Download Markdown (.md)",
       "BtnDownloadJson": "Download JSON (.json)",
       "BtnCopyMd": "Copy Markdown",
       "BtnCreateJournal": "Save to Journal Entry",
-      "PreviewHeading": "Markdown Report Preview"
+      "ViewModeLabel": "Report Preview Mode",
+      "ModeVisual": "Visual Report (Charts)",
+      "ModeMarkdown": "Markdown",
+      "ModeJournal": "Journal Preview",
+      "PreviewHeading": "Markdown Report Preview",
+      "JournalPreviewHeading": "Foundry Journal HTML Preview"
     },
     "Dialogs": {
       "ConfirmTitle": "Confirm WAIFU Auto-Fix",

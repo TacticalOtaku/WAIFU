@@ -1,3 +1,29 @@
+{{#if hasReport}}
+  <div class="waifu-analytics-strip">
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Charts.UuidIntegrity"}}</span>
+        <span class="waifu-mono">{{stats.uuidStats.validPercent}}% OK</span>
+      </h3>
+      {{{charts.uuidBarHtml}}}
+      <div class="waifu-inline-stats">
+        <span><b>{{uuids.journalCount}}</b> {{localize "WAIFU.Uuids.FilterJournals"}}</span>
+        <span><b>{{uuids.loreframeCount}}</b> {{localize "WAIFU.Uuids.FilterLoreframe"}}</span>
+        <span><b>{{uuids.actorCount}}</b> {{localize "WAIFU.Uuids.FilterActors"}}</span>
+        <span><b>{{uuidMissingPackCount}}</b> {{localize "WAIFU.Uuids.Reason.missing-pack"}}</span>
+      </div>
+    </section>
+
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Charts.UuidTopDocs"}}</span>
+        <span class="waifu-mono">{{uuids.brokenCount}} / {{uuids.totalScanned}}</span>
+      </h3>
+      {{{charts.uuidTopDocsSvg}}}
+    </section>
+  </div>
+{{/if}}
+
 <div class="waifu-toolbar">
   <div class="waifu-search">
     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>

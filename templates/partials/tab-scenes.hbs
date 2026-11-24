@@ -1,3 +1,30 @@
+{{#if hasReport}}
+  <div class="waifu-analytics-strip">
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Charts.TextureFormats"}}</span>
+        <span class="waifu-mono">{{stats.sceneStats.assetFormats.webpRasterPercent}}% WebP</span>
+      </h3>
+      {{{charts.assetFormatBarHtml}}}
+      <div class="waifu-inline-stats">
+        <span><b>{{stats.sceneStats.geometryTotals.totalLevels}}</b> {{localize "WAIFU.Stats.Levels"}}</span>
+        <span><b>{{stats.sceneStats.geometryTotals.totalTiles}}</b> {{localize "WAIFU.Stats.Tiles"}}</span>
+        <span><b>{{stats.sceneStats.geometryTotals.totalWalls}}</b> {{localize "WAIFU.Scenes.ColWalls"}}</span>
+        <span><b>{{stats.sceneStats.geometryTotals.totalLights}}</b> {{localize "WAIFU.Scenes.ColLights"}}</span>
+        <span><b>{{stats.sceneStats.geometryTotals.totalAnimations}}</b> {{localize "WAIFU.Scenes.ColAnims"}}</span>
+      </div>
+    </section>
+
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Charts.SceneResolution"}}</span>
+        <span class="waifu-mono">{{thresholds.maxMegapixels}} MP limit</span>
+      </h3>
+      {{{charts.sceneResolutionBarsSvg}}}
+    </section>
+  </div>
+{{/if}}
+
 <div class="waifu-toolbar">
   <div class="waifu-search">
     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
@@ -57,6 +84,9 @@
             <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColScene"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
           </th>
           <th scope="col" data-type="number">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColScore"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col" data-type="number">
             <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColMaxRes"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
           </th>
           <th scope="col">{{localize "WAIFU.Scenes.ColAssets"}}</th>
@@ -84,6 +114,9 @@
                 <span class="waifu-mono">Levels: {{this.levelsCount}} • Tiles: {{this.tilesCount}}</span>
               </div>
             </th>
+            <td data-value="{{this.heavinessScore}}">
+              <strong>{{this.heavinessScore}}</strong>
+            </td>
             <td data-value="{{this.maxResolution.megapixels}}">
               {{#if this.maxResolution.width}}
                 <div class="waifu-cell-stack">
