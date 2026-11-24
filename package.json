@@ -1,0 +1,20 @@
+{
+  "name": "waifu",
+  "version": "1.0.0",
+  "description": "WAIFU: World Audit & Integrity for Foundry VTT v14",
+  "author": "TacticalOtaku",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check:static": "node tools/check.mjs",
+    "check": "npm run check:static && npm test",
+    "deploy": "node tools/deploy.mjs",
+    "package": "node tools/package.mjs",
+    "release": "npm run check && npm run package"
+  }
+}

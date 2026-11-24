@@ -1,0 +1,270 @@
+{
+  "WAIFU": {
+    "ModuleTitle": "WAIFU: World Audit & Integrity",
+    "WindowTitle": "WAIFU — World Audit & Integrity",
+    "Controls": {
+      "OpenAudit": "WAIFU: World Audit & Integrity",
+      "SettingsButton": "Open World Audit (WAIFU)",
+      "MenuName": "World Audit Dashboard",
+      "MenuLabel": "Open WAIFU Audit",
+      "MenuHint": "Audit heavy scenes, broken @UUID links (journals, Loreframe, actors), bloated world settings, and orphaned module flags."
+    },
+    "Settings": {
+      "MaxTextureResolution": {
+        "Name": "Max Map Texture Edge (px)",
+        "Hint": "Flag scene backgrounds, foregrounds, and tiles whose width or height exceeds this pixel threshold."
+      },
+      "MaxMegapixels": {
+        "Name": "Max Map Megapixels (MP)",
+        "Hint": "Flag map textures exceeding this megapixel budget (width × height / 1,000,000)."
+      },
+      "MaxWalls": {
+        "Name": "Max Walls per Scene",
+        "Hint": "Flag scenes with more wall segments than this threshold."
+      },
+      "MaxLights": {
+        "Name": "Max Lights per Scene",
+        "Hint": "Flag scenes with more ambient light sources than this threshold."
+      },
+      "MaxAnimations": {
+        "Name": "Max Animations per Scene",
+        "Hint": "Flag scenes whose animated lights, video tiles, animated tokens, and weather exceed this threshold."
+      },
+      "MaxSettingBytes": {
+        "Name": "Bloated World Setting Threshold (bytes)",
+        "Hint": "Flag world settings larger than this UTF-8 JSON byte size."
+      },
+      "MaxFlagBytes": {
+        "Name": "Bloated Flag Namespace Threshold (bytes)",
+        "Hint": "Flag document flag namespaces larger than this UTF-8 JSON byte size."
+      },
+      "WebpQuality": {
+        "Name": "WebP Conversion Quality",
+        "Hint": "Quality factor (0.50–1.00) used when auto-converting heavy PNG/raster textures to WebP."
+      },
+      "DownscaleOnConvert": {
+        "Name": "Downscale Oversized Maps on WebP Convert",
+        "Hint": "When enabled, converting an image larger than the max resolution threshold scales it down proportionally."
+      },
+      "IncludeChatMessages": {
+        "Name": "Scan Chat Messages for Orphaned Flags",
+        "Hint": "Include game.messages when scanning for orphaned module flags (may take longer in huge worlds)."
+      },
+      "Theme": {
+        "Name": "WAIFU Window Theme",
+        "Hint": "Visual theme for the WAIFU audit window.",
+        "Night": "Night",
+        "Parchment": "Parchment"
+      },
+      "Accent": {
+        "Name": "WAIFU Accent Color",
+        "Hint": "Accent palette for highlights and focus indicators."
+      }
+    },
+    "Theme": {
+      "Night": "Night",
+      "Parchment": "Parchment",
+      "Brass": "Brass",
+      "Embers": "Embers",
+      "Arcane": "Arcane",
+      "Forest": "Forest",
+      "Frost": "Frost",
+      "Rose": "Rose",
+      "Appearance": "Appearance"
+    },
+    "Header": {
+      "HealthLabel": "World Health",
+      "WorldMeta": "{world} • {system} {systemVersion}",
+      "ModulesMeta": "{active} active / {installed} installed modules",
+      "ScanMeta": "Last audit: {time} ({duration} ms)",
+      "NeverScanned": "Audit not run yet",
+      "Rescan": "Run Audit",
+      "Thresholds": "Settings",
+      "ExportMarkdown": "Export MD",
+      "ExportJson": "Export JSON",
+      "BackupStorage": "Backup Storage"
+    },
+    "Kpi": {
+      "HeavyScenes": "Heavy Scenes",
+      "HeavyScenesSub": "{count} scenes checked",
+      "PngAssets": "PNG -> WebP",
+      "PngAssetsSub": "{count} unoptimized assets",
+      "BrokenUuids": "Broken @UUID",
+      "BrokenUuidsSub": "{count} references scanned",
+      "BloatedSettings": "Bloated Settings",
+      "BloatedSettingsSub": "{size} total world settings",
+      "OrphanedFlags": "Orphaned Flags",
+      "OrphanedFlagsSub": "{size} in deleted modules",
+      "Fixable": "Auto-Fixable",
+      "FixableSub": "Ready for 1-click repair"
+    },
+    "Tabs": {
+      "Overview": "Overview",
+      "Scenes": "Scenes",
+      "Uuids": "@UUID Links",
+      "Storage": "Settings & Flags",
+      "Report": "Report"
+    },
+    "Rail": {
+      "HealthTitle": "World Integrity",
+      "MetricsTitle": "Quick Breakdown",
+      "FootprintTitle": "Storage & Media Footprint",
+      "WorldSettingsSize": "World Settings",
+      "OrphanedFlagsSize": "Orphaned Flags",
+      "HeavyMediaAssets": "Non-WebP / Oversized Maps",
+      "ActionsTitle": "Quick Actions",
+      "ActionRunAudit": "Run Full Audit",
+      "ActionRunAuditSub": "Scan scenes, journals, actors, storage",
+      "ActionFixAllSafe": "Auto-Fix Recommended",
+      "ActionFixAllSafeSub": "Convert PNGs, exact UUID matches, clean orphans",
+      "ActionBackup": "Backup Settings & Flags",
+      "ActionBackupSub": "Download JSON snapshot before cleanup",
+      "ActionExport": "Export Full Report",
+      "ActionExportSub": "Save Markdown & JSON diagnostics"
+    },
+    "Severity": {
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Info",
+      "ok": "Healthy"
+    },
+    "Overview": {
+      "RecommendationsTitle": "Recommended Auto-Fixes",
+      "NoIssues": "No issues detected in this world. Everything looks clean!",
+      "TopScenesTitle": "Heaviest Scenes",
+      "TopUuidsTitle": "Broken @UUID Breakdown",
+      "TopStorageTitle": "Largest Settings & Orphaned Namespaces",
+      "EnvironmentTitle": "Audit Thresholds & World Context",
+      "RunFirst": "Click \"Run Audit\" to inspect scenes, journals (including Loreframe), actors, world settings, and flags.",
+      "ApplySceneWebp": "Convert {count} PNG/Raster Maps to WebP",
+      "ApplyWallCleanup": "Remove {count} Duplicate/Zero Walls",
+      "ApplyUuidExact": "Auto-Replace {count} Exact @UUID Matches",
+      "ApplyOrphanCleanup": "Clean {count} Orphaned Settings & Flags",
+      "OpenTab": "Inspect Details"
+    },
+    "Scenes": {
+      "SearchPlaceholder": "Filter scenes or asset paths...",
+      "FilterAll": "All",
+      "FilterHeavy": "Issues Only",
+      "FilterPng": "PNG / Raster",
+      "FilterGeometry": "Walls / Lights / Anim",
+      "BatchWebp": "Convert All PNG/Raster -> WebP",
+      "BatchDedupeWalls": "Deduplicate Zero/Dup Walls",
+      "ColScene": "Scene",
+      "ColMaxRes": "Max Res",
+      "ColAssets": "Assets",
+      "ColWalls": "Walls",
+      "ColLights": "Lights",
+      "ColAnims": "Animations",
+      "ColStatus": "Status",
+      "ColActions": "Auto-Fix",
+      "Empty": "No scenes match the current filter.",
+      "PngTag": "PNG -> WebP",
+      "RasterTag": "Raster -> WebP",
+      "OversizedTag": "Oversized ({w}×{h}, {mp} MP)",
+      "WallsTag": "{count} walls ({dup} dup/zero)",
+      "LightsTag": "{count} lights",
+      "AnimsTag": "{count} animations",
+      "BtnConvertWebp": "-> WebP",
+      "BtnDedupeWalls": "Clean Walls",
+      "BtnStopLightAnims": "Disable Light Anim",
+      "BtnOpenScene": "Configure Scene"
+    },
+    "Uuids": {
+      "SearchPlaceholder": "Filter by document, UUID, or label...",
+      "FilterAll": "All",
+      "FilterJournals": "Journals",
+      "FilterLoreframe": "Flags / Loreframe",
+      "FilterActors": "Actors & Items",
+      "FilterWithMatch": "With Candidate",
+      "BatchApplyExact": "Apply High-Confidence Matches",
+      "BatchUnlinkNoMatch": "Unlink Unmatched",
+      "ColSource": "Source Document",
+      "ColPath": "Field / Path",
+      "ColBroken": "Broken Reference",
+      "ColReason": "Reason",
+      "ColCandidate": "Suggested Replacement",
+      "ColActions": "Auto-Fix",
+      "Empty": "No broken @UUID references match the current filter.",
+      "NoCandidate": "No automatic match found",
+      "BtnApply": "Replace",
+      "BtnUnlink": "Unlink",
+      "BtnOpen": "Open Sheet",
+      "Reason": {
+        "missing-document": "Document missing",
+        "missing-pack": "Compendium missing",
+        "missing-embedded": "Embedded doc missing",
+        "malformed": "Malformed UUID"
+      }
+    },
+    "Storage": {
+      "SearchPlaceholder": "Filter by namespace, setting key, or document...",
+      "FilterAll": "All",
+      "FilterOrphaned": "Deleted Modules",
+      "FilterInactive": "Disabled Modules",
+      "FilterBloated": "Bloated Active",
+      "SettingsHeading": "World Settings",
+      "FlagsHeading": "Document Flags (Orphaned & Bloated)",
+      "BtnBackup": "Download JSON Backup",
+      "BtnDeleteAllOrphanSettings": "Delete Orphaned Settings",
+      "BtnDeleteAllOrphanFlags": "Delete Orphaned Flags",
+      "ColNamespace": "Namespace",
+      "ColKeyOrDoc": "Setting Key / Target",
+      "ColStatus": "Module State",
+      "ColSize": "Size",
+      "ColCount": "Entries",
+      "ColActions": "Actions",
+      "EmptySettings": "No bloated or orphaned world settings match the filter.",
+      "EmptyFlags": "No orphaned or bloated document flags match the filter.",
+      "Status": {
+        "orphaned": "Deleted Module",
+        "inactive": "Disabled Module",
+        "bloated": "Bloated Active",
+        "ok": "Active"
+      },
+      "BtnInspect": "Inspect",
+      "BtnDelete": "Delete"
+    },
+    "Report": {
+      "Title": "Audit Report & Export",
+      "Subtitle": "Export structured diagnostics for documentation, backup, or team debugging.",
+      "BtnDownloadMd": "Download Markdown (.md)",
+      "BtnDownloadJson": "Download JSON (.json)",
+      "BtnCopyMd": "Copy Markdown",
+      "BtnCreateJournal": "Save to Journal Entry",
+      "PreviewHeading": "Markdown Report Preview"
+    },
+    "Dialogs": {
+      "ConfirmTitle": "Confirm WAIFU Auto-Fix",
+      "ConfirmWebpBatch": "Convert {count} raster scene/tile images to WebP and update their document paths? Original files will remain untouched on disk.",
+      "ConfirmDedupeWalls": "Remove {count} zero-length or exact duplicate wall segments from \"{scene}\"?",
+      "ConfirmDisableLightAnims": "Clear animation presets on {count} ambient lights in \"{scene}\"?",
+      "ConfirmUuidBatch": "Apply {count} high-confidence @UUID replacements across world documents?",
+      "ConfirmUnlinkBatch": "Unlink {count} broken @UUID references (preserving visible link text)?",
+      "ConfirmDeleteSetting": "Delete world setting \"{key}\" ({size}) from the world database? Consider downloading a JSON backup first.",
+      "ConfirmDeleteOrphanSettings": "Delete {count} orphaned world settings belonging to uninstalled modules? Download a backup before proceeding if unsure.",
+      "ConfirmDeleteOrphanFlags": "Remove flag namespace \"{namespace}\" from {count} world documents ({size})?",
+      "ConfirmDeleteAllOrphanFlags": "Remove all orphaned module flag namespaces across {count} document flag entries? Disabled modules will NOT be touched.",
+      "DownloadBackupLabel": "Download JSON backup before deleting (Recommended)",
+      "InspectTitle": "Inspect Storage Payload"
+    },
+    "Notifications": {
+      "AuditComplete": "WAIFU audit complete in {duration} ms: {issues} issues found.",
+      "Exported": "Exported WAIFU report: {filename}",
+      "Copied": "Markdown report copied to clipboard.",
+      "JournalCreated": "Created Journal Entry \"{name}\" with the WAIFU audit report.",
+      "WebpConverted": "Converted {count} image(s) to WebP ({saved} saved).",
+      "WebpFailed": "Failed to convert {src} to WebP: {error}",
+      "WallsCleaned": "Removed {count} duplicate/zero-length walls from \"{scene}\".",
+      "LightAnimsCleared": "Disabled animations on {count} light(s) in \"{scene}\".",
+      "UuidReplaced": "Replaced broken @UUID in \"{doc}\".",
+      "UuidBatchReplaced": "Updated {count} @UUID reference(s).",
+      "UuidUnlinked": "Unlinked broken @UUID in \"{doc}\" while keeping visible text.",
+      "SettingDeleted": "Deleted world setting \"{key}\".",
+      "SettingsBatchDeleted": "Deleted {count} orphaned world settings.",
+      "FlagsDeleted": "Removed {count} orphaned flag namespace entries.",
+      "BackupDownloaded": "Saved JSON backup: {filename}",
+      "NothingToFix": "No matching auto-fix items available."
+    }
+  }
+}

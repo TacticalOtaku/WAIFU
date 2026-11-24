@@ -1,0 +1,35 @@
+<div class="waifu-card">
+  <div class="waifu-section-head">
+    <div>
+      <h3>{{localize "WAIFU.Report.Title"}}</h3>
+      <p class="waifu-mono">{{localize "WAIFU.Report.Subtitle"}}</p>
+    </div>
+    <div class="waifu-row-actions">
+      <button type="button" class="waifu-btn is-sm is-primary" data-action="exportMarkdown" {{#unless hasReport}}disabled{{/unless}}>
+        <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+        {{localize "WAIFU.Report.BtnDownloadMd"}}
+      </button>
+      <button type="button" class="waifu-btn is-sm" data-action="exportJson" {{#unless hasReport}}disabled{{/unless}}>
+        <i class="fa-solid fa-file-code" aria-hidden="true"></i>
+        {{localize "WAIFU.Report.BtnDownloadJson"}}
+      </button>
+      <button type="button" class="waifu-btn is-sm" data-action="copyMarkdown" {{#unless hasReport}}disabled{{/unless}}>
+        <i class="fa-solid fa-copy" aria-hidden="true"></i>
+        {{localize "WAIFU.Report.BtnCopyMd"}}
+      </button>
+      <button type="button" class="waifu-btn is-sm" data-action="saveJournalReport" {{#unless hasReport}}disabled{{/unless}}>
+        <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+        {{localize "WAIFU.Report.BtnCreateJournal"}}
+      </button>
+    </div>
+  </div>
+</div>
+
+{{#if hasReport}}
+  <section class="waifu-card">
+    <h3><span>{{localize "WAIFU.Report.PreviewHeading"}}</span></h3>
+    <pre class="waifu-report-pre">{{markdownPreview}}</pre>
+  </section>
+{{else}}
+  <p class="waifu-empty">{{localize "WAIFU.Overview.RunFirst"}}</p>
+{{/if}}

@@ -1,0 +1,176 @@
+<div class="waifu-toolbar">
+  <div class="waifu-search">
+    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    <label class="waifu-sr-only" for="waifu-scenes-search">{{localize "WAIFU.Scenes.SearchPlaceholder"}}</label>
+    <input
+      id="waifu-scenes-search"
+      type="search"
+      value="{{filters.scenesQuery}}"
+      placeholder="{{localize 'WAIFU.Scenes.SearchPlaceholder'}}"
+      data-filter-input="scenes"
+    >
+  </div>
+
+  <div class="waifu-filters" role="group" aria-label="{{localize 'WAIFU.Tabs.Scenes'}}">
+    {{#each sceneFilterChips}}
+      <button
+        type="button"
+        class="waifu-chip"
+        data-action="setSceneFilter"
+        data-filter="{{this.id}}"
+        aria-pressed="{{#if this.active}}true{{else}}false{{/if}}"
+      >{{this.label}}</button>
+    {{/each}}
+  </div>
+
+  <div class="waifu-toolbar-tools">
+    <button
+      type="button"
+      class="waifu-btn is-sm is-primary"
+      data-action="batchConvertWebp"
+      {{#unless scenes.unoptimizedAssetsCount}}disabled{{/unless}}
+      {{#if busy}}disabled{{/if}}
+    >
+      <i class="fa-solid fa-file-image" aria-hidden="true"></i>
+      {{localize "WAIFU.Scenes.BatchWebp"}} ({{scenes.unoptimizedAssetsCount}})
+    </button>
+    <button
+      type="button"
+      class="waifu-btn is-sm"
+      data-action="batchDedupeWalls"
+      {{#unless scenes.redundantWallsTotal}}disabled{{/unless}}
+      {{#if busy}}disabled{{/if}}
+    >
+      <i class="fa-solid fa-border-none" aria-hidden="true"></i>
+      {{localize "WAIFU.Scenes.BatchDedupeWalls"}} ({{scenes.redundantWallsTotal}})
+    </button>
+  </div>
+</div>
+
+{{#if scenes.items.length}}
+  <div tabindex="0" role="region" aria-labelledby="waifu-scenes-caption" class="waifu-table-wrap">
+    <table class="waifu-table" data-waifu-table="scenes">
+      <caption id="waifu-scenes-caption">{{localize "WAIFU.Tabs.Scenes"}}</caption>
+      <thead>
+        <tr>
+          <th scope="col" data-type="string">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColScene"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col" data-type="number">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColMaxRes"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col">{{localize "WAIFU.Scenes.ColAssets"}}</th>
+          <th scope="col" data-type="number">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColWalls"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col" data-type="number">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColLights"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col" data-type="number">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColAnims"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col" data-type="number">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColStatus"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col">{{localize "WAIFU.Scenes.ColActions"}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each sceneRows}}
+          <tr data-waifu-row="scene" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+            <th scope="row">
+              <div class="waifu-cell-stack">
+                <span class="waifu-ellipsis">{{this.name}}</span>
+                <span class="waifu-mono">Levels: {{this.levelsCount}} • Tiles: {{this.tilesCount}}</span>
+              </div>
+            </th>
+            <td data-value="{{this.maxResolution.megapixels}}">
+              {{#if this.maxResolution.width}}
+                <div class="waifu-cell-stack">
+                  <strong>{{this.maxResolution.width}}×{{this.maxResolution.height}}</strong>
+                  <span class="waifu-mono">{{this.maxResolution.megapixels}} MP</span>
+                </div>
+              {{else}}
+                —
+              {{/if}}
+            </td>
+            <td>
+              <div class="waifu-sublist">
+                {{#each this.issueAssets}}
+                  <div class="waifu-asset-pill">
+                    <span class="waifu-ellipsis waifu-mono">{{this.slotLabel}}: {{this.src}}</span>
+                    <div class="waifu-row-actions">
+                      {{#if this.isPng}}
+                        <span class="waifu-badge is-critical">PNG</span>
+                      {{else if this.isUnoptimizedRaster}}
+                        <span class="waifu-badge is-warning">{{this.ext}}</span>
+                      {{/if}}
+                      {{#if this.isOversized}}
+                        <span class="waifu-badge is-critical">{{this.width}}×{{this.height}}</span>
+                      {{/if}}
+                      {{#if this.canAutoConvert}}
+                        <button
+                          type="button"
+                          class="waifu-btn is-sm is-primary"
+                          data-action="convertSingleAsset"
+                          data-scene-id="{{../id}}"
+                          data-asset-src="{{this.src}}"
+                          {{#if @root.busy}}disabled{{/if}}
+                        >{{localize "WAIFU.Scenes.BtnConvertWebp"}}</button>
+                      {{/if}}
+                    </div>
+                  </div>
+                {{else}}
+                  <span class="waifu-mono">{{this.assets.length}} WebP/OK</span>
+                {{/each}}
+              </div>
+            </td>
+            <td data-value="{{this.wallsCount}}">
+              <div class="waifu-cell-stack">
+                <strong>{{this.wallsCount}}</strong>
+                {{#if this.redundantWallIds.length}}
+                  <span class="waifu-badge is-warning">{{this.redundantWallIds.length}} dup/0</span>
+                {{/if}}
+              </div>
+            </td>
+            <td data-value="{{this.lightsCount}}">{{this.lightsCount}}</td>
+            <td data-value="{{this.animationsCount}}">{{this.animationsCount}}</td>
+            <td data-value="{{this.severityRank}}">
+              <span class="waifu-badge is-{{this.severity}}">{{this.severityLabel}}</span>
+            </td>
+            <td>
+              <div class="waifu-row-actions">
+                {{#if this.redundantWallIds.length}}
+                  <button
+                    type="button"
+                    class="waifu-btn is-sm"
+                    data-action="dedupeSceneWalls"
+                    data-scene-id="{{this.id}}"
+                    {{#if @root.busy}}disabled{{/if}}
+                  >{{localize "WAIFU.Scenes.BtnDedupeWalls"}}</button>
+                {{/if}}
+                {{#if this.hasExcessiveAnimsWithLights}}
+                  <button
+                    type="button"
+                    class="waifu-btn is-sm"
+                    data-action="disableSceneLightAnims"
+                    data-scene-id="{{this.id}}"
+                    {{#if @root.busy}}disabled{{/if}}
+                  >{{localize "WAIFU.Scenes.BtnStopLightAnims"}}</button>
+                {{/if}}
+                <button
+                  type="button"
+                  class="waifu-btn is-sm"
+                  data-action="openDocumentSheet"
+                  data-uuid="{{this.uuid}}"
+                >{{localize "WAIFU.Scenes.BtnOpenScene"}}</button>
+              </div>
+            </td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+{{else}}
+  <p class="waifu-empty">{{localize "WAIFU.Scenes.Empty"}}</p>
+{{/if}}

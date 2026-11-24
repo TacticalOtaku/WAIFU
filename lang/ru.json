@@ -1,0 +1,270 @@
+{
+  "WAIFU": {
+    "ModuleTitle": "WAIFU: Аудит и целостность мира",
+    "WindowTitle": "WAIFU — Аудит и целостность мира",
+    "Controls": {
+      "OpenAudit": "WAIFU: Аудит и целостность мира",
+      "SettingsButton": "Открыть аудит мира (WAIFU)",
+      "MenuName": "Окно аудита мира",
+      "MenuLabel": "Открыть аудит WAIFU",
+      "MenuHint": "Аудит тяжёлых сцен, битых ссылок @UUID (журналы, Loreframe, актёры), раздутых world settings и осиротевших флагов удалённых модулей."
+    },
+    "Settings": {
+      "MaxTextureResolution": {
+        "Name": "Макс. сторона текстуры карты (px)",
+        "Hint": "Отмечать фоны, передние планы и тайлы сцен, чья ширина или высота превышает этот порог."
+      },
+      "MaxMegapixels": {
+        "Name": "Макс. мегапиксели карты (MP)",
+        "Hint": "Отмечать текстуры карт, превышающие этот объём пикселей (ширина × высота / 1 000 000)."
+      },
+      "MaxWalls": {
+        "Name": "Макс. число стен на сцене",
+        "Hint": "Отмечать сцены, где количество сегментов стен превышает этот порог."
+      },
+      "MaxLights": {
+        "Name": "Макс. число источников света",
+        "Hint": "Отмечать сцены, где количество источников света превышает этот порог."
+      },
+      "MaxAnimations": {
+        "Name": "Макс. число анимаций на сцене",
+        "Hint": "Отмечать сцены, где сумма анимированного света, видео-тайлов, видео-токенов и погоды превышает порог."
+      },
+      "MaxSettingBytes": {
+        "Name": "Порог раздутой world setting (байты)",
+        "Hint": "Отмечать настройки мира, превышающие этот размер JSON в UTF-8."
+      },
+      "MaxFlagBytes": {
+        "Name": "Порог раздутого блока флагов (байты)",
+        "Hint": "Отмечать пространства имён флагов на документе, превышающие этот размер JSON в UTF-8."
+      },
+      "WebpQuality": {
+        "Name": "Качество конвертации в WebP",
+        "Hint": "Качество сжатия (0.50–1.00) при автоконвертации тяжёлых PNG/растровых текстур в WebP."
+      },
+      "DownscaleOnConvert": {
+        "Name": "Уменьшать сверхбольшие карты при WebP-конвертации",
+        "Hint": "Если включено, изображения больше порога разрешения будут пропорционально уменьшены при конвертации в WebP."
+      },
+      "IncludeChatMessages": {
+        "Name": "Проверять сообщения чата на осиротевшие флаги",
+        "Hint": "Включать game.messages в поиск осиротевших флагов модулей (может замедлить аудит в крупных мирах)."
+      },
+      "Theme": {
+        "Name": "Тема окна WAIFU",
+        "Hint": "Визуальная тема окна статистики и аудита WAIFU.",
+        "Night": "Ночь",
+        "Parchment": "Пергамент"
+      },
+      "Accent": {
+        "Name": "Акцентный цвет WAIFU",
+        "Hint": "Акцентная палитра для выделения и индикаторов фокуса."
+      }
+    },
+    "Theme": {
+      "Night": "Ночь",
+      "Parchment": "Пергамент",
+      "Brass": "Латунь",
+      "Embers": "Угли",
+      "Arcane": "Аркана",
+      "Forest": "Лес",
+      "Frost": "Иней",
+      "Rose": "Роза",
+      "Appearance": "Оформление"
+    },
+    "Header": {
+      "HealthLabel": "Здоровье мира",
+      "WorldMeta": "{world} • {system} {systemVersion}",
+      "ModulesMeta": "Активно {active} / установлено {installed} модулей",
+      "ScanMeta": "Последний аудит: {time} ({duration} мс)",
+      "NeverScanned": "Аудит ещё не запускался",
+      "Rescan": "Запустить аудит",
+      "Thresholds": "Настройки",
+      "ExportMarkdown": "Отчёт MD",
+      "ExportJson": "Отчёт JSON",
+      "BackupStorage": "Бэкап данных"
+    },
+    "Kpi": {
+      "HeavyScenes": "Тяжёлые сцены",
+      "HeavyScenesSub": "Проверено сцен: {count}",
+      "PngAssets": "PNG -> WebP",
+      "PngAssetsSub": "Неоптимизированных файлов: {count}",
+      "BrokenUuids": "Битые @UUID",
+      "BrokenUuidsSub": "Проверено ссылок: {count}",
+      "BloatedSettings": "Раздутые Settings",
+      "BloatedSettingsSub": "Всего настроек мира: {size}",
+      "OrphanedFlags": "Сироты-флаги",
+      "OrphanedFlagsSub": "{size} от удалённых модулей",
+      "Fixable": "Автофикс",
+      "FixableSub": "Готово к исправлению в 1 клик"
+    },
+    "Tabs": {
+      "Overview": "Обзор",
+      "Scenes": "Сцены",
+      "Uuids": "Ссылки @UUID",
+      "Storage": "Настройки и флаги",
+      "Report": "Отчёт"
+    },
+    "Rail": {
+      "HealthTitle": "Целостность мира",
+      "MetricsTitle": "Сводка проблем",
+      "FootprintTitle": "Нагрузка и объём данных",
+      "WorldSettingsSize": "World Settings",
+      "OrphanedFlagsSize": "Осиротевшие флаги",
+      "HeavyMediaAssets": "Не-WebP / огромные карты",
+      "ActionsTitle": "Быстрые действия",
+      "ActionRunAudit": "Запустить аудит",
+      "ActionRunAuditSub": "Проверить сцены, журналы, актёров, БД",
+      "ActionFixAllSafe": "Безопасный автофикс",
+      "ActionFixAllSafeSub": "PNG->WebP, точные @UUID, сироты",
+      "ActionBackup": "Бэкап Settings и Flags",
+      "ActionBackupSub": "Скачать JSON-снимок перед очисткой",
+      "ActionExport": "Выгрузить отчёт",
+      "ActionExportSub": "Сохранить Markdown и JSON отчёт"
+    },
+    "Severity": {
+      "critical": "Критично",
+      "warning": "Предупреждение",
+      "info": "Инфо",
+      "ok": "Норма"
+    },
+    "Overview": {
+      "RecommendationsTitle": "Предложения по автоисправлению",
+      "NoIssues": "Проблем не обнаружено. Мир в отличном состоянии!",
+      "TopScenesTitle": "Самые тяжёлые сцены",
+      "TopUuidsTitle": "Сводка по битым @UUID",
+      "TopStorageTitle": "Крупнейшие настройки и осиротевшие модули",
+      "EnvironmentTitle": "Пороги аудита и контекст мира",
+      "RunFirst": "Нажмите «Запустить аудит» для проверки сцен, журналов (включая Loreframe), актёров, настроек и флагов.",
+      "ApplySceneWebp": "Конвертировать {count} PNG/растровых карт в WebP",
+      "ApplyWallCleanup": "Удалить {count} дублирующихся/нулевых стен",
+      "ApplyUuidExact": "Заменить {count} точных совпадений @UUID",
+      "ApplyOrphanCleanup": "Очистить {count} осиротевших настроек и флагов",
+      "OpenTab": "Подробнее"
+    },
+    "Scenes": {
+      "SearchPlaceholder": "Фильтр по сценам или путям текстур...",
+      "FilterAll": "Все",
+      "FilterHeavy": "Только с проблемами",
+      "FilterPng": "PNG / Растр",
+      "FilterGeometry": "Стены / Свет / Анимации",
+      "BatchWebp": "Конвертировать все PNG/Растр -> WebP",
+      "BatchDedupeWalls": "Очистить дубли/нулевые стены",
+      "ColScene": "Сцена",
+      "ColMaxRes": "Макс. разр.",
+      "ColAssets": "Текстуры",
+      "ColWalls": "Стены",
+      "ColLights": "Свет",
+      "ColAnims": "Анимации",
+      "ColStatus": "Статус",
+      "ColActions": "Автофикс",
+      "Empty": "Нет сцен, подходящих под выбранный фильтр.",
+      "PngTag": "PNG -> WebP",
+      "RasterTag": "Растр -> WebP",
+      "OversizedTag": "Большая ({w}×{h}, {mp} MP)",
+      "WallsTag": "{count} стен ({dup} дубл./нул.)",
+      "LightsTag": "{count} света",
+      "AnimsTag": "{count} анимаций",
+      "BtnConvertWebp": "-> WebP",
+      "BtnDedupeWalls": "Очистить стены",
+      "BtnStopLightAnims": "Убрать аним. света",
+      "BtnOpenScene": "Настроить сцену"
+    },
+    "Uuids": {
+      "SearchPlaceholder": "Фильтр по документу, UUID или тексту...",
+      "FilterAll": "Все",
+      "FilterJournals": "Журналы",
+      "FilterLoreframe": "Флаги / Loreframe",
+      "FilterActors": "Актёры и предметы",
+      "FilterWithMatch": "С кандидатом",
+      "BatchApplyExact": "Заменить точные совпадения",
+      "BatchUnlinkNoMatch": "Убрать битые ссылки (оставить текст)",
+      "ColSource": "Источник",
+      "ColPath": "Поле / Путь",
+      "ColBroken": "Битая ссылка",
+      "ColReason": "Причина",
+      "ColCandidate": "Предлагаемая замена",
+      "ColActions": "Автофикс",
+      "Empty": "Нет битых ссылок @UUID для выбранного фильтра.",
+      "NoCandidate": "Подходящая замена не найдена",
+      "BtnApply": "Заменить",
+      "BtnUnlink": "Отвязать",
+      "BtnOpen": "Открыть лист",
+      "Reason": {
+        "missing-document": "Документ не найден",
+        "missing-pack": "Компендиум не найден",
+        "missing-embedded": "Вложенный объект удалён",
+        "malformed": "Некорректный формат UUID"
+      }
+    },
+    "Storage": {
+      "SearchPlaceholder": "Фильтр по модулю, ключу или документу...",
+      "FilterAll": "Все",
+      "FilterOrphaned": "Удалённые модули",
+      "FilterInactive": "Отключённые модули",
+      "FilterBloated": "Раздутые активные",
+      "SettingsHeading": "Настройки мира (World Settings)",
+      "FlagsHeading": "Флаги документов (осиротевшие и раздутые)",
+      "BtnBackup": "Скачать бэкап JSON",
+      "BtnDeleteAllOrphanSettings": "Удалить осиротевшие настройки",
+      "BtnDeleteAllOrphanFlags": "Удалить осиротевшие флаги",
+      "ColNamespace": "Модуль (Namespace)",
+      "ColKeyOrDoc": "Ключ / Цель",
+      "ColStatus": "Состояние модуля",
+      "ColSize": "Размер",
+      "ColCount": "Записей",
+      "ColActions": "Действия",
+      "EmptySettings": "Раздутые или осиротевшие настройки мира не найдены.",
+      "EmptyFlags": "Осиротевшие или раздутые флаги документов не найдены.",
+      "Status": {
+        "orphaned": "Удалённый модуль",
+        "inactive": "Отключённый модуль",
+        "bloated": "Раздутый активный",
+        "ok": "Активен"
+      },
+      "BtnInspect": "Просмотр",
+      "BtnDelete": "Удалить"
+    },
+    "Report": {
+      "Title": "Отчёт аудита и экспорт",
+      "Subtitle": "Выгрузка структурированного отчёта для архива, отладки или передачи команде.",
+      "BtnDownloadMd": "Скачать Markdown (.md)",
+      "BtnDownloadJson": "Скачать JSON (.json)",
+      "BtnCopyMd": "Скопировать Markdown",
+      "BtnCreateJournal": "Сохранить в журнал мира",
+      "PreviewHeading": "Предпросмотр отчёта Markdown"
+    },
+    "Dialogs": {
+      "ConfirmTitle": "Подтверждение автоисправления WAIFU",
+      "ConfirmWebpBatch": "Конвертировать {count} растровых изображений сцен/тайлов в WebP и обновить пути в документах? Исходные файлы на диске удалены не будут.",
+      "ConfirmDedupeWalls": "Удалить {count} нулевых или полностью дублирующихся сегментов стен со сцены «{scene}»?",
+      "ConfirmDisableLightAnims": "Отключить анимации у {count} источников света на сцене «{scene}»?",
+      "ConfirmUuidBatch": "Применить {count} точных замен битых ссылок @UUID в документах мира?",
+      "ConfirmUnlinkBatch": "Отвязать {count} битых ссылок @UUID (сохранив видимый текст ссылки)?",
+      "ConfirmDeleteSetting": "Удалить настройку мира «{key}» ({size}) из базы данных? Рекомендуется предварительно сохранить бэкап JSON.",
+      "ConfirmDeleteOrphanSettings": "Удалить {count} осиротевших настроек от удалённых модулей? При сомнениях сначала скачайте бэкап.",
+      "ConfirmDeleteOrphanFlags": "Удалить пространство флагов «{namespace}» из {count} документов мира ({size})?",
+      "ConfirmDeleteAllOrphanFlags": "Удалить все осиротевшие флаги удалённых модулей ({count} записей)? Флаги временно отключённых модулей затронуты не будут.",
+      "DownloadBackupLabel": "Скачать JSON-бэкап перед удалением (рекомендуется)",
+      "InspectTitle": "Просмотр содержимого"
+    },
+    "Notifications": {
+      "AuditComplete": "Аудит WAIFU завершён за {duration} мс: найдено проблем — {issues}.",
+      "Exported": "Отчёт WAIFU выгружен: {filename}",
+      "Copied": "Отчёт Markdown скопирован в буфер обмена.",
+      "JournalCreated": "Создана запись журнала «{name}» с отчётом аудита WAIFU.",
+      "WebpConverted": "Конвертировано в WebP: {count} файл(ов) (сэкономлено {saved}).",
+      "WebpFailed": "Не удалось конвертировать {src} в WebP: {error}",
+      "WallsCleaned": "Удалено {count} дублирующихся/нулевых стен со сцены «{scene}».",
+      "LightAnimsCleared": "Отключены анимации у {count} источников света на сцене «{scene}».",
+      "UuidReplaced": "Заменена битая ссылка @UUID в документе «{doc}».",
+      "UuidBatchReplaced": "Обновлено ссылок @UUID: {count}.",
+      "UuidUnlinked": "Битая ссылка @UUID отвязана в «{doc}» с сохранением текста.",
+      "SettingDeleted": "Удалена настройка мира «{key}».",
+      "SettingsBatchDeleted": "Удалено осиротевших настроек мира: {count}.",
+      "FlagsDeleted": "Удалено записей осиротевших флагов: {count}.",
+      "BackupDownloaded": "JSON-бэкап сохранён: {filename}",
+      "NothingToFix": "Нет подходящих элементов для автоисправления."
+    }
+  }
+}

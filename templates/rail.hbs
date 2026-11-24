@@ -1,0 +1,130 @@
+<aside class="waifu-rail" aria-label="{{localize 'WAIFU.Rail.HealthTitle'}}">
+  <section class="waifu-healthcard" data-state="{{summary.healthState}}">
+    <div class="waifu-health-top">
+      <span class="waifu-health-label">{{localize "WAIFU.Header.HealthLabel"}}</span>
+      <span class="waifu-health-value">{{summary.healthScore}}<small>%</small></span>
+    </div>
+    <div class="waifu-health-bar" style="--health-share: {{healthShare}}">
+      <span class="waifu-health-fill"></span>
+    </div>
+    <div class="waifu-health-badges">
+      <span class="waifu-badge {{#if summary.criticalCount}}is-critical{{else}}is-ok{{/if}}">
+        {{localize "WAIFU.Severity.critical"}}: {{summary.criticalCount}}
+      </span>
+      <span class="waifu-badge {{#if summary.warningCount}}is-warning{{else}}is-ok{{/if}}">
+        {{localize "WAIFU.Severity.warning"}}: {{summary.warningCount}}
+      </span>
+      {{#if summary.infoCount}}
+        <span class="waifu-badge is-info">
+          {{localize "WAIFU.Severity.info"}}: {{summary.infoCount}}
+        </span>
+      {{/if}}
+    </div>
+  </section>
+
+  <div>
+    <h2 class="waifu-rail-title">{{localize "WAIFU.Rail.MetricsTitle"}}</h2>
+    <div class="waifu-stats">
+      <button type="button" class="waifu-stat" data-action="selectTab" data-tab="scenes">
+        <b class="{{#if scenes.criticalCount}}is-bad{{else if scenes.heavyScenesCount}}is-warn{{else}}is-ok{{/if}}">
+          {{scenes.heavyScenesCount}}
+        </b>
+        <span>{{localize "WAIFU.Tabs.Scenes"}}</span>
+      </button>
+      <button type="button" class="waifu-stat" data-action="selectTab" data-tab="uuids">
+        <b class="{{#if uuids.brokenCount}}is-bad{{else}}is-ok{{/if}}">
+          {{uuids.brokenCount}}
+        </b>
+        <span>@UUID</span>
+      </button>
+      <button type="button" class="waifu-stat" data-action="selectTab" data-tab="storage">
+        <b class="{{#if settings.flaggedCount}}is-warn{{else}}is-ok{{/if}}">
+          {{settings.flaggedCount}}
+        </b>
+        <span>Settings</span>
+      </button>
+      <button type="button" class="waifu-stat" data-action="selectTab" data-tab="storage">
+        <b class="{{#if flags.orphanedNamespacesCount}}is-warn{{else}}is-ok{{/if}}">
+          {{flags.orphanedNamespacesCount}}
+        </b>
+        <span>Flags</span>
+      </button>
+    </div>
+  </div>
+
+  <div>
+    <h2 class="waifu-rail-title">{{localize "WAIFU.Rail.FootprintTitle"}}</h2>
+    <div class="waifu-footprint">
+      <div class="waifu-meter">
+        <div class="waifu-meter-head">
+          <span>{{localize "WAIFU.Rail.WorldSettingsSize"}}</span>
+          <b>{{settings.formattedTotalSize}}</b>
+        </div>
+        <div class="waifu-meter-bar {{#if settings.bloatedCount}}is-warn{{/if}}" style="--share: {{meters.settingsShare}}">
+          <i></i>
+        </div>
+      </div>
+      <div class="waifu-meter">
+        <div class="waifu-meter-head">
+          <span>{{localize "WAIFU.Rail.OrphanedFlagsSize"}}</span>
+          <b>{{flags.formattedOrphanedSize}}</b>
+        </div>
+        <div class="waifu-meter-bar {{#if flags.orphanedEntriesCount}}is-bad{{/if}}" style="--share: {{meters.flagsShare}}">
+          <i></i>
+        </div>
+      </div>
+      <div class="waifu-meter">
+        <div class="waifu-meter-head">
+          <span>{{localize "WAIFU.Rail.HeavyMediaAssets"}}</span>
+          <b>{{scenes.unoptimizedAssetsCount}}</b>
+        </div>
+        <div class="waifu-meter-bar {{#if scenes.pngAssetsCount}}is-warn{{/if}}" style="--share: {{meters.mediaShare}}">
+          <i></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <h2 class="waifu-rail-title">{{localize "WAIFU.Rail.ActionsTitle"}}</h2>
+    <div class="waifu-rest">
+      <button type="button" class="waifu-rest-btn" data-action="runAudit" {{#if busy}}disabled{{/if}}>
+        <i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i>
+        <span>
+          <strong>{{localize "WAIFU.Rail.ActionRunAudit"}}</strong>
+          <small>{{localize "WAIFU.Rail.ActionRunAuditSub"}}</small>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="waifu-rest-btn is-heal"
+        data-action="fixAllRecommended"
+        {{#unless hasAnyFixable}}disabled{{/unless}}
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+        <span>
+          <strong>{{localize "WAIFU.Rail.ActionFixAllSafe"}}</strong>
+          <small>{{localize "WAIFU.Rail.ActionFixAllSafeSub"}}</small>
+        </span>
+      </button>
+
+      <button type="button" class="waifu-rest-btn is-info" data-action="backupStorage" {{#unless hasReport}}disabled{{/unless}}>
+        <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
+        <span>
+          <strong>{{localize "WAIFU.Rail.ActionBackup"}}</strong>
+          <small>{{localize "WAIFU.Rail.ActionBackupSub"}}</small>
+        </span>
+      </button>
+
+      <button type="button" class="waifu-rest-btn is-arcane" data-action="selectTab" data-tab="report" {{#unless hasReport}}disabled{{/unless}}>
+        <i class="fa-solid fa-file-export" aria-hidden="true"></i>
+        <span>
+          <strong>{{localize "WAIFU.Rail.ActionExport"}}</strong>
+          <small>{{localize "WAIFU.Rail.ActionExportSub"}}</small>
+        </span>
+      </button>
+    </div>
+  </div>
+</aside>

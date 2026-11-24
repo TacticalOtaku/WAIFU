@@ -1,0 +1,112 @@
+{{#unless hasReport}}
+  <p class="waifu-empty">{{localize "WAIFU.Overview.RunFirst"}}</p>
+{{else}}
+  <div class="waifu-overview">
+    <section class="waifu-card is-wide">
+      <h3>
+        <span>{{localize "WAIFU.Overview.RecommendationsTitle"}}</span>
+        {{#if summary.totalFixable}}
+          <span class="waifu-badge is-info">{{summary.totalFixable}}</span>
+        {{/if}}
+      </h3>
+      {{#if recommendations.length}}
+        <div class="waifu-rec-list">
+          {{#each recommendations}}
+            <div class="waifu-rec-item">
+              <div class="waifu-cell-stack">
+                <strong>{{this.label}}</strong>
+                <span class="waifu-mono">{{this.detail}}</span>
+              </div>
+              <div class="waifu-row-actions">
+                <button type="button" class="waifu-btn is-sm is-primary" data-action="{{this.action}}" {{#if @root.busy}}disabled{{/if}}>
+                  {{localize "WAIFU.Kpi.Fixable"}}
+                </button>
+                <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="{{this.tab}}">
+                  {{localize "WAIFU.Overview.OpenTab"}}
+                </button>
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      {{else}}
+        <p class="waifu-empty">{{localize "WAIFU.Overview.NoIssues"}}</p>
+      {{/if}}
+    </section>
+
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Overview.TopScenesTitle"}}</span>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="scenes">{{localize "WAIFU.Overview.OpenTab"}}</button>
+      </h3>
+      {{#if topScenes.length}}
+        {{#each topScenes}}
+          <div class="waifu-kv">
+            <span class="waifu-ellipsis">{{this.name}}</span>
+            <b>
+              <span class="waifu-badge is-{{this.severity}}">{{this.severityLabel}}</span>
+              {{#if this.maxResolution.width}} {{this.maxResolution.width}}×{{this.maxResolution.height}}{{/if}}
+            </b>
+          </div>
+        {{/each}}
+      {{else}}
+        <p class="waifu-empty">{{localize "WAIFU.Overview.NoIssues"}}</p>
+      {{/if}}
+    </section>
+
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Overview.TopUuidsTitle"}}</span>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="uuids">{{localize "WAIFU.Overview.OpenTab"}}</button>
+      </h3>
+      <div class="waifu-kv">
+        <span>{{localize "WAIFU.Uuids.FilterJournals"}}</span>
+        <b>{{uuids.journalCount}}</b>
+      </div>
+      <div class="waifu-kv">
+        <span>{{localize "WAIFU.Uuids.FilterLoreframe"}}</span>
+        <b>{{uuids.loreframeCount}}</b>
+      </div>
+      <div class="waifu-kv">
+        <span>{{localize "WAIFU.Uuids.FilterActors"}}</span>
+        <b>{{uuids.actorCount}}</b>
+      </div>
+      <div class="waifu-kv">
+        <span>{{localize "WAIFU.Uuids.FilterWithMatch"}}</span>
+        <b>{{uuids.withCandidateCount}} ({{uuids.exactMatchCount}} exact)</b>
+      </div>
+    </section>
+
+    <section class="waifu-card">
+      <h3>
+        <span>{{localize "WAIFU.Overview.TopStorageTitle"}}</span>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="storage">{{localize "WAIFU.Overview.OpenTab"}}</button>
+      </h3>
+      {{#each topNamespaces}}
+        <div class="waifu-kv">
+          <span class="waifu-mono waifu-ellipsis">{{this.namespace}} ({{this.count}})</span>
+          <b>{{this.formattedSize}} ({{this.sharePercent}}%)</b>
+        </div>
+      {{/each}}
+    </section>
+
+    <section class="waifu-card">
+      <h3><span>{{localize "WAIFU.Overview.EnvironmentTitle"}}</span></h3>
+      <div class="waifu-kv">
+        <span>{{localize "WAIFU.Settings.MaxTextureResolution.Name"}}</span>
+        <b>{{thresholds.maxTextureResolution}} px / {{thresholds.maxMegapixels}} MP</b>
+      </div>
+      <div class="waifu-kv">
+        <span>{{localize "WAIFU.Settings.MaxWalls.Name"}}</span>
+        <b>{{thresholds.maxWalls}}</b>
+      </div>
+      <div class="waifu-kv">
+        <span>{{localize "WAIFU.Settings.MaxLights.Name"}} / {{localize "WAIFU.Settings.MaxAnimations.Name"}}</span>
+        <b>{{thresholds.maxLights}} / {{thresholds.maxAnimations}}</b>
+      </div>
+      <div class="waifu-kv">
+        <span>{{localize "WAIFU.Settings.MaxSettingBytes.Name"}}</span>
+        <b>{{formattedThresholdBytes}}</b>
+      </div>
+    </section>
+  </div>
+{{/unless}}

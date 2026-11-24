@@ -1,0 +1,137 @@
+<div class="waifu-toolbar">
+  <div class="waifu-search">
+    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    <label class="waifu-sr-only" for="waifu-uuids-search">{{localize "WAIFU.Uuids.SearchPlaceholder"}}</label>
+    <input
+      id="waifu-uuids-search"
+      type="search"
+      value="{{filters.uuidsQuery}}"
+      placeholder="{{localize 'WAIFU.Uuids.SearchPlaceholder'}}"
+      data-filter-input="uuids"
+    >
+  </div>
+
+  <div class="waifu-filters" role="group" aria-label="{{localize 'WAIFU.Tabs.Uuids'}}">
+    {{#each uuidFilterChips}}
+      <button
+        type="button"
+        class="waifu-chip"
+        data-action="setUuidFilter"
+        data-filter="{{this.id}}"
+        aria-pressed="{{#if this.active}}true{{else}}false{{/if}}"
+      >{{this.label}}</button>
+    {{/each}}
+  </div>
+
+  <div class="waifu-toolbar-tools">
+    <button
+      type="button"
+      class="waifu-btn is-sm is-primary"
+      data-action="batchApplyExactUuids"
+      {{#unless uuids.exactMatchCount}}disabled{{/unless}}
+      {{#if busy}}disabled{{/if}}
+    >
+      <i class="fa-solid fa-link" aria-hidden="true"></i>
+      {{localize "WAIFU.Uuids.BatchApplyExact"}} ({{uuids.exactMatchCount}})
+    </button>
+    <button
+      type="button"
+      class="waifu-btn is-sm is-danger"
+      data-action="batchUnlinkNoMatch"
+      {{#unless uuids.brokenCount}}disabled{{/unless}}
+      {{#if busy}}disabled{{/if}}
+    >
+      <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
+      {{localize "WAIFU.Uuids.BatchUnlinkNoMatch"}}
+    </button>
+  </div>
+</div>
+
+{{#if uuidRows.length}}
+  <div tabindex="0" role="region" aria-labelledby="waifu-uuids-caption" class="waifu-table-wrap">
+    <table class="waifu-table" data-waifu-table="uuids">
+      <caption id="waifu-uuids-caption">{{localize "WAIFU.Tabs.Uuids"}}</caption>
+      <thead>
+        <tr>
+          <th scope="col" data-type="string">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Uuids.ColSource"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col" data-type="string">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Uuids.ColPath"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col">{{localize "WAIFU.Uuids.ColBroken"}}</th>
+          <th scope="col" data-type="string">
+            <button type="button" data-action="sortTable">{{localize "WAIFU.Uuids.ColReason"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
+          </th>
+          <th scope="col">{{localize "WAIFU.Uuids.ColCandidate"}}</th>
+          <th scope="col">{{localize "WAIFU.Uuids.ColActions"}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each uuidRows}}
+          <tr data-waifu-row="uuid" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+            <th scope="row">
+              <div class="waifu-cell-stack">
+                <span class="waifu-ellipsis">{{this.sourceTitle}}</span>
+                <span class="waifu-badge {{#if this.isLoreframe}}is-info{{/if}}">{{this.sourceBadge}}</span>
+              </div>
+            </th>
+            <td>
+              <span class="waifu-mono waifu-ellipsis">{{this.fieldPath}}</span>
+            </td>
+            <td>
+              <div class="waifu-cell-stack">
+                <span class="waifu-mono waifu-ellipsis">{{this.rawUuid}}</span>
+                {{#if this.label}}
+                  <span>{{this.label}}</span>
+                {{/if}}
+              </div>
+            </td>
+            <td>
+              <span class="waifu-badge is-{{this.severity}}">{{this.reasonLabel}}</span>
+            </td>
+            <td>
+              {{#if this.candidates.length}}
+                <select class="waifu-select" data-uuid-select="{{this.id}}" aria-label="{{localize 'WAIFU.Uuids.ColCandidate'}}">
+                  {{#each this.candidates}}
+                    <option value="{{this.uuid}}">{{this.name}} ({{this.sourceLabel}}, {{this.percent}}%)</option>
+                  {{/each}}
+                </select>
+              {{else}}
+                <span class="waifu-mono">{{localize "WAIFU.Uuids.NoCandidate"}}</span>
+              {{/if}}
+            </td>
+            <td>
+              <div class="waifu-row-actions">
+                {{#if this.candidates.length}}
+                  <button
+                    type="button"
+                    class="waifu-btn is-sm is-primary"
+                    data-action="applySingleUuid"
+                    data-occ-id="{{this.id}}"
+                    {{#if @root.busy}}disabled{{/if}}
+                  >{{localize "WAIFU.Uuids.BtnApply"}}</button>
+                {{/if}}
+                <button
+                  type="button"
+                  class="waifu-btn is-sm"
+                  data-action="unlinkSingleUuid"
+                  data-occ-id="{{this.id}}"
+                  {{#if @root.busy}}disabled{{/if}}
+                >{{localize "WAIFU.Uuids.BtnUnlink"}}</button>
+                <button
+                  type="button"
+                  class="waifu-btn is-sm"
+                  data-action="openDocumentSheet"
+                  data-uuid="{{this.rootUuid}}"
+                >{{localize "WAIFU.Uuids.BtnOpen"}}</button>
+              </div>
+            </td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+{{else}}
+  <p class="waifu-empty">{{localize "WAIFU.Uuids.Empty"}}</p>
+{{/if}}

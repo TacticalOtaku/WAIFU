@@ -1,0 +1,1217 @@
+/* WAIFU: World Audit & Integrity — Window frame, rail, header, tabs, tables, and action cards.
+   Styled in the AIM: Actor Window design language for Foundry VTT v14. */
+
+.waifu-window {
+  min-inline-size: 360px;
+  min-block-size: 540px;
+  background: var(--surface-0);
+  color: var(--text);
+  font-family: var(--font-ui);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-lift);
+}
+
+:where(.waifu-root) button {
+  height: auto;
+  min-height: 0;
+  line-height: inherit;
+}
+
+:where(.waifu-root button:not([class*="fa-"])) {
+  font-family: inherit;
+}
+
+.waifu-window > .window-header {
+  background: var(--surface-1);
+  border-block-end: 1px solid var(--line);
+  color: var(--text-2);
+}
+
+.waifu-window > .window-header .window-title {
+  color: var(--text);
+  font-family: var(--font-display);
+}
+
+.waifu-window > .window-header .header-control {
+  color: var(--text-2);
+}
+
+.waifu-window > .window-content {
+  position: relative;
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface-0);
+}
+
+.waifu-window[data-layout="narrow"] > .window-content {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.waifu-sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Left Diagnostic Rail ───────────────────────────────────────────── */
+.waifu-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-block-size: 0;
+  padding: var(--s4) var(--s3);
+  overflow: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  background: var(--surface-0);
+  border-inline-end: 1px solid var(--line);
+}
+
+.waifu-window[data-layout="narrow"] .waifu-rail {
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--s2);
+  overflow: auto hidden;
+  padding: 10px 12px 8px;
+  border-inline-end: 0;
+  border-block-end: 1px solid var(--line);
+}
+
+.waifu-window[data-layout="narrow"] .waifu-rail > * {
+  flex: 0 0 auto;
+}
+
+.waifu-window[data-layout="narrow"] .waifu-healthcard,
+.waifu-window[data-layout="narrow"] .waifu-stats,
+.waifu-window[data-layout="narrow"] .waifu-footprint,
+.waifu-window[data-layout="narrow"] .waifu-rest {
+  inline-size: 240px;
+}
+
+.waifu-rail-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 2px 6px;
+  font: 600 10.5px var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Health Score Card (analogous to .aim-hpcard) */
+.waifu-healthcard {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-1);
+}
+
+.waifu-healthcard[data-state="critical"] {
+  border-color: color-mix(in oklab, var(--hp) 55%, transparent);
+}
+
+.waifu-healthcard[data-state="warning"] {
+  border-color: color-mix(in oklab, var(--warn) 45%, transparent);
+}
+
+.waifu-health-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.waifu-health-label {
+  font: 600 10.5px var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.waifu-health-value {
+  color: var(--text);
+  font: 700 28px/1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.waifu-health-value small {
+  font-size: 14px;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.waifu-health-bar {
+  position: relative;
+  block-size: 10px;
+  border-radius: 6px;
+  background: var(--surface-0);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden;
+}
+
+.waifu-health-fill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: calc(var(--health-share, 1) * 100%);
+  border-radius: 6px;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--heal) 70%, #000), var(--heal));
+  transition: inline-size var(--d-slow) var(--ease-settle);
+}
+
+.waifu-healthcard[data-state="warning"] .waifu-health-fill {
+  background: linear-gradient(90deg, color-mix(in oklab, var(--warn) 70%, #000), var(--warn));
+}
+
+.waifu-healthcard[data-state="critical"] .waifu-health-fill {
+  background: linear-gradient(90deg, color-mix(in oklab, var(--hp) 70%, #000), var(--hp));
+}
+
+.waifu-health-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+}
+
+/* 4-column stat strip (analogous to .aim-stats) */
+.waifu-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s1);
+}
+
+.waifu-stat {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  min-block-size: 46px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--d-fast), transform var(--d-fast) var(--ease-snap);
+}
+
+.waifu-stat:hover {
+  border-color: var(--accent-line);
+  transform: translateY(-1px);
+}
+
+.waifu-stat b {
+  font: 700 16px/1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.waifu-stat b.is-warn { color: var(--warn); }
+.waifu-stat b.is-bad { color: var(--hp); }
+.waifu-stat b.is-ok { color: var(--heal); }
+
+.waifu-stat span {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* Storage & Media Footprint Bars */
+.waifu-footprint {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+}
+
+.waifu-meter {
+  display: grid;
+  gap: 4px;
+}
+
+.waifu-meter-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+.waifu-meter-head b {
+  color: var(--text);
+  font: 600 11.5px var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.waifu-meter-bar {
+  position: relative;
+  block-size: 6px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.waifu-meter-bar i {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: left;
+  transform: scaleX(var(--share, 0));
+  transition: transform var(--d-slow) var(--ease-settle);
+}
+
+.waifu-meter-bar.is-warn i { background: var(--warn); }
+.waifu-meter-bar.is-bad i { background: var(--hp); }
+
+/* Quick Action Stack (analogous to .aim-rest-btn) */
+.waifu-rest {
+  display: grid;
+  gap: var(--s2);
+}
+
+.waifu-rest-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  color: var(--text);
+  font: 600 12.5px var(--font-ui);
+  text-align: start;
+  cursor: pointer;
+  --tone: var(--accent);
+  transition: border-color var(--d-fast), background-color var(--d-fast), transform var(--d-fast) var(--ease-snap);
+}
+
+.waifu-rest-btn.is-arcane { --tone: var(--arcane); }
+.waifu-rest-btn.is-heal { --tone: var(--heal); }
+.waifu-rest-btn.is-info { --tone: var(--temp); }
+
+.waifu-rest-btn:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--tone) 55%, transparent);
+  background: color-mix(in oklab, var(--tone) 8%, var(--surface-1));
+  transform: translateY(-1px);
+}
+
+.waifu-rest-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.waifu-rest-btn > i {
+  flex: none;
+  inline-size: 28px;
+  block-size: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--tone) 16%, transparent);
+  color: var(--tone);
+}
+
+.waifu-rest-btn > span {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.waifu-rest-btn small {
+  font: 500 10.5px var(--font-ui);
+  color: var(--text-3);
+}
+
+/* ── Main Column & Header ───────────────────────────────────────────── */
+.waifu-main {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+
+.waifu-head {
+  position: relative;
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4) var(--s4) var(--s3);
+}
+
+.waifu-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-inline-size: 0;
+  padding-inline-end: 130px;
+}
+
+.waifu-title-text {
+  min-inline-size: 0;
+}
+
+.waifu-name {
+  margin: 0;
+  border: 0;
+  font: 600 21px/1.15 var(--font-display);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waifu-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  margin-block-start: 4px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.waifu-dot {
+  color: var(--text-3);
+}
+
+/* Animated Health Orb (matching .aim-level) */
+.waifu-orb {
+  --score: 1;
+  position: relative;
+  flex: none;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  inline-size: 48px;
+  block-size: 48px;
+  padding: 0;
+  border: 1.5px solid var(--accent-line);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, var(--surface-3), var(--surface-0) 75%);
+  cursor: pointer;
+  transition: transform var(--d-base) var(--ease-snap);
+}
+
+.waifu-orb:hover { transform: scale(1.05); }
+
+.waifu-orb-pool {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: 50%;
+  box-shadow: inset 0 -6px 12px rgb(0 0 0 / 0.35);
+}
+
+.waifu-orb-fill {
+  position: absolute;
+  inset: 0;
+  transform: translateY(calc((1 - var(--score)) * 100%));
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--accent) 85%, #fff),
+    var(--accent) 38%,
+    color-mix(in oklab, var(--accent) 55%, #000)
+  );
+  transition: transform 900ms var(--ease-settle);
+}
+
+.waifu-orb[data-state="critical"] .waifu-orb-fill {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--hp) 85%, #fff), var(--hp) 40%, #4b1210);
+}
+
+.waifu-wave {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-end: calc(100% - 4px);
+  inline-size: 200%;
+  block-size: 9px;
+  fill: color-mix(in oklab, var(--accent) 85%, #fff);
+  animation: waifu-wave 3.4s linear infinite;
+}
+
+.waifu-wave.is-back {
+  inset-block-end: calc(100% - 2px);
+  opacity: 0.45;
+  animation-duration: 5.4s;
+  animation-direction: reverse;
+}
+
+@keyframes waifu-wave {
+  to { transform: translateX(-50%); }
+}
+
+.waifu-orb-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: calc(var(--score) * var(--score) * 0.85);
+  box-shadow: 0 0 22px 4px color-mix(in oklab, var(--accent) 70%, transparent);
+}
+
+.waifu-orb-n {
+  font: 700 15px/1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.65);
+}
+
+.waifu-orb-n small { font-size: 9px; }
+
+/* Header Top-Right Tools & Appearance Menu */
+.waifu-tools {
+  position: absolute;
+  inset-block-start: var(--s4);
+  inset-inline-end: var(--s4);
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+.waifu-ibtn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-inline-size: 30px;
+  min-block-size: 30px;
+  inline-size: 30px;
+  block-size: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color var(--d-fast), border-color var(--d-fast), background-color var(--d-fast);
+}
+
+.waifu-ibtn:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background-color: var(--surface-2);
+}
+
+.waifu-menu-wrap { position: relative; }
+
+.waifu-menu {
+  position: absolute;
+  inset-block-start: calc(100% + 6px);
+  inset-inline-end: 0;
+  z-index: 30;
+  display: grid;
+  gap: 8px;
+  min-inline-size: 224px;
+  padding: 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lift);
+}
+
+.waifu-menu[hidden] { display: none; }
+
+.waifu-menu-label {
+  font: 600 10px var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.waifu-theme-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.waifu-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.waifu-swatch {
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  justify-self: center;
+}
+
+.waifu-swatch[aria-pressed="true"] {
+  border-color: var(--text);
+  transform: scale(1.1);
+}
+
+.waifu-swatch[data-accent-val="brass"] { background: var(--acc-brass); }
+.waifu-swatch[data-accent-val="embers"] { background: var(--acc-embers); }
+.waifu-swatch[data-accent-val="arcane"] { background: var(--acc-arcane); }
+.waifu-swatch[data-accent-val="forest"] { background: var(--acc-forest); }
+.waifu-swatch[data-accent-val="frost"] { background: var(--acc-frost); }
+.waifu-swatch[data-accent-val="rose"] { background: var(--acc-rose); }
+
+/* 6-Tile KPI Strip (matching .aim-abilities) */
+.waifu-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--s2);
+}
+
+.waifu-window[data-layout="narrow"] .waifu-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.waifu-kpi {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-block-size: 64px;
+  padding: 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--d-fast), transform var(--d-fast) var(--ease-snap);
+}
+
+.waifu-kpi:hover {
+  border-color: var(--accent-line);
+  transform: translateY(-1px);
+}
+
+.waifu-kpi-k {
+  font: 600 9.5px var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-inline-size: 100%;
+}
+
+.waifu-kpi-m {
+  font: 700 19px/1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.waifu-kpi[data-tone="critical"] .waifu-kpi-m { color: var(--hp); }
+.waifu-kpi[data-tone="warning"] .waifu-kpi-m { color: var(--warn); }
+.waifu-kpi[data-tone="heal"] .waifu-kpi-m { color: var(--heal); }
+.waifu-kpi[data-tone="accent"] .waifu-kpi-m { color: var(--accent); }
+
+.waifu-kpi-v,
+.waifu-kpi-s {
+  font: 500 10.5px var(--font-num);
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-inline-size: 100%;
+  transition: transform var(--d-base) var(--ease-snap), opacity var(--d-fast);
+}
+
+.waifu-kpi-s {
+  position: absolute;
+  inset-block-end: 6px;
+  inset-inline: 4px;
+  text-align: center;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.waifu-kpi:is(:hover, :focus-visible) .waifu-kpi-v {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.waifu-kpi:is(:hover, :focus-visible) .waifu-kpi-s {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Accessible Tab Navigation ──────────────────────────────────────── */
+.waifu-tabs {
+  position: relative;
+  display: flex;
+  gap: var(--s1);
+  padding: 0 var(--s4);
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-block-end: 1px solid var(--line);
+}
+
+.waifu-tabs::-webkit-scrollbar { display: none; }
+
+.waifu-tab {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 40px;
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-2);
+  font: 500 13px var(--font-ui);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--d-fast);
+}
+
+.waifu-tab:hover,
+.waifu-tab[aria-selected="true"] {
+  color: var(--text);
+}
+
+/* Forced-colors safe underline drawn with border on pseudo-element */
+.waifu-tab::after {
+  content: "";
+  position: absolute;
+  inset: auto var(--s3) 0;
+  border-block-end: 2px solid transparent;
+  transform: scaleX(0);
+  transition: transform var(--d-base) var(--ease-settle), border-color var(--d-fast);
+}
+
+.waifu-tab:hover::after {
+  border-block-end-color: var(--accent-line);
+  transform: scaleX(1);
+}
+
+.waifu-tab[aria-selected="true"]::after {
+  border-block-end-color: var(--accent);
+  transform: scaleX(1);
+}
+
+.waifu-tab-n {
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font: 600 10.5px var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.waifu-tab[aria-selected="true"] .waifu-tab-n {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ── Tab Panels (no padding/borders directly on [role="tabpanel"]) ─── */
+.waifu-panels {
+  position: relative;
+  flex: 1;
+  min-block-size: 0;
+  display: grid;
+}
+
+.waifu-panel {
+  grid-area: 1 / 1;
+  min-block-size: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.waifu-panel[hidden] {
+  display: none;
+}
+
+.waifu-panel-inner {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+}
+
+/* ── Shared Buttons, Chips, Toolbar, Focus ──────────────────────────── */
+.waifu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-inline-size: 24px;
+  min-block-size: 30px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font: 500 12.5px var(--font-ui);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--d-fast), background-color var(--d-fast), transform var(--d-fast) var(--ease-snap);
+}
+
+.waifu-btn:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  transform: translateY(-1px);
+}
+
+.waifu-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+
+.waifu-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.waifu-btn.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.waifu-btn.is-danger {
+  background: color-mix(in oklab, var(--hp) 16%, var(--surface-2));
+  border-color: color-mix(in oklab, var(--hp) 55%, transparent);
+  color: var(--hp);
+}
+
+.waifu-btn.is-sm {
+  min-block-size: 26px;
+  padding: 0 8px;
+  font-size: 11.5px;
+}
+
+.waifu-window :is(button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.waifu-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.waifu-toolbar-tools {
+  flex: 0 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  margin-inline-start: auto;
+}
+
+.waifu-search {
+  flex: 1 1 200px;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-block-size: 32px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  color: var(--text-3);
+}
+
+.waifu-search:focus-within {
+  border-color: var(--accent-line);
+}
+
+.waifu-search input {
+  flex: 1;
+  min-inline-size: 0;
+  block-size: 30px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: 13px var(--font-ui);
+  box-shadow: none;
+}
+
+.waifu-search input:focus {
+  outline: none;
+}
+
+.waifu-filters {
+  display: flex;
+  flex-wrap: wrap;
+  flex-wrap: balance;
+  gap: var(--s1);
+}
+
+.waifu-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-block-size: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface-1);
+  color: var(--text-2);
+  font: 500 12px var(--font-ui);
+  cursor: pointer;
+  transition: border-color var(--d-fast), color var(--d-fast), background-color var(--d-fast);
+}
+
+.waifu-chip[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+/* ── Overview Cards ─────────────────────────────────────────────────── */
+.waifu-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: var(--s3);
+  align-items: start;
+}
+
+.waifu-card {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-1);
+}
+
+.waifu-card.is-wide {
+  grid-column: 1 / -1;
+}
+
+.waifu-card h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin: 0;
+  border: 0;
+  font: 600 13.5px var(--font-display);
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.waifu-kv {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: 5px 0;
+  border-block-end: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.waifu-kv:last-child { border-block-end: 0; }
+.waifu-kv b { color: var(--text); font-weight: 600; text-align: end; }
+
+.waifu-rec-list {
+  display: grid;
+  gap: var(--s2);
+}
+
+.waifu-rec-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+/* ── Status Badges & Tags ───────────────────────────────────────────── */
+.waifu-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: 600 11px var(--font-num);
+  white-space: nowrap;
+}
+
+.waifu-badge.is-critical {
+  border-color: color-mix(in oklab, var(--hp) 55%, transparent);
+  background: color-mix(in oklab, var(--hp) 14%, transparent);
+  color: var(--hp);
+}
+
+.waifu-badge.is-warning {
+  border-color: color-mix(in oklab, var(--warn) 55%, transparent);
+  background: color-mix(in oklab, var(--warn) 14%, transparent);
+  color: var(--warn);
+}
+
+.waifu-badge.is-info {
+  border-color: color-mix(in oklab, var(--temp) 55%, transparent);
+  background: color-mix(in oklab, var(--temp) 14%, transparent);
+  color: var(--temp);
+}
+
+.waifu-badge.is-ok {
+  border-color: color-mix(in oklab, var(--heal) 55%, transparent);
+  background: color-mix(in oklab, var(--heal) 14%, transparent);
+  color: var(--heal);
+}
+
+/* ── Responsive & Sortable Data Tables ──────────────────────────────── */
+.waifu-table-wrap {
+  overflow: auto;
+  max-inline-size: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-1);
+  container-type: inline-size;
+  scrollbar-gutter: stable;
+}
+
+.waifu-table {
+  inline-size: 100%;
+  min-inline-size: 620px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.waifu-table caption {
+  padding: 8px 12px;
+  text-align: start;
+  font: 600 11px var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: var(--surface-1);
+  border-block-end: 1px solid var(--line);
+}
+
+.waifu-table thead th {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: 600 11.5px var(--font-ui);
+  text-align: start;
+  border-block-end: 1px solid var(--line-strong);
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+.waifu-table thead th:has(> button) {
+  padding: 0;
+}
+
+.waifu-table thead th > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  inline-size: 100%;
+  min-block-size: 32px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.waifu-table thead th > button:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.waifu-sort-icon {
+  opacity: 0.35;
+  font-size: 10px;
+}
+
+.waifu-table thead th[aria-sort] .waifu-sort-icon {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.waifu-table thead th[aria-sort="descending"] .waifu-sort-icon {
+  transform: rotate(180deg);
+}
+
+.waifu-table tbody tr {
+  transition: background-color var(--d-fast);
+}
+
+.waifu-table tbody tr:hover {
+  background: color-mix(in oklab, var(--accent) 5%, transparent);
+}
+
+.waifu-table tbody tr[hidden] {
+  display: none;
+}
+
+.waifu-table tbody th,
+.waifu-table tbody td {
+  padding: 9px 10px;
+  border-block-end: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.waifu-table tbody th {
+  text-align: start;
+  font-weight: 600;
+}
+
+.waifu-table tbody tr:last-child :is(th, td) {
+  border-block-end: 0;
+}
+
+.waifu-cell-stack {
+  display: grid;
+  gap: 4px;
+  min-inline-size: 0;
+}
+
+.waifu-ellipsis {
+  max-inline-size: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waifu-mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.waifu-sublist {
+  display: grid;
+  gap: 4px;
+  margin-block-start: 4px;
+}
+
+.waifu-asset-pill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-0);
+  font-size: 11.5px;
+}
+
+.waifu-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.waifu-select {
+  max-inline-size: 240px;
+  min-block-size: 28px;
+  padding: 2px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-0);
+  color: var(--text);
+  font: 12px var(--font-ui);
+}
+
+/* ── Report Preview ─────────────────────────────────────────────────── */
+.waifu-report-pre {
+  margin: 0;
+  padding: var(--s3);
+  max-block-size: 420px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-0);
+  color: var(--text);
+  font: 12px/1.55 var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.waifu-empty {
+  margin: var(--s5) auto;
+  max-inline-size: 42ch;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.waifu-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.waifu-section-head h2 {
+  margin: 0;
+  border: 0;
+  font: 600 15px var(--font-display);
+  color: var(--text);
+}
+
+/* Scrollbars matching AIM */
+.waifu-window ::-webkit-scrollbar { inline-size: 10px; block-size: 10px; }
+.waifu-window ::-webkit-scrollbar-track,
+.waifu-window ::-webkit-scrollbar-corner { background: transparent; }
+.waifu-window ::-webkit-scrollbar-thumb {
+  min-block-size: 40px;
+  background: var(--line-strong);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 99px;
+}
+.waifu-window ::-webkit-scrollbar-thumb:hover { background: var(--accent-line); border-width: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .waifu-window *,
+  .waifu-window *::before,
+  .waifu-window *::after {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}
