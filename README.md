@@ -2,12 +2,14 @@
 
 # WAIFU: World Audit & Integrity
 
-**Diagnostic report workspace and safe auto-fix toolkit for Foundry VTT v14+** — audit heavy multi-level scenes, broken `@UUID` references, bloated world settings, and orphaned module flags with inline SVG charts and exportable reports.
+**Diagnostic report workspace and safe auto-fix toolkit for Foundry VTT v14+**
 
-[![GitHub Release](https://img.shields.io/github/v/release/TacticalOtaku/WAIFU?style=flat-square&color=b8860b)](https://github.com/TacticalOtaku/WAIFU/releases/latest)
-[![Release Workflow](https://github.com/TacticalOtaku/WAIFU/actions/workflows/release.yml/badge.svg)](https://github.com/TacticalOtaku/WAIFU/actions/workflows/release.yml)
-[![Foundry VTT](https://img.shields.io/badge/Foundry%20VTT-v14-ff6400?style=flat-square)](https://foundryvtt.com/)
-[![Languages](https://img.shields.io/badge/Languages-EN%20%7C%20RU-2e7d32?style=flat-square)](lang/)
+Inspect heavy multi-level scenes, broken `@UUID` references, bloated world settings, and orphaned module flags with inline SVG charts and exportable reports.
+
+[![Release](https://img.shields.io/github/v/release/TacticalOtaku/WAIFU?style=flat-square&label=Release&color=b8860b)](https://github.com/TacticalOtaku/WAIFU/releases/latest)
+[![Release Workflow](https://img.shields.io/github/actions/workflow/status/TacticalOtaku/WAIFU/release.yml?style=flat-square&label=Release%20CI)](https://github.com/TacticalOtaku/WAIFU/actions/workflows/release.yml)
+[![Foundry VTT](https://img.shields.io/badge/Foundry_VTT-v14-ff6400?style=flat-square)](https://foundryvtt.com/)
+[![Languages](https://img.shields.io/badge/Languages-EN_%7C_RU-2e7d32?style=flat-square)](lang/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3b82f6?style=flat-square)](module.json)
 
 [Installation](#installation) · [Opening WAIFU](#opening-waifu) · [Workspace](#workspace) · [Diagnostics & Auto-Fix](#diagnostics--auto-fix) · [Reports & Charts](#reports--charts) · [Settings & API](#settings--api) · [Development](#development)
@@ -16,28 +18,25 @@
 
 ---
 
-**WAIFU** inspects your entire Foundry VTT world in seconds, scores overall world integrity (`0–100%`), visualizes bottlenecks with built-in SVG charts and statistical distributions, and offers **safe, reversible auto-fixes** with optional JSON backups before cleanup.
-
-> [!NOTE]
-> Built specifically for **Foundry VTT v14** (including multi-level `Scene.levels`, `ApplicationV2`, and **Loreframe** journal blocks) with full **English** and **Русский** localization. Designed in the visual language of **AIM: Actor Window** (`Night` & `Parchment` themes, 6 accent palettes, and bundled **Onest Variable** typography).
-
----
-
 ## Installation
 
-### Via Manifest URL (Recommended)
-
-In Foundry VTT Setup → **Add-on Modules** → **Install Module**, paste the Manifest URL:
+In Foundry VTT (**Setup → Add-on Modules → Install Module**), paste the **Manifest URL**:
 
 ```text
 https://github.com/TacticalOtaku/WAIFU/releases/latest/download/module.json
 ```
 
-### Manual / Offline Archive
+**Requirements:** Foundry VTT **14** (system-agnostic; zero runtime dependencies).  
+**Manual install:** Download `waifu-v<version>.zip` from [GitHub Releases](https://github.com/TacticalOtaku/WAIFU/releases/latest), extract it into `Data/modules/waifu`, and enable **WAIFU: World Audit & Integrity** under **Manage Modules**.
 
-1. Download `waifu-v<version>.zip` from [GitHub Releases](https://github.com/TacticalOtaku/WAIFU/releases/latest).
-2. Extract it into your Foundry `Data/modules/waifu` directory.
-3. Launch your world and enable **WAIFU: World Audit & Integrity** under **Manage Modules**.
+---
+
+## Overview
+
+**WAIFU** inspects your entire Foundry VTT world in seconds, scores overall world integrity (`0–100%`), visualizes bottlenecks with built-in SVG charts and statistical distributions, and offers **safe, reversible auto-fixes** with optional JSON backups before cleanup.
+
+> [!NOTE]
+> Built specifically for **Foundry VTT v14** (including multi-level `Scene.levels`, `ApplicationV2`, and **Loreframe** journal blocks) with full **English** and **Русский** localization. Designed in the visual language of **AIM: Actor Window** (`Night` & `Parchment` themes, 6 accent palettes, and bundled **Onest Variable** typography).
 
 ---
 
@@ -173,9 +172,9 @@ const md = waifu.exportReport(report, "markdown", "ru");
 
 ## Development
 
-Requires **Node.js ≥ 24** (`node --test` and zero runtime dependencies):
+Requires **Node.js ≥ 24** (`node --test` and zero runtime dependencies). Tagged releases (`v*`) run checks and publish the ZIP archive and `module.json` via [release.yml](.github/workflows/release.yml).
 
-```sh
+```bash
 npm run check     # Static manifest, i18n key parity (en/ru), and syntax checks + unit tests
 npm run deploy    # Copy module runtime files (including assets/fonts) into local Foundry Data/modules/waifu
 npm run package   # Build dist/waifu-v<version>.zip and dist/module.json
@@ -184,7 +183,9 @@ npm run release   # Run checks and build release archive
 
 ---
 
-## Author & License
+## Feedback & License
 
-Created by [TacticalOtaku](https://github.com/TacticalOtaku) · Licensed under the [MIT License](module.json).
+Bug reports and feature suggestions are welcome via [GitHub Issues](https://github.com/TacticalOtaku/WAIFU/issues).
+
+Created by [TacticalOtaku](https://github.com/TacticalOtaku) · Licensed under the **MIT License** ([module.json](module.json)).  
 Bundled UI typeface: [Onest Variable](assets/fonts/OFL-onest.txt) (`SIL Open Font License 1.1`).
