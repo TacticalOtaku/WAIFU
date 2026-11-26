@@ -57,15 +57,16 @@ Any **GM** user can open the diagnostic dashboard in four ways:
 
 ## Workspace
 
-WAIFU uses a dedicated **report-first workspace** (`Masthead` + `Report Outline Sidebar` + `Analytical Viewport`), responsive down to narrow windows (`< 860 px`):
+WAIFU uses a **3-level Hub-and-Drilldown workspace** (`Compact Masthead` → `6-Window Bento Hub` → `In-Place Drill-Downs & Level 2 Drawers`), automatically collapsing into stacked quick-summary cards in narrow windows (`< 860 px`):
 
-| Section | Purpose |
+| Sub-Window / Level 1 View | Summary on Hub (Level 0) & Full Drill-Down Details (Level 1 / 2) |
 | --- | --- |
-| **Executive Overview** | 4 executive KPI cards, Health Score penalty breakdown, Health Trend Sparkline & JSON Report Comparison, World Maintenance alerts (Chat/Combats/404 Media), Domain Severity Matrix, Texture Format Donut, Heaviest Scenes, Top Storage Namespaces, `@UUID` Integrity Donut, Scene Metric Distributions (`Min / Avg / Median / P95 / Max`), and prioritized 1-click Auto-Fixes with Dry-Run previews. |
-| **Scenes & Media** | Texture format mix bar, Megapixels vs Limit chart, file byte weights, 404 missing media detection, search/filter chips (`All`, `Issues Only`, `PNG / Raster`, `Walls / Lights / Anim`, `404 / Heavy Size`, `Ignored`), sortable scene table, canvas focus/ping, orphaned token cleanup, near-duplicate wall deduplication, and per-asset or batch WebP conversion (skipping larger outputs). |
-| **`@UUID` Integrity** | Link validity bar, top offending documents chart, extended coverage (`JournalEntry`, `Loreframe`, `Actor`, `Item`, `RollTable`, `Macro`, `Scene`), `#anchor` verification, filters, ranked fuzzy replacement selector, manual catalog picker, optional `{label}` sync, 1-click replace, and safe unlink. |
-| **Settings & Flags** | Database allocation donut & reclaimable space bar, top namespaces chart, World Settings & Document Flags tables with interactive JSON inspection, per-document flag deletion, backup snapshots & **JSON Restore**, ignore rules, and Chat/Combat maintenance. |
-| **Full Report** | Interactive switcher between **Visual Report (Charts)**, **Markdown**, and **Journal Preview**, plus exports to `.html`, `.md`, `.json`, clipboard, and Foundry `JournalEntry`. |
+| **1 · Integrity Score & Trend** | 270° health gauge, score deduction progress bar, scan sparkline & comparison CTA → full Health Trend chart with delta pills, itemized penalty breakdown, Domain Severity Matrix table, and Scene Metric Distributions (`Min / Avg / Median / P95 / Max`). |
+| **2 · Auto-Fix & Maintenance** | Top 3 prioritized safe fixes with 1-click triggers and maintenance alert badges → interactive **Dry-Run Queue** with per-fix checkboxes, default JSON backup checkbox, plus Chat Log archiving, Stale Combats cleanup, Non-Scene 404 Media, Unused `waifu-optimized`, and Ignore Rules manager. |
+| **3 · Scenes & Media** | Clean vs problematic scene KPIs, WebP vs PNG mix bar, top 2 heaviest scenes (click directly opens the **Level 2 Scene Drawer**) → resolution chart (`MP` vs limit), search/filter chips, sortable `Scene.levels` & `Tile` table, canvas focus/ping, orphaned token/wall cleanup, and per-asset/batch WebP conversion. |
+| **4 · `@UUID` Integrity** | Valid link percentage bar and top offending docs → integrity/top-docs charts, extended coverage (`JournalEntry`, `Loreframe`, `Actor`, `Item`, `RollTable`, `Macro`, `Scene`), `#anchor` verification, filters, fuzzy selector, manual catalog picker, optional `{label}` sync, 1-click replace, and safe unlink. |
+| **5 · Database Storage & Flags** | Reclaimable DB footprint bar and top namespaces → allocation donut, top namespaces chart, sortable World Settings & Document Flags tables with interactive JSON inspection, per-document flag deletion, JSON Backup & **JSON Restore**, and Chat/Combat maintenance. |
+| **6 · Report Studio & Thresholds** | Quick threshold summary tiles and `.html` / `.md` / `.json` / `Journal` export strip → **Report Preview** switcher (**Visual**, **Markdown**, **Journal**) paired side-by-side with inline editing for all **15 audit thresholds** and toggles. |
 
 ### Themes & Typography
 

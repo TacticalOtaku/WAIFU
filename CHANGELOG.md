@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0
+
+### Added
+
+- **Central Hub & 3-Level Drill-Down Architecture:** Replaced the static sidebar layout with a compact masthead and a 6-card Bento Central Hub (`1 · Integrity Score & Trend`, `2 · Auto-Fix & Maintenance`, `3 · Scenes & Media`, `4 · @UUID Links & Anchors`, `5 · Database Storage & Flags`, `6 · Report, Export & Thresholds`) where every summary window drills down in-place into detailed analytics with a `← All Windows` breadcrumb bar and quick-jump pills.
+- **Interactive Dry-Run Auto-Fix Queue:** Dedicated Fix Center view with per-category checkboxes, optional automatic JSON backup toggle (`Download JSON backup before deleting`), and consolidated batch execution alongside Chat Log, Stale Combats, Non-Scene 404 Media, Unused `waifu-optimized`, and Ignore Rules maintenance actions.
+- **Level 2 Slide-Over Scene Inspector Drawer:** Opens directly from Hub scene cards or the Scenes table to inspect per-level `Scene.levels` backgrounds/foregrounds and `Tiles`, trigger 1-click WebP conversion, clean walls, disable animated lights, remove orphaned tokens, or focus on the canvas without losing table filters.
+- **Inline 15-Threshold Audit Studio:** Edit all 15 audit thresholds and AIM switch toggles right beside live Visual, Markdown, and Journal report previews (`Report Studio`).
+- **Compact Hub Visualizations:** Added micro-sparkline (`renderCompactSparklineSvg`), segmented penalty bar (`renderCompactBarHtml`), trend chart gridlines, and narrow (`< 860 px`) stacked list navigation.
+
+### Changed
+
+- **AIM Visual Tokens & Unified Typography:** Updated Night/Parchment surface ladders, contrast-safe `*-soft` badge fills inside nested rows, unified bi-script `--font-display: var(--font-ui)` (`Onest Variable`), and compositor-only `data-motion` animations (`full` / `reduced` / `off`).
+
 ## 1.1.0
 
 ### Added

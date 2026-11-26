@@ -2,26 +2,95 @@
   <div class="waifu-sr-only" role="status" aria-live="polite" data-waifu-status>{{statusMessage}}</div>
 
   <div class="waifu-progress" data-waifu-progress {{#unless busy}}hidden{{/unless}}>
+    <span class="waifu-mono">
+      <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+      <span data-waifu-progress-label>{{progressLabel}}</span>
+    </span>
     <div class="waifu-progress-bar">
       <div class="waifu-progress-fill" data-waifu-progress-fill style="width:{{progressPercent}}%"></div>
     </div>
-    <span class="waifu-mono waifu-ellipsis" data-waifu-progress-label>{{progressLabel}}</span>
+    <span class="waifu-mono" data-waifu-progress-pct>{{progressPercent}}%</span>
     <button type="button" class="waifu-btn is-sm is-danger" data-action="cancelOperation">
       {{localize "Cancel"}}
     </button>
   </div>
 
+  <nav
+    class="waifu-crumb-bar"
+    aria-label="{{localize 'WAIFU.Nav.BreadcrumbLabel'}}"
+    {{#unless isDrillDown}}hidden{{/unless}}
+  >
+    <div class="waifu-crumb-left">
+      <button type="button" class="waifu-btn is-sm" data-action="goHub">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+        <span>{{localize "WAIFU.Nav.BackToHub"}}</span>
+      </button>
+      <div class="waifu-crumb-trail">
+        <button type="button" class="waifu-crumb-root" data-action="goHub">
+          {{localize "WAIFU.Nav.RootCrumb"}}
+        </button>
+        <span class="waifu-crumb-sep" aria-hidden="true">›</span>
+        <span class="waifu-crumb-active">{{activeDomainTitle}}</span>
+      </div>
+    </div>
+
+    <div class="waifu-pill-nav" role="tablist" aria-label="{{localize 'WAIFU.Nav.DomainSwitcher'}}">
+      {{#each drillPills}}
+        <button
+          type="button"
+          role="tab"
+          id="waifu-pill-{{this.id}}"
+          class="waifu-pill-tab"
+          data-action="selectTab"
+          data-tab="{{this.id}}"
+          aria-selected="{{#if this.active}}true{{else}}false{{/if}}"
+          tabindex="{{#if this.active}}0{{else}}-1{{/if}}"
+        >
+          <span>{{this.shortLabel}}</span>
+          {{#if this.hasCount}}
+            <span class="waifu-pill-count">• {{this.count}}</span>
+          {{/if}}
+        </button>
+      {{/each}}
+    </div>
+  </nav>
+
   <div class="waifu-panels">
     <section
       class="waifu-panel"
-      role="tabpanel"
-      id="waifu-panel-overview"
-      aria-labelledby="waifu-tab-overview"
-      data-panel="overview"
-      {{#unless isOverviewActive}}hidden{{/unless}}
+      role="region"
+      id="waifu-panel-hub"
+      data-panel="hub"
+      {{#unless isHubActive}}hidden{{/unless}}
     >
       <div class="waifu-panel-inner">
-        {{> "modules/waifu/templates/partials/tab-overview.hbs"}}
+        {{> "modules/waifu/templates/partials/view-hub.hbs"}}
+      </div>
+    </section>
+
+    <section
+      class="waifu-panel"
+      role="tabpanel"
+      id="waifu-panel-health"
+      aria-labelledby="waifu-pill-health"
+      data-panel="health"
+      {{#unless isHealthActive}}hidden{{/unless}}
+    >
+      <div class="waifu-panel-inner">
+        {{> "modules/waifu/templates/partials/view-health.hbs"}}
+      </div>
+    </section>
+
+    <section
+      class="waifu-panel"
+      role="tabpanel"
+      id="waifu-panel-autofix"
+      aria-labelledby="waifu-pill-autofix"
+      data-panel="autofix"
+      {{#unless isAutofixActive}}hidden{{/unless}}
+    >
+      <div class="waifu-panel-inner">
+        {{> "modules/waifu/templates/partials/view-autofix.hbs"}}
       </div>
     </section>
 
@@ -29,12 +98,12 @@
       class="waifu-panel"
       role="tabpanel"
       id="waifu-panel-scenes"
-      aria-labelledby="waifu-tab-scenes"
+      aria-labelledby="waifu-pill-scenes"
       data-panel="scenes"
       {{#unless isScenesActive}}hidden{{/unless}}
     >
       <div class="waifu-panel-inner">
-        {{> "modules/waifu/templates/partials/tab-scenes.hbs"}}
+        {{> "modules/waifu/templates/partials/view-scenes.hbs"}}
       </div>
     </section>
 
@@ -42,12 +111,12 @@
       class="waifu-panel"
       role="tabpanel"
       id="waifu-panel-uuids"
-      aria-labelledby="waifu-tab-uuids"
+      aria-labelledby="waifu-pill-uuids"
       data-panel="uuids"
       {{#unless isUuidsActive}}hidden{{/unless}}
     >
       <div class="waifu-panel-inner">
-        {{> "modules/waifu/templates/partials/tab-uuids.hbs"}}
+        {{> "modules/waifu/templates/partials/view-uuids.hbs"}}
       </div>
     </section>
 
@@ -55,12 +124,12 @@
       class="waifu-panel"
       role="tabpanel"
       id="waifu-panel-storage"
-      aria-labelledby="waifu-tab-storage"
+      aria-labelledby="waifu-pill-storage"
       data-panel="storage"
       {{#unless isStorageActive}}hidden{{/unless}}
     >
       <div class="waifu-panel-inner">
-        {{> "modules/waifu/templates/partials/tab-storage.hbs"}}
+        {{> "modules/waifu/templates/partials/view-storage.hbs"}}
       </div>
     </section>
 
@@ -68,13 +137,15 @@
       class="waifu-panel"
       role="tabpanel"
       id="waifu-panel-report"
-      aria-labelledby="waifu-tab-report"
+      aria-labelledby="waifu-pill-report"
       data-panel="report"
       {{#unless isReportActive}}hidden{{/unless}}
     >
       <div class="waifu-panel-inner">
-        {{> "modules/waifu/templates/partials/tab-report.hbs"}}
+        {{> "modules/waifu/templates/partials/view-report.hbs"}}
       </div>
     </section>
   </div>
+
+  {{> "modules/waifu/templates/partials/scene-drawer.hbs"}}
 </main>

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildReportCharts,
+  renderCompactBarHtml,
+  renderCompactSparklineSvg,
   renderDonutChartHtml,
   renderHealthGaugeSvg,
   renderHealthTrendSvg,
@@ -303,4 +305,16 @@ test("SVG chart helpers handle zero-data and XSS-escaped labels cleanly", () => 
   assert.match(idleGauge, /—/);
   assert.doesNotMatch(idleGauge, /%/);
   assert.match(idleGauge, /PENDING/);
+
+  const compactBar = renderCompactBarHtml(
+    [{ label: "<bad>", value: 20, tone: "warning" }],
+    { totalMax: 100, ariaLabel: "Penalties" }
+  );
+  assert.match(compactBar, /waifu-segbar/);
+  assert.match(compactBar, /width:20\.00%/);
+  assert.doesNotMatch(compactBar, /<bad>/);
+
+  const spark = renderCompactSparklineSvg([], 74);
+  assert.match(spark, /waifu-spark-svg/);
+  assert.match(spark, /<polyline/);
 });

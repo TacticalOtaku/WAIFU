@@ -1,0 +1,132 @@
+{{#if drawerScene}}
+  <div class="waifu-drawer-backdrop" data-action="closeDrawerBackdrop">
+    <aside class="waifu-drawer" role="dialog" aria-modal="true" aria-label="{{drawerScene.name}}">
+      <div class="waifu-drawer-head">
+        <div class="waifu-subwin-titlegroup">
+          <div class="waifu-subwin-icon is-{{drawerScene.severity}}" aria-hidden="true">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div class="waifu-subwin-titles">
+            <h2 class="waifu-subwin-title">{{drawerScene.name}}</h2>
+            <span class="waifu-subwin-sub">
+              {{localize "WAIFU.Scenes.ColScore"}}: {{drawerScene.heavinessScore}} • {{drawerScene.levelsCount}} {{localize "WAIFU.Stats.Levels"}} • {{drawerScene.tilesCount}} {{localize "WAIFU.Stats.Tiles"}}
+            </span>
+          </div>
+        </div>
+        <button type="button" class="waifu-ibtn" data-action="closeSceneDrawer" aria-label="{{localize 'Close'}}">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="waifu-row-actions">
+        <button type="button" class="waifu-btn is-sm" data-action="focusSceneCanvas" data-scene-id="{{drawerScene.id}}">
+          <i class="fa-solid fa-crosshairs" aria-hidden="true"></i> {{localize "WAIFU.Scenes.BtnFocusCanvas"}}
+        </button>
+        <button type="button" class="waifu-btn is-sm" data-action="openDocumentSheet" data-uuid="{{drawerScene.uuid}}">
+          {{localize "WAIFU.Scenes.BtnOpenScene"}}
+        </button>
+        <button
+          type="button"
+          class="waifu-btn is-sm"
+          data-action="toggleIgnoreItem"
+          data-ignore-category="scenes"
+          data-ignore-id="{{drawerScene.id}}"
+        >
+          <i class="fa-solid {{#if drawerScene.isIgnored}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
+          {{#if drawerScene.isIgnored}}{{localize "WAIFU.Ignore.Unignore"}}{{else}}{{localize "WAIFU.Ignore.Ignore"}}{{/if}}
+        </button>
+      </div>
+
+      <span class="waifu-drawer-section-label">{{localize "WAIFU.Drawer.AssetsTitle"}}</span>
+
+      <div class="waifu-mini-rows">
+        {{#each drawerScene.drawerAssets}}
+          <div class="waifu-drawer-asset {{#if this.hasIssue}}is-issue{{/if}}">
+            <div class="waifu-mini-row-left">
+              <strong class="waifu-mini-row-title">{{this.slotHeader}}</strong>
+              <span class="waifu-mono waifu-ellipsis" title="{{this.src}}">{{this.detailLine}}</span>
+            </div>
+            {{#if this.canAutoConvert}}
+              <button
+                type="button"
+                class="waifu-btn is-sm is-primary"
+                data-action="convertSingleAsset"
+                data-scene-id="{{../drawerScene.id}}"
+                data-asset-src="{{this.src}}"
+                {{#if @root.busy}}disabled{{/if}}
+              >{{localize "WAIFU.Scenes.BtnConvertWebp"}}</button>
+            {{else if this.isMissing}}
+              <span class="waifu-badge is-critical">404</span>
+            {{else if this.isWebp}}
+              <span class="waifu-badge is-ok">WebP OK</span>
+            {{else}}
+              <span class="waifu-badge">{{this.ext}}</span>
+            {{/if}}
+          </div>
+        {{else}}
+          <p class="waifu-empty">{{localize "WAIFU.Scenes.Empty"}}</p>
+        {{/each}}
+      </div>
+
+      <span class="waifu-drawer-section-label">{{localize "WAIFU.Drawer.GeometryTitle"}}</span>
+
+      <div class="waifu-drawer-geogrid">
+        <div class="waifu-drawer-geocard">
+          <span>{{localize "WAIFU.Scenes.ColWalls"}}</span>
+          <b>{{drawerScene.wallsCount}}{{#if drawerScene.redundantWallIds.length}} ({{drawerScene.redundantWallIds.length}} dup){{/if}}</b>
+          {{#if drawerScene.redundantWallIds.length}}
+            <button
+              type="button"
+              class="waifu-btn is-sm"
+              data-action="dedupeSceneWalls"
+              data-scene-id="{{drawerScene.id}}"
+              {{#if busy}}disabled{{/if}}
+            >{{localize "WAIFU.Scenes.BtnDedupeWalls"}}</button>
+          {{else if drawerScene.nearDuplicateWallIds.length}}
+            <button
+              type="button"
+              class="waifu-btn is-sm"
+              data-action="dedupeNearWalls"
+              data-scene-id="{{drawerScene.id}}"
+              {{#if busy}}disabled{{/if}}
+            >{{localize "WAIFU.Scenes.BtnNearWalls"}}</button>
+          {{else}}
+            <span class="waifu-badge is-ok">{{localize "WAIFU.Severity.ok"}}</span>
+          {{/if}}
+        </div>
+
+        <div class="waifu-drawer-geocard">
+          <span>{{localize "WAIFU.Stats.AnimLights"}}</span>
+          <b>{{drawerScene.animatedLightIds.length}} / {{drawerScene.lightsCount}}</b>
+          {{#if drawerScene.animatedLightIds.length}}
+            <button
+              type="button"
+              class="waifu-btn is-sm"
+              data-action="disableSceneLightAnims"
+              data-scene-id="{{drawerScene.id}}"
+              {{#if busy}}disabled{{/if}}
+            >{{localize "WAIFU.Scenes.BtnStopLightAnims"}}</button>
+          {{else}}
+            <span class="waifu-badge is-ok">{{localize "WAIFU.Severity.ok"}}</span>
+          {{/if}}
+        </div>
+
+        <div class="waifu-drawer-geocard">
+          <span>{{localize "WAIFU.Scenes.OrphanTokensShort"}}</span>
+          <b>{{drawerScene.orphanedTokenIds.length}}</b>
+          {{#if drawerScene.orphanedTokenIds.length}}
+            <button
+              type="button"
+              class="waifu-btn is-sm is-danger"
+              data-action="cleanOrphanTokens"
+              data-scene-id="{{drawerScene.id}}"
+              {{#if busy}}disabled{{/if}}
+            >{{localize "WAIFU.Storage.BtnDelete"}} ({{drawerScene.orphanedTokenIds.length}})</button>
+          {{else}}
+            <span class="waifu-badge is-ok">{{localize "WAIFU.Severity.ok"}}</span>
+          {{/if}}
+        </div>
+      </div>
+    </aside>
+  </div>
+{{/if}}

@@ -1,10 +1,10 @@
 {{#if hasReport}}
   <div class="waifu-analytics-strip">
     <section class="waifu-card">
-      <h3>
-        <span>{{localize "WAIFU.Charts.UuidIntegrity"}}</span>
-        <span class="waifu-mono">{{stats.uuidStats.validPercent}}% OK</span>
-      </h3>
+      <div class="waifu-card-head">
+        <h3>{{localize "WAIFU.Charts.UuidIntegrity"}}</h3>
+        <span class="waifu-mini-metric is-ok">{{stats.uuidStats.validPercent}}% OK</span>
+      </div>
       {{{charts.uuidBarHtml}}}
       <div class="waifu-inline-stats">
         <span><b>{{uuids.journalCount}}</b> {{localize "WAIFU.Uuids.FilterJournals"}}</span>
@@ -15,10 +15,10 @@
     </section>
 
     <section class="waifu-card">
-      <h3>
-        <span>{{localize "WAIFU.Charts.UuidTopDocs"}}</span>
+      <div class="waifu-card-head">
+        <h3>{{localize "WAIFU.Charts.UuidTopDocs"}}</h3>
         <span class="waifu-mono">{{uuids.brokenCount}} / {{uuids.totalScanned}}</span>
-      </h3>
+      </div>
       {{{charts.uuidTopDocsSvg}}}
     </section>
   </div>
@@ -35,18 +35,6 @@
       placeholder="{{localize 'WAIFU.Uuids.SearchPlaceholder'}}"
       data-filter-input="uuids"
     >
-  </div>
-
-  <div class="waifu-filters" role="group" aria-label="{{localize 'WAIFU.Tabs.Uuids'}}">
-    {{#each uuidFilterChips}}
-      <button
-        type="button"
-        class="waifu-chip"
-        data-action="setUuidFilter"
-        data-filter="{{this.id}}"
-        aria-pressed="{{#if this.active}}true{{else}}false{{/if}}"
-      >{{this.label}}</button>
-    {{/each}}
   </div>
 
   <div class="waifu-toolbar-tools">
@@ -75,6 +63,18 @@
       {{localize "WAIFU.Uuids.BatchUnlinkNoMatch"}} ({{uuidsUnmatchedCount}})
     </button>
   </div>
+</div>
+
+<div class="waifu-filters" role="group" aria-label="{{localize 'WAIFU.Tabs.Uuids'}}">
+  {{#each uuidFilterChips}}
+    <button
+      type="button"
+      class="waifu-chip"
+      data-action="setUuidFilter"
+      data-filter="{{this.id}}"
+      aria-pressed="{{#if this.active}}true{{else}}false{{/if}}"
+    >{{this.label}}</button>
+  {{/each}}
 </div>
 
 {{#if uuidRows.length}}

@@ -1,15 +1,21 @@
-/* WAIFU: World Audit & Integrity — Polished Workspace Stylesheet.
-   Night/Parchment theme tokens, AIM typography (Onest Variable + WAIFU Display),
-   sticky accessible tables, and unified DialogV2 styling. */
+/* WAIFU: World Audit & Integrity — Hub & Drill-Down Workspace Stylesheet
+   Grounded in AIM "Nocturne & Parchment": 6-Window Bento Hub -> In-Place Drill-Downs -> Level 2 Drawers/Modals. */
 
 .waifu-root {
+  box-sizing: border-box;
   color: var(--text);
   font-family: var(--font-ui);
   font-size: var(--t-base);
-  line-height: 1.5;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+.waifu-root *,
+.waifu-root *::before,
+.waifu-root *::after {
+  box-sizing: border-box;
 }
 
 .waifu-window {
@@ -23,7 +29,7 @@
 :where(.waifu-root) :is(h1, h2, h3, h4) {
   border: 0;
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   text-wrap: balance;
 }
 
@@ -45,7 +51,7 @@
   font-family: var(--font-ui);
 }
 
-.waifu-root :is(.waifu-toc-item, .waifu-link-btn, .waifu-chip, .waifu-ibtn, .waifu-swatch, .waifu-table thead th > button):hover {
+.waifu-root :is(.waifu-chip, .waifu-ibtn, .waifu-swatch, .waifu-pill-tab, .waifu-switch, .waifu-table thead th > button):hover {
   box-shadow: none;
 }
 
@@ -55,8 +61,8 @@
 }
 
 .waifu-root :is(input[type="text"], input[type="number"], input[type="search"], select, textarea) {
-  min-block-size: 2rem;
-  padding: 0.3rem 0.55rem;
+  min-block-size: var(--ctrl-h);
+  padding: 0.25rem 0.55rem;
   border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
   background: var(--surface-0);
@@ -89,30 +95,22 @@
   color: var(--text-2);
 }
 
+/* Central Hub + In-Place Drill-Down Shell */
 .waifu-window > .window-content {
   position: relative;
   display: grid;
-  grid-template-columns: 256px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    "masthead masthead"
-    "sidebar main";
+    "masthead"
+    "main";
   gap: 0;
   padding: 0;
   overflow: hidden;
   background: var(--surface-0);
 }
 
-.waifu-window[data-layout="narrow"] > .window-content {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr);
-  grid-template-areas:
-    "masthead"
-    "sidebar"
-    "main";
-}
-
-/* Unified styling for DialogV2 modal windows spawned by WAIFU */
+/* Unified DialogV2 styling */
 .waifu-dialog {
   background: var(--surface-1);
   border: 1px solid var(--line-strong);
@@ -174,7 +172,7 @@
   border: 0;
 }
 
-/* ── Top Report Masthead ────────────────────────────────────────────── */
+/* ── Compact Masthead ───────────────────────────────────────────────── */
 .waifu-masthead {
   grid-area: masthead;
   display: flex;
@@ -182,11 +180,11 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--s3);
-  padding: 0.7rem var(--s4);
+  padding: var(--s3) var(--s4);
   background: var(--surface-1);
   border-block-end: 1px solid var(--line-strong);
   box-shadow: var(--shadow-card);
-  z-index: 4;
+  z-index: 5;
 }
 
 .waifu-masthead-brand {
@@ -207,17 +205,18 @@
   border: 1px solid var(--accent-line);
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .waifu-brand-text {
   min-inline-size: 0;
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 
 .waifu-brand-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--s2);
   min-inline-size: 0;
@@ -240,7 +239,7 @@
   align-items: center;
   gap: 2px 6px;
   font-size: var(--t-xs);
-  color: var(--text-2);
+  color: var(--text-3);
 }
 
 .waifu-dot {
@@ -267,8 +266,8 @@
   display: inline-grid;
   place-items: center;
   flex: none;
-  min-inline-size: 2rem;
-  min-block-size: 2rem;
+  min-inline-size: var(--ctrl-h);
+  min-block-size: var(--ctrl-h);
   padding: 0 0.45rem;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
@@ -297,10 +296,11 @@
   inset-inline-end: -5px;
   padding: 0 4px;
   min-inline-size: 1rem;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   background: var(--warn);
-  color: #161106;
+  color: var(--accent-ink);
   font: 700 0.65rem/1.35 var(--font-num);
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
@@ -312,9 +312,9 @@
   inset-inline-end: 0;
   z-index: 40;
   display: grid;
-  gap: 8px;
-  min-inline-size: 236px;
-  padding: 12px;
+  gap: var(--s2);
+  min-inline-size: 256px;
+  padding: var(--s3);
   background: var(--surface-1);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
@@ -324,10 +324,17 @@
 .waifu-menu[hidden] { display: none; }
 
 .waifu-menu-label {
-  font: 600 0.6875rem var(--font-ui);
+  font: 600 0.65625rem var(--font-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-3);
+}
+
+.waifu-menu-hint {
+  margin: 0;
+  font-size: var(--t-xs);
+  color: var(--text-3);
+  line-height: 1.4;
 }
 
 .waifu-theme-row {
@@ -339,7 +346,7 @@
 .waifu-swatches {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
 }
 
 .waifu-swatch {
@@ -365,304 +372,7 @@
 .waifu-swatch[data-accent-val="frost"] { background: var(--acc-frost); }
 .waifu-swatch[data-accent-val="rose"] { background: var(--acc-rose); }
 
-/* ── Left Report Outline Sidebar ────────────────────────────────────── */
-.waifu-sidebar {
-  grid-area: sidebar;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s3);
-  min-block-size: 0;
-  padding: var(--s3);
-  overflow: auto;
-  scrollbar-gutter: stable;
-  overscroll-behavior: contain;
-  background: var(--surface-0);
-  border-inline-end: 1px solid var(--line);
-}
-
-.waifu-sidebar-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 2px 6px;
-  border: 0;
-  font: 600 0.6875rem var(--font-ui);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-
-.waifu-sidebar-label {
-  font: 600 0.6875rem var(--font-ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-2);
-}
-
-/* Health Ring Gauge Card */
-.waifu-gauge-card {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--surface-1);
-  box-shadow: var(--shadow-card);
-}
-
-.waifu-gauge-card[data-state="critical"] {
-  border-color: color-mix(in oklab, var(--hp) 55%, transparent);
-}
-
-.waifu-gauge-card[data-state="warning"] {
-  border-color: color-mix(in oklab, var(--warn) 45%, transparent);
-}
-
-.waifu-gauge-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s2);
-}
-
-.waifu-gauge-body {
-  display: grid;
-  place-items: center;
-  padding: 2px 0;
-}
-
-.waifu-gauge-svg {
-  display: block;
-}
-
-.waifu-gauge-num {
-  font: 700 1.625rem/1 var(--font-num);
-  font-variant-numeric: tabular-nums;
-  fill: var(--text);
-  letter-spacing: -0.02em;
-}
-
-.waifu-gauge-pct {
-  font: 600 0.8125rem/1 var(--font-num);
-  fill: var(--text-3);
-}
-
-.waifu-gauge-sub {
-  font: 600 0.6rem/1 var(--font-ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.waifu-gauge-pills {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 5px;
-}
-
-/* Vertical Report Section Outline Navigation */
-.waifu-toc-section {
-  display: grid;
-  gap: 2px;
-}
-
-.waifu-toc {
-  display: grid;
-  gap: 4px;
-}
-
-.waifu-toc-item {
-  position: relative;
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 9px;
-  min-block-size: 2.75rem;
-  padding: 7px 10px;
-  border: 1px solid transparent;
-  border-radius: var(--r-md);
-  background: transparent;
-  color: var(--text-2);
-  text-align: start;
-  cursor: pointer;
-  transition: background-color var(--d-fast), border-color var(--d-fast), color var(--d-fast);
-}
-
-.waifu-toc-item:hover {
-  background: var(--surface-1);
-  border-color: var(--line);
-  color: var(--text);
-}
-
-.waifu-toc-item[aria-selected="true"] {
-  background: var(--surface-1);
-  border-color: var(--accent-line);
-  color: var(--text);
-  box-shadow: var(--shadow-card);
-}
-
-/* Non-color active indicator via border on ::before (forced-colors safe) */
-.waifu-toc-item[aria-selected="true"]::before {
-  content: "";
-  position: absolute;
-  inset-block: 7px;
-  inset-inline-start: 0;
-  inline-size: 0;
-  border-inline-start: 3px solid var(--accent);
-}
-
-.waifu-toc-icon {
-  inline-size: 28px;
-  block-size: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  color: var(--text-3);
-  font-size: var(--t-xs);
-}
-
-.waifu-toc-item[aria-selected="true"] .waifu-toc-icon {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.waifu-toc-text {
-  display: grid;
-  min-inline-size: 0;
-  gap: 2px;
-}
-
-.waifu-toc-text strong {
-  font: 600 var(--t-sm)/1.2 var(--font-ui);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.waifu-toc-text small {
-  font: 500 0.7rem/1.15 var(--font-num);
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.waifu-toc-badge {
-  padding: 2px 7px;
-  border-radius: 99px;
-  background: var(--surface-3);
-  color: var(--text-2);
-  font: 600 0.7rem var(--font-num);
-  font-variant-numeric: tabular-nums;
-}
-
-.waifu-toc-badge.is-critical {
-  background: color-mix(in oklab, var(--hp) 18%, transparent);
-  color: var(--hp);
-}
-
-.waifu-toc-badge.is-warning {
-  background: color-mix(in oklab, var(--warn) 18%, transparent);
-  color: var(--warn);
-}
-
-/* Sidebar Threshold Snapshot */
-.waifu-threshold-box {
-  margin-block-start: auto;
-  display: grid;
-  gap: 6px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface-1);
-}
-
-.waifu-link-btn {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: var(--accent);
-  font: 600 0.7rem var(--font-ui);
-  text-transform: none;
-  letter-spacing: 0;
-  cursor: pointer;
-}
-
-.waifu-link-btn:hover { text-decoration: underline; }
-
-.waifu-threshold-list {
-  display: grid;
-  gap: 4px;
-}
-
-.waifu-threshold-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--s2);
-  font-size: var(--t-xs);
-  color: var(--text-3);
-}
-
-.waifu-threshold-row b {
-  color: var(--text-2);
-  font: 600 var(--t-xs) var(--font-num);
-  font-variant-numeric: tabular-nums;
-}
-
-.waifu-threshold-row.is-highlight {
-  padding-block-start: 5px;
-  border-block-start: 1px solid var(--line);
-  color: var(--text-2);
-}
-
-.waifu-threshold-row.is-highlight b {
-  color: var(--warn);
-}
-
-/* Narrow Layout Sidebar Collapse */
-.waifu-window[data-layout="narrow"] .waifu-sidebar {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--s2);
-  overflow: auto hidden;
-  padding: 8px 12px;
-  border-inline-end: 0;
-  border-block-end: 1px solid var(--line);
-}
-
-.waifu-window[data-layout="narrow"] .waifu-gauge-card,
-.waifu-window[data-layout="narrow"] .waifu-threshold-box,
-.waifu-window[data-layout="narrow"] .waifu-sidebar-title,
-.waifu-window[data-layout="narrow"] .waifu-toc-text small {
-  display: none;
-}
-
-.waifu-window[data-layout="narrow"] .waifu-toc-section {
-  flex: 1;
-}
-
-.waifu-window[data-layout="narrow"] .waifu-toc {
-  display: flex;
-  gap: 6px;
-}
-
-.waifu-window[data-layout="narrow"] .waifu-toc-item {
-  flex: none;
-  min-block-size: 2.25rem;
-  padding: 5px 10px;
-}
-
-.waifu-window[data-layout="narrow"] .waifu-toc-item[aria-selected="true"]::before {
-  inset: auto 10px 0;
-  inline-size: auto;
-  block-size: 0;
-  border-inline-start: 0;
-  border-block-end: 2.5px solid var(--accent);
-}
-
-/* ── Main Analytical Viewport ───────────────────────────────────────── */
+/* ── Main Container & Level-1 Drill-Down Breadcrumb Bar ─────────────── */
 .waifu-main {
   grid-area: main;
   display: flex;
@@ -671,6 +381,105 @@
   min-block-size: 0;
 }
 
+.waifu-crumb-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+  padding: var(--s2) var(--s4);
+  background: var(--surface-1);
+  border-block-end: 1px solid var(--line);
+  z-index: 4;
+}
+
+.waifu-crumb-bar[hidden] {
+  display: none;
+}
+
+.waifu-crumb-left {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-inline-size: 0;
+}
+
+.waifu-crumb-trail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-sm);
+  min-inline-size: 0;
+}
+
+.waifu-crumb-root {
+  border: 0;
+  padding: 2px 4px;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--text-3);
+  font: 500 var(--t-sm) var(--font-ui);
+  cursor: pointer;
+}
+
+.waifu-crumb-root:hover {
+  color: var(--text);
+}
+
+.waifu-crumb-sep {
+  color: var(--text-3);
+}
+
+.waifu-crumb-active {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waifu-pill-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.waifu-pill-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-block-size: var(--ctrl-sm);
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: 500 var(--t-xs) var(--font-ui);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--d-fast), border-color var(--d-fast), background-color var(--d-fast);
+}
+
+.waifu-pill-tab:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--surface-3);
+}
+
+.waifu-pill-tab[aria-selected="true"] {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.waifu-pill-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+
+/* ── View Panels ────────────────────────────────────────────────────── */
 .waifu-panels {
   position: relative;
   flex: 1;
@@ -692,125 +501,726 @@
 
 .waifu-panel-inner {
   display: grid;
-  gap: var(--s3);
+  gap: var(--s4);
   padding: var(--s4);
 }
 
-/* ── Executive KPI Strip & Analytics Grids ──────────────────────────── */
-.waifu-exec-grid {
+/* ── Level 0 Central Hub: 6-Window Bento Grid ───────────────────────── */
+.waifu-hub-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
-  gap: var(--s2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s4);
+  align-items: stretch;
 }
 
-.waifu-exec-card {
+.waifu-subwin {
   position: relative;
-  overflow: clip;
-  display: grid;
-  justify-items: start;
-  gap: 4px;
-  padding: 13px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   background: var(--surface-1);
   box-shadow: var(--shadow-card);
-  color: var(--text);
-  text-align: start;
   cursor: pointer;
   transition: border-color var(--d-fast), transform var(--d-fast) var(--ease-snap), background-color var(--d-fast);
 }
 
-.waifu-exec-card::before {
+.waifu-subwin::before {
   content: "";
   position: absolute;
   inset-block-start: 0;
-  inset-inline: 0;
+  inset-inline: var(--s3);
   block-size: 2px;
-  background: var(--line-strong);
+  border-radius: 0 0 2px 2px;
+  background: transparent;
+  opacity: 0.9;
 }
 
-.waifu-exec-card[data-tone="critical"]::before { background: var(--hp); }
-.waifu-exec-card[data-tone="warning"]::before { background: var(--warn); }
-.waifu-exec-card[data-tone="ok"]::before { background: var(--heal); }
+.waifu-subwin[data-tone="critical"]::before { background: var(--hp); }
+.waifu-subwin[data-tone="warning"]::before { background: var(--warn); }
+.waifu-subwin[data-tone="ok"]::before { background: var(--heal); }
+.waifu-subwin[data-tone="info"]::before { background: var(--temp); }
+.waifu-subwin[data-tone="arcane"]::before { background: var(--arcane); }
 
-.waifu-exec-card:hover {
+.waifu-subwin:hover {
   border-color: var(--accent-line);
-  background: color-mix(in oklab, var(--surface-1) 92%, var(--accent) 8%);
   transform: translateY(-2px);
 }
 
-.waifu-exec-k {
-  font: 600 0.7rem var(--font-ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.waifu-subwin-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.waifu-subwin-titlegroup {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  min-inline-size: 0;
+  flex: 1;
+}
+
+.waifu-subwin-icon {
+  flex: none;
+  inline-size: var(--tile);
+  block-size: var(--tile);
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
+.waifu-subwin-icon.is-warning {
+  color: var(--warn);
+  border-color: var(--warn-line);
+  background: var(--warn-soft);
+}
+
+.waifu-subwin-icon.is-heal {
+  color: var(--heal);
+  border-color: var(--heal-line);
+  background: var(--heal-soft);
+}
+
+.waifu-subwin-icon.is-critical {
+  color: var(--hp);
+  border-color: var(--hp-line);
+  background: var(--hp-soft);
+}
+
+.waifu-subwin-icon.is-arcane {
+  color: var(--arcane);
+  border-color: var(--arcane-line);
+  background: var(--arcane-soft);
+}
+
+.waifu-subwin-icon.is-info {
+  color: var(--temp);
+  border-color: var(--temp-line);
+  background: var(--temp-soft);
+}
+
+.waifu-subwin-titles {
+  display: grid;
+  gap: 4px;
+  min-inline-size: 0;
+}
+
+.waifu-subwin-title {
+  margin: 0;
+  font: 600 var(--t-title)/1.25 var(--font-display);
+  color: var(--text);
+}
+
+.waifu-subwin-sub {
+  font-size: var(--t-xs);
+  color: var(--text-3);
+  line-height: 1.3;
+}
+
+.waifu-subwin-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-inline-size: 0;
+}
+
+.waifu-subwin-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding-block-start: var(--s2);
+  border-block-start: 1px solid var(--line);
+  font-size: var(--t-xs);
   color: var(--text-3);
 }
 
-.waifu-exec-v {
-  font: 700 clamp(1.375rem, 1.8vw, 1.65rem)/1.1 var(--font-num);
-  font-variant-numeric: tabular-nums;
+/* Sub-Window 1 Telemetry Inner Split */
+.waifu-w1-grid {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 146px minmax(0, 1fr);
+  gap: var(--s3);
+  align-items: stretch;
 }
 
-.waifu-exec-v small {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-3);
+.waifu-w1-gaugebox {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  padding: var(--s3) var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
 }
 
-.waifu-exec-card[data-tone="critical"] .waifu-exec-v { color: var(--hp); }
-.waifu-exec-card[data-tone="warning"] .waifu-exec-v { color: var(--warn); }
-.waifu-exec-card[data-tone="ok"] .waifu-exec-v { color: var(--heal); }
+.waifu-w1-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-inline-size: 0;
+}
 
-.waifu-exec-sub {
+.waifu-w1-pen-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
   font-size: var(--t-xs);
   color: var(--text-2);
+}
+
+.waifu-w1-sparkbox {
+  flex: 1 1 auto;
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.waifu-w1-spark-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s1) var(--s2);
+  font-size: var(--t-xs);
+  color: var(--text-2);
+}
+
+.waifu-spark-svg {
+  inline-size: 100%;
+  block-size: auto;
+  max-block-size: 56px;
+}
+
+/* Sub-Window KPI Line + Compact Rows */
+.waifu-kpi-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.waifu-kpi-main {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.waifu-kpi-num {
+  font: 700 var(--t-kpi)/1.1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.waifu-kpi-num.is-warn { color: var(--warn); }
+.waifu-kpi-num.is-critical { color: var(--hp); }
+.waifu-kpi-num.is-ok { color: var(--heal); }
+
+.waifu-kpi-unit {
+  font-size: var(--t-xs);
+  color: var(--text-2);
+}
+
+.waifu-kpi-right {
+  font: 600 var(--t-xs) var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.waifu-mini-rows {
+  display: grid;
+  gap: var(--s2);
+}
+
+.waifu-mini-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  min-inline-size: 0;
+}
+
+.waifu-mini-row-left {
+  display: grid;
+  gap: 2px;
+  min-inline-size: 0;
+  flex: 1;
+}
+
+.waifu-mini-row-title {
+  font: 600 var(--t-sm)/1.25 var(--font-ui);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waifu-mini-row-sub {
+  font-size: var(--t-xs);
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waifu-mini-metric {
+  flex: none;
+  font: 600 var(--t-xs) var(--font-num);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.waifu-mini-metric.is-critical { color: var(--hp); }
+.waifu-mini-metric.is-warning { color: var(--warn); }
+.waifu-mini-metric.is-info { color: var(--temp); }
+.waifu-mini-metric.is-ok { color: var(--heal); }
+
+.waifu-mini-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+}
+
+.waifu-mini-tile {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.waifu-mini-tile span {
+  font-size: var(--t-xs);
+  color: var(--text-3);
+}
+
+.waifu-mini-tile b {
+  font: 600 var(--t-sm)/1.2 var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.waifu-export-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+/* Compact Hub Cards for Narrow Widths (<860px) */
+.waifu-hub-compact-list {
+  display: none;
+  gap: var(--s2);
+}
+
+.waifu-narrow-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-card);
+  text-align: start;
+  cursor: pointer;
+}
+
+.waifu-narrow-card[data-tone="warning"] { border-color: var(--warn-line); }
+.waifu-narrow-card[data-tone="ok"] { border-color: var(--heal-line); }
+.waifu-narrow-card[data-tone="critical"] { border-color: var(--hp-line); }
+
+.waifu-narrow-card:hover {
+  border-color: var(--accent-line);
+  background: var(--surface-2);
+}
+
+.waifu-window[data-layout="narrow"] .waifu-hub-grid { display: none; }
+.waifu-window[data-layout="narrow"] .waifu-hub-compact-list { display: grid; }
+.waifu-window[data-layout="narrow"] .waifu-drill-grid,
+.waifu-window[data-layout="narrow"] .waifu-studio-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.waifu-window[data-layout="narrow"] .waifu-crumb-bar { padding: var(--s2) var(--s3); }
+.waifu-window[data-layout="narrow"] .waifu-pill-nav {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-block-end: 2px;
+}
+
+/* ── Level 1 Drill-Down Grid Layouts ────────────────────────────────── */
+.waifu-drill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s4);
+  align-items: stretch;
+}
+
+.waifu-autofix-grid {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+}
+
+.waifu-studio-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: stretch;
 }
 
 .waifu-chart-grid,
 .waifu-analytics-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: var(--s3);
+  gap: var(--s4);
   align-items: start;
 }
 
 .waifu-card {
-  display: grid;
-  gap: var(--s2);
-  padding: var(--s3) var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   background: var(--surface-1);
   box-shadow: var(--shadow-card);
+  min-inline-size: 0;
 }
 
-.waifu-card h3 {
+.waifu-card > h3,
+.waifu-card-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--s2);
   margin: 0;
-  border: 0;
+  padding-block-end: var(--s2);
+  border-block-end: 1px solid var(--line);
   font: 600 var(--t-md)/1.25 var(--font-display);
   color: var(--text);
 }
 
-.waifu-card > h3 {
-  padding-block-end: var(--s2);
-  border-block-end: 1px solid var(--line);
-}
-
+/* Empty Hero First-Run Card */
 .waifu-empty-card {
+  display: grid;
   justify-items: center;
+  text-align: center;
+  gap: var(--s3);
   padding: var(--s5);
 }
 
+.waifu-empty-card h2 {
+  margin: 0;
+  font: 700 var(--t-xl)/1.2 var(--font-display);
+}
+
+/* Penalty Itemized List inside Drill-Down 1 */
+.waifu-penalty-list {
+  display: grid;
+  gap: var(--s2);
+}
+
+.waifu-penalty-item {
+  display: grid;
+  gap: 6px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.waifu-penalty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  font-size: var(--t-sm);
+}
+
+.waifu-penalty-track {
+  block-size: 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.waifu-penalty-fill {
+  block-size: 100%;
+  border-radius: var(--r-pill);
+}
+
+/* Dry-Run Autofix Queue inside Drill-Down 2 */
+.waifu-dryrun-list {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.waifu-dryrun-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.waifu-dryrun-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex: 1;
+  min-inline-size: 0;
+  cursor: pointer;
+}
+
+.waifu-dryrun-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-block-start: var(--s3);
+  border-block-start: 1px solid var(--line);
+}
+
+/* Thresholds Studio Form inside Drill-Down 6 */
+.waifu-threshold-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+}
+
+@media (max-width: 720px) {
+  .waifu-threshold-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.waifu-threshold-cell {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.waifu-threshold-cell > span {
+  font-size: var(--t-xs);
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waifu-threshold-cell > input {
+  width: 100%;
+  min-block-size: 1.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.waifu-switch-list {
+  display: grid;
+  gap: var(--s2);
+}
+
+.waifu-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.waifu-switch-row > span {
+  font-size: var(--t-sm);
+  color: var(--text);
+}
+
+/* AIM Switch Component */
+.waifu-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.waifu-switch input {
+  position: absolute;
+  opacity: 0;
+  inline-size: 38px;
+  block-size: 22px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.waifu-switch-track {
+  inline-size: 38px;
+  block-size: 22px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-3);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: background-color var(--d-fast), border-color var(--d-fast);
+}
+
+.waifu-switch-thumb {
+  inline-size: 16px;
+  block-size: 16px;
+  border-radius: 50%;
+  background: var(--text-2);
+  transition: transform var(--d-fast) var(--ease-snap), background-color var(--d-fast);
+}
+
+.waifu-switch input:checked + .waifu-switch-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.waifu-switch input:checked + .waifu-switch-track .waifu-switch-thumb {
+  transform: translateX(16px);
+  background: var(--accent-ink);
+}
+
+.waifu-switch input:focus-visible + .waifu-switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Level 2 Slide-Over Scene Drawer ────────────────────────────────── */
+.waifu-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--scrim);
+  animation: waifu-fade-in var(--d-fast) var(--ease-settle);
+}
+
+.waifu-drawer-backdrop[hidden] {
+  display: none;
+}
+
+.waifu-drawer {
+  inline-size: min(540px, 94%);
+  block-size: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  background: var(--surface-1);
+  border-inline-start: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-lift);
+  overflow: auto;
+  overscroll-behavior: contain;
+  animation: waifu-drawer-slide var(--d-base) var(--ease-settle);
+}
+
+@keyframes waifu-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes waifu-drawer-slide {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.waifu-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-block-end: var(--s3);
+  border-block-end: 1px solid var(--line);
+}
+
+.waifu-drawer-section-label {
+  font: 600 var(--t-xs) var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.waifu-drawer-asset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.waifu-drawer-asset.is-issue {
+  border-color: var(--hp-line);
+}
+
+.waifu-drawer-geogrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+}
+
+.waifu-drawer-geocard {
+  display: grid;
+  gap: var(--s2);
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-size: var(--t-xs);
+  color: var(--text-2);
+}
+
+.waifu-drawer-geocard b {
+  font: 600 var(--t-sm) var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* ── SVG Charts, Donuts, Bars & Legends ─────────────────────────────── */
 .waifu-inline-stats {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
-  padding-block-start: 6px;
+  padding-block-start: 8px;
   border-block-start: 1px solid var(--line);
   font-size: var(--t-xs);
   color: var(--text-2);
@@ -821,7 +1231,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── SVG Charts, Donuts, Bars & Legends ─────────────────────────────── */
 .waifu-donut-wrap {
   display: flex;
   flex-wrap: wrap;
@@ -829,26 +1238,15 @@
   gap: var(--s3);
 }
 
-.waifu-donut-svg {
-  flex: none;
-  display: block;
-}
-
+.waifu-donut-svg { flex: none; display: block; }
 .waifu-donut-val {
   font: 700 1.0625rem/1 var(--font-num);
   font-variant-numeric: tabular-nums;
   fill: var(--text);
   letter-spacing: -0.02em;
 }
-
-.waifu-donut-val.is-compact {
-  font-size: 0.85rem;
-}
-
-.waifu-donut-sub {
-  font: 500 0.625rem var(--font-ui);
-  fill: var(--text-3);
-}
+.waifu-donut-val.is-compact { font-size: 0.85rem; }
+.waifu-donut-sub { font: 500 0.625rem var(--font-ui); fill: var(--text-3); }
 
 .waifu-legend {
   list-style: none;
@@ -867,82 +1265,35 @@
   font-size: var(--t-xs);
 }
 
-.waifu-legend-swatch {
-  inline-size: 10px;
-  block-size: 10px;
-  border-radius: 3px;
-}
+.waifu-legend-swatch { inline-size: 10px; block-size: 10px; border-radius: 3px; }
+.waifu-legend-label { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.waifu-legend-val { font: 600 var(--t-xs) var(--font-num); font-variant-numeric: tabular-nums; color: var(--text); }
+.waifu-legend-pct { font: 500 0.7rem var(--font-num); font-variant-numeric: tabular-nums; color: var(--text-3); min-inline-size: 42px; text-align: end; }
 
-.waifu-legend-label {
-  color: var(--text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.waifu-hbar-svg { inline-size: 100%; block-size: auto; display: block; }
+.waifu-hbar-label { font: 500 0.72rem var(--font-ui); fill: var(--text-2); }
+.waifu-hbar-val { font: 600 0.7rem var(--font-num); font-variant-numeric: tabular-nums; fill: var(--text); }
+.waifu-hbar-limit { font: 600 0.62rem var(--font-ui); fill: var(--text-3); }
 
-.waifu-legend-val {
-  font: 600 var(--t-xs) var(--font-num);
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
+.waifu-gauge-svg { display: block; }
+.waifu-gauge-num { font: 700 1.5rem/1 var(--font-num); font-variant-numeric: tabular-nums; fill: var(--text); letter-spacing: -0.02em; }
+.waifu-gauge-pct { font: 600 0.8rem/1 var(--font-num); fill: var(--text-3); }
+.waifu-gauge-sub { font: 600 0.6rem/1 var(--font-ui); letter-spacing: 0.06em; }
 
-.waifu-legend-pct {
-  font: 500 0.7rem var(--font-num);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-3);
-  min-inline-size: 42px;
-  text-align: end;
-}
-
-.waifu-hbar-svg {
-  inline-size: 100%;
-  block-size: auto;
-  display: block;
-}
-
-.waifu-hbar-label {
-  font: 500 0.72rem var(--font-ui);
-  fill: var(--text-2);
-}
-
-.waifu-hbar-val {
-  font: 600 0.7rem var(--font-num);
-  font-variant-numeric: tabular-nums;
-  fill: var(--text);
-}
-
-.waifu-hbar-limit {
-  font: 600 0.62rem var(--font-ui);
-  fill: var(--text-3);
-}
-
-.waifu-matrix-wrap {
-  display: grid;
-  gap: 8px;
-}
-
-.waifu-segbar-block {
-  display: grid;
-  gap: 7px;
-}
+.waifu-matrix-wrap,
+.waifu-segbar-block { display: grid; gap: 7px; }
 
 .waifu-segbar {
   display: flex;
   gap: 1px;
-  block-size: 10px;
-  border-radius: 99px;
+  block-size: 9px;
+  border-radius: var(--r-pill);
   background: var(--surface-3);
   overflow: hidden;
 }
 
-.waifu-seg-fill {
-  block-size: 100%;
-  transition: width var(--d-slow) var(--ease-settle);
-}
-
-.waifu-seg-fill.is-empty {
-  background: var(--surface-3);
-}
+.waifu-seg-fill { block-size: 100%; transition: width var(--d-slow) var(--ease-settle); }
+.waifu-seg-fill.is-empty { background: var(--surface-3); }
 
 .waifu-seg-legend {
   display: flex;
@@ -952,35 +1303,13 @@
   color: var(--text-2);
 }
 
-.waifu-seg-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
+.waifu-seg-pill { display: inline-flex; align-items: center; gap: 5px; }
+.waifu-seg-pill i { display: inline-block; inline-size: 8px; block-size: 8px; border-radius: 2px; }
+.waifu-seg-pill b { color: var(--text); font-variant-numeric: tabular-nums; }
+.waifu-seg-pill small { color: var(--text-3); }
+.waifu-chart-empty { margin: var(--s2) 0; color: var(--text-3); font-size: var(--t-xs); }
 
-.waifu-seg-pill i {
-  display: inline-block;
-  inline-size: 8px;
-  block-size: 8px;
-  border-radius: 2px;
-}
-
-.waifu-seg-pill b {
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-.waifu-seg-pill small {
-  color: var(--text-3);
-}
-
-.waifu-chart-empty {
-  margin: var(--s2) 0;
-  color: var(--text-3);
-  font-size: var(--t-xs);
-}
-
-/* ── Shared Key-Value, Recommendations, Badges ──────────────────────── */
+/* ── Shared KV, Badges, Buttons, Toolbars, Tables ───────────────────── */
 .waifu-kv {
   display: flex;
   align-items: center;
@@ -995,10 +1324,7 @@
 .waifu-kv:last-child { border-block-end: 0; }
 .waifu-kv b { color: var(--text); font-weight: 600; text-align: end; font-variant-numeric: tabular-nums; }
 
-.waifu-rec-list {
-  display: grid;
-  gap: var(--s2);
-}
+.waifu-rec-list { display: grid; gap: var(--s2); }
 
 .waifu-rec-item {
   display: flex;
@@ -1006,7 +1332,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--s2);
-  padding: var(--s2) var(--s3);
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface-2);
@@ -1017,46 +1343,28 @@
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--line);
-  background: var(--surface-2);
+  background: var(--surface-1);
   color: var(--text-2);
   font: 600 var(--t-xs) var(--font-num);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.waifu-badge.is-critical {
-  border-color: color-mix(in oklab, var(--hp) 55%, transparent);
-  background: color-mix(in oklab, var(--hp) 14%, transparent);
-  color: var(--hp);
-}
+.waifu-badge.is-critical { border-color: var(--hp-line); background: var(--hp-soft); color: var(--hp); }
+.waifu-badge.is-warning { border-color: var(--warn-line); background: var(--warn-soft); color: var(--warn); }
+.waifu-badge.is-info { border-color: var(--temp-line); background: var(--temp-soft); color: var(--temp); }
+.waifu-badge.is-ok { border-color: var(--heal-line); background: var(--heal-soft); color: var(--heal); }
+.waifu-badge.is-arcane { border-color: var(--arcane-line); background: var(--arcane-soft); color: var(--arcane); }
 
-.waifu-badge.is-warning {
-  border-color: color-mix(in oklab, var(--warn) 55%, transparent);
-  background: color-mix(in oklab, var(--warn) 14%, transparent);
-  color: var(--warn);
-}
-
-.waifu-badge.is-info {
-  border-color: color-mix(in oklab, var(--temp) 55%, transparent);
-  background: color-mix(in oklab, var(--temp) 14%, transparent);
-  color: var(--temp);
-}
-
-.waifu-badge.is-ok {
-  border-color: color-mix(in oklab, var(--heal) 55%, transparent);
-  background: color-mix(in oklab, var(--heal) 14%, transparent);
-  color: var(--heal);
-}
-
-/* ── Buttons, Toolbar, Search, Chips, Focus ─────────────────────────── */
 .waifu-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   min-inline-size: 26px;
-  min-block-size: 2rem;
+  min-block-size: var(--ctrl-h);
   padding: 0.25rem var(--s3);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
@@ -1070,17 +1378,12 @@
 
 .waifu-btn:hover:not(:disabled) {
   border-color: var(--accent-line);
+  background: var(--surface-3);
   transform: translateY(-1px);
 }
 
-.waifu-btn:active:not(:disabled) {
-  transform: translateY(0) scale(0.97);
-}
-
-.waifu-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.waifu-btn:active:not(:disabled) { transform: translateY(0) scale(0.97); }
+.waifu-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .waifu-btn.is-primary {
   background: var(--accent);
@@ -1089,26 +1392,34 @@
   font-weight: 600;
 }
 
+.waifu-btn.is-accent-outline {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .waifu-btn.is-heal {
-  background: color-mix(in oklab, var(--heal) 15%, var(--surface-2));
-  border-color: color-mix(in oklab, var(--heal) 50%, transparent);
+  background: var(--heal-soft);
+  border-color: var(--heal-line);
   color: var(--heal);
   font-weight: 600;
 }
 
 .waifu-btn.is-danger {
-  background: color-mix(in oklab, var(--hp) 16%, var(--surface-2));
-  border-color: color-mix(in oklab, var(--hp) 55%, transparent);
+  background: var(--hp-soft);
+  border-color: var(--hp-line);
   color: var(--hp);
+  font-weight: 500;
 }
 
 .waifu-btn.is-sm {
-  min-block-size: 1.75rem;
-  padding: 0.15rem 9px;
+  min-block-size: var(--ctrl-sm);
+  padding: 0.15rem 10px;
   font-size: var(--t-xs);
 }
 
-.waifu-root :is(button, input, select, textarea, summary, [tabindex]):focus-visible {
+.waifu-root :is(button, input, select, textarea, summary, [tabindex], .waifu-subwin):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -1134,7 +1445,7 @@
   display: flex;
   align-items: center;
   gap: var(--s2);
-  min-block-size: 2.125rem;
+  min-block-size: var(--ctrl-h);
   padding: 0 var(--s3);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
@@ -1142,15 +1453,13 @@
   color: var(--text-3);
 }
 
-.waifu-search:focus-within {
-  border-color: var(--accent-line);
-}
+.waifu-search:focus-within { border-color: var(--accent-line); }
 
 .waifu-search input {
   flex: 1;
   min-inline-size: 0;
-  min-block-size: 1.9rem;
-  padding: 0.2rem 0;
+  min-block-size: 1.75rem;
+  padding: 0.15rem 0;
   border: 0;
   background: none;
   color: var(--text);
@@ -1164,7 +1473,6 @@
 .waifu-mode-switch {
   display: flex;
   flex-wrap: wrap;
-  flex-wrap: balance;
   gap: var(--s1);
 }
 
@@ -1172,10 +1480,10 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-block-size: 1.875rem;
+  min-block-size: var(--ctrl-sm);
   padding: 0.15rem 11px;
   border: 1px solid var(--line);
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   background: var(--surface-1);
   color: var(--text-2);
   font: 500 var(--t-xs) var(--font-ui);
@@ -1187,13 +1495,14 @@
   color: var(--accent);
   border-color: var(--accent-line);
   background: var(--accent-soft);
+  font-weight: 600;
 }
 
-/* ── Sticky Sortable Data Tables ────────────────────────────────────── */
+/* ── Sortable Data Tables ───────────────────────────────────────────── */
 .waifu-table-wrap {
   overflow: auto;
   max-inline-size: 100%;
-  max-block-size: min(580px, 65vh);
+  max-block-size: min(560px, 64vh);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   background: var(--surface-1);
@@ -1212,7 +1521,7 @@
 }
 
 .waifu-stats-table {
-  min-inline-size: 380px;
+  min-inline-size: 360px;
   font-size: var(--t-xs);
   font-variant-numeric: tabular-nums;
 }
@@ -1236,17 +1545,13 @@
   color: var(--text-2);
   font: 600 var(--t-xs) var(--font-ui);
   text-align: start;
-  text-wrap: balance;
   border-block-end: 1px solid var(--line-strong);
   box-shadow: inset 0 -1px 0 var(--line-strong);
   padding: 9px 11px;
   white-space: nowrap;
 }
 
-.waifu-table thead th:first-child {
-  z-index: 3;
-}
-
+.waifu-table thead th:first-child { z-index: 3; }
 .waifu-table thead th:has(> button) { padding: 0; }
 
 .waifu-table thead th > button {
@@ -1280,7 +1585,7 @@
 
 .waifu-table tbody th,
 .waifu-table tbody td {
-  padding: 9px 11px;
+  padding: 10px 11px;
   border-block-end: 1px solid var(--line);
   vertical-align: top;
 }
@@ -1303,7 +1608,7 @@
 
 .waifu-cell-stack {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   min-inline-size: 0;
 }
 
@@ -1316,16 +1621,12 @@
 
 .waifu-mono {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-variant-ligatures: none;
   color: var(--text-2);
 }
 
-.waifu-sublist {
-  display: grid;
-  gap: 4px;
-  margin-block-start: 2px;
-}
+.waifu-sublist { display: grid; gap: 4px; margin-block-start: 2px; }
 
 .waifu-asset-pill {
   display: grid;
@@ -1339,10 +1640,6 @@
   font-size: var(--t-xs);
 }
 
-.waifu-more-assets {
-  margin-block-start: 2px;
-}
-
 .waifu-more-assets > summary {
   cursor: pointer;
   color: var(--accent);
@@ -1351,20 +1648,18 @@
   list-style-position: inside;
 }
 
-.waifu-more-assets > .waifu-sublist {
-  margin-block-start: 4px;
-}
+.waifu-more-assets > .waifu-sublist { margin-block-start: 4px; }
 
 .waifu-row-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .waifu-root .waifu-select {
-  max-inline-size: 250px;
-  min-block-size: 1.875rem;
+  max-inline-size: 240px;
+  min-block-size: var(--ctrl-sm);
   padding: 2px 7px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
@@ -1373,101 +1668,63 @@
   font: var(--t-xs) var(--font-ui);
 }
 
-/* ── Generated Report View (Visual Document, Markdown, Journal) ─────── */
-.waifu-report-doc {
-  display: grid;
-  gap: var(--s3);
+/* ── Report Preview Styles (shared with formatReportHtml) ───────────── */
+.waifu-report-scroll {
+  max-block-size: 460px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-0);
+  padding: var(--s3);
 }
 
+.waifu-report-doc { display: grid; gap: var(--s3); }
 .waifu-report-banner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--s3);
-  padding: var(--s4);
+  padding: var(--s3);
   border: 1px solid var(--line-strong);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   background: var(--surface-1);
-  box-shadow: var(--shadow-card);
 }
-
-.waifu-report-kicker {
-  font: 600 0.6875rem var(--font-ui);
-  letter-spacing: 0.14em;
-  color: var(--accent);
-  margin-block-end: 4px;
-}
-
-.waifu-report-banner h2 {
-  margin: 0 0 10px;
-  border: 0;
-  font: 700 var(--t-xl)/1.2 var(--font-display);
-  color: var(--text);
-}
-
-.waifu-report-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  margin: 0;
-}
-
-.waifu-report-meta dt {
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-3);
-}
-
-.waifu-report-meta dd {
-  margin: 2px 0 0;
-  font-size: var(--t-xs);
-  color: var(--text-2);
-  font-weight: 500;
-}
-
+.waifu-report-kicker { font: 600 0.65625rem var(--font-ui); letter-spacing: 0.12em; color: var(--accent); margin-block-end: 4px; }
+.waifu-report-banner h2 { margin: 0 0 8px; font: 700 var(--t-lg)/1.2 var(--font-display); color: var(--text); }
+.waifu-report-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; }
+.waifu-report-meta dt { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
+.waifu-report-meta dd { margin: 2px 0 0; font-size: var(--t-xs); color: var(--text-2); font-weight: 500; }
 .waifu-report-banner-gauge {
   display: grid;
   justify-items: center;
   gap: 2px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface-0);
 }
-
-.waifu-report-gauge-meta {
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-  font-size: var(--t-xs);
-  color: var(--text-2);
-}
-
-.waifu-report-recs {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.waifu-report-gauge-meta { display: flex; gap: 6px; align-items: baseline; font-size: var(--t-xs); color: var(--text-2); }
+.waifu-exec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s2); }
+.waifu-exec-card {
   display: grid;
-  gap: 6px;
-}
-
-.waifu-report-recs li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  justify-items: start;
+  gap: 3px;
+  padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  font-size: var(--t-sm);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
 }
+.waifu-exec-k { font: 600 0.65rem var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+.waifu-exec-v { font: 700 1.2rem/1.1 var(--font-num); font-variant-numeric: tabular-nums; color: var(--text); }
+.waifu-exec-sub { font-size: var(--t-xs); color: var(--text-2); }
+.waifu-report-recs { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.waifu-report-recs li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); font-size: var(--t-xs); }
 
 .waifu-report-pre {
   margin: 0;
   padding: var(--s3);
-  max-block-size: 520px;
+  max-block-size: 460px;
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
@@ -1479,25 +1736,24 @@
 }
 
 .waifu-journal-preview {
-  padding: var(--s4);
+  padding: var(--s3);
+  max-block-size: 460px;
+  overflow: auto;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface-0);
   font-size: var(--t-sm);
-  line-height: 1.55;
-  overflow: auto;
+  line-height: 1.5;
 }
-
-.waifu-journal-preview h1 { font: 700 var(--t-xl) var(--font-display); margin: 0 0 8px; }
-.waifu-journal-preview h2 { font: 600 var(--t-lg) var(--font-display); margin: 14px 0 6px; border: 0; }
+.waifu-journal-preview h1 { font: 700 var(--t-lg) var(--font-display); margin: 0 0 8px; }
+.waifu-journal-preview h2 { font: 600 var(--t-md) var(--font-display); margin: 12px 0 6px; }
 .waifu-journal-preview table { inline-size: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: var(--t-xs); }
-.waifu-journal-preview th,
-.waifu-journal-preview td { padding: 6px 8px; border: 1px solid var(--line); text-align: start; }
+.waifu-journal-preview th, .waifu-journal-preview td { padding: 6px 8px; border: 1px solid var(--line); text-align: start; }
 .waifu-journal-preview thead th { background: var(--surface-2); }
 
 .waifu-empty {
-  margin: var(--s4) auto;
-  max-inline-size: 52ch;
+  margin: var(--s3) auto;
+  max-inline-size: 56ch;
   text-align: center;
   text-wrap: pretty;
   color: var(--text-3);
@@ -1519,30 +1775,29 @@
   color: var(--text);
 }
 
-/* ── Progress Bar, Checkboxes, Dry-Run Preview & Dialog Lists ──────── */
+/* ── Live Progress Strip & Modal Helpers ────────────────────────────── */
 .waifu-progress {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(140px, 1fr) auto auto;
   align-items: center;
-  gap: var(--s2);
-  padding: 7px var(--s4);
+  gap: var(--s3);
+  padding: 8px var(--s4);
   background: var(--surface-1);
-  border-block-end: 1px solid var(--line-strong);
+  border-block-end: 1px solid var(--accent-line);
 }
 
-.waifu-progress[hidden] {
-  display: none;
-}
+.waifu-progress[hidden] { display: none; }
 
 .waifu-progress-bar {
   block-size: 8px;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   background: var(--surface-3);
   overflow: hidden;
 }
 
 .waifu-progress-fill {
   block-size: 100%;
+  border-radius: var(--r-pill);
   background: var(--accent);
   transition: width var(--d-fast) ease-out;
 }
@@ -1551,7 +1806,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-block-size: 1.875rem;
+  min-block-size: var(--ctrl-sm);
   padding: 3px 10px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
@@ -1561,9 +1816,7 @@
   cursor: pointer;
 }
 
-.waifu-check-pill input {
-  margin: 0;
-}
+.waifu-check-pill input { margin: 0; }
 
 .waifu-confirm-preview {
   margin: 8px 0 0;
@@ -1578,7 +1831,7 @@
 
 .waifu-modal-list {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   max-block-size: 360px;
   overflow: auto;
   margin-block-start: 8px;
@@ -1591,9 +1844,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 7px 10px;
+  padding: 9px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   background: var(--surface-2);
 }
 
@@ -1623,7 +1876,7 @@
 
 /* Scrollbars */
 .waifu-window ::-webkit-scrollbar,
-.waifu-dialog ::-webkit-scrollbar { inline-size: 10px; block-size: 10px; }
+.waifu-dialog ::-webkit-scrollbar { inline-size: 8px; block-size: 8px; }
 .waifu-window ::-webkit-scrollbar-track,
 .waifu-window ::-webkit-scrollbar-corner,
 .waifu-dialog ::-webkit-scrollbar-track,
@@ -1633,11 +1886,24 @@
   min-block-size: 40px;
   background: var(--line-strong);
   background-clip: padding-box;
-  border: 3px solid transparent;
-  border-radius: 99px;
+  border: 2px solid transparent;
+  border-radius: var(--r-pill);
 }
 .waifu-window ::-webkit-scrollbar-thumb:hover,
-.waifu-dialog ::-webkit-scrollbar-thumb:hover { background: var(--accent-line); border-width: 2px; }
+.waifu-dialog ::-webkit-scrollbar-thumb:hover { background: var(--accent-line); }
+
+@media (forced-colors: active) {
+  .waifu-subwin,
+  .waifu-card,
+  .waifu-mini-row,
+  .waifu-btn,
+  .waifu-chip,
+  .waifu-pill-tab,
+  .waifu-badge,
+  .waifu-drawer {
+    border: 1px solid ButtonText;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .waifu-window *,

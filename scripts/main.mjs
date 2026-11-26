@@ -228,13 +228,15 @@ Hooks.once("init", () => {
     foundry.applications?.handlebars?.loadTemplates ?? globalThis.loadTemplates;
   loadTemplatesFn?.([
     `modules/${MODULE_ID}/templates/masthead.hbs`,
-    `modules/${MODULE_ID}/templates/sidebar.hbs`,
     `modules/${MODULE_ID}/templates/main.hbs`,
-    `modules/${MODULE_ID}/templates/partials/tab-overview.hbs`,
-    `modules/${MODULE_ID}/templates/partials/tab-scenes.hbs`,
-    `modules/${MODULE_ID}/templates/partials/tab-uuids.hbs`,
-    `modules/${MODULE_ID}/templates/partials/tab-storage.hbs`,
-    `modules/${MODULE_ID}/templates/partials/tab-report.hbs`
+    `modules/${MODULE_ID}/templates/partials/view-hub.hbs`,
+    `modules/${MODULE_ID}/templates/partials/view-health.hbs`,
+    `modules/${MODULE_ID}/templates/partials/view-autofix.hbs`,
+    `modules/${MODULE_ID}/templates/partials/view-scenes.hbs`,
+    `modules/${MODULE_ID}/templates/partials/view-uuids.hbs`,
+    `modules/${MODULE_ID}/templates/partials/view-storage.hbs`,
+    `modules/${MODULE_ID}/templates/partials/view-report.hbs`,
+    `modules/${MODULE_ID}/templates/partials/scene-drawer.hbs`
   ]);
 });
 

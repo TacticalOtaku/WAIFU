@@ -1,42 +1,27 @@
-/* WAIFU: World Audit & Integrity — Design tokens inherited from AIM: Actor Window.
-   Scoped to .waifu-root (never :root). Supports Night (default) and Parchment themes
-   plus 6 accent palettes with accessible 4.5:1+ contrast across all surfaces. */
-
-/* Headings: Palatino for Latin only, matching AIM Display. Cyrillic and any glyph Palatino lacks
-   fall cleanly through to --font-ui (Onest Variable) so Russian headings match the UI typeface. */
-@font-face {
-  font-family: "WAIFU Display";
-  font-weight: 400;
-  src: local("Palatino Linotype"), local("PalatinoLinotype-Roman"), local("Book Antiqua"), local("Palatino"), local("Palatino-Roman");
-  unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F;
-}
-
-@font-face {
-  font-family: "WAIFU Display";
-  font-weight: 700;
-  src: local("Palatino Linotype Bold"), local("PalatinoLinotype-Bold"), local("Book Antiqua Bold"), local("Palatino Bold"), local("Palatino-Bold");
-  unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F;
-}
+/* WAIFU: World Audit & Integrity — AIM "Nocturne & Parchment" Design Tokens.
+   Scoped strictly to .waifu-root (never :root). Supports Night (default) and Parchment themes,
+   6 accessible accents with 4.5:1+ contrast across all surfaces, single bi-script Onest typography,
+   and 3-tier motion discipline. */
 
 .waifu-root {
   color-scheme: dark;
 
-  /* Surfaces */
-  --surface-0: #0c0e13;
-  --surface-1: #13161e;
-  --surface-2: #1a1e29;
-  --surface-3: #232836;
+  /* Four-step surface depth ladder */
+  --surface-0: #0e1016;
+  --surface-1: #151821;
+  --surface-2: #1c202c;
+  --surface-3: #252a38;
   --line: rgb(255 255 255 / 0.08);
   --line-strong: rgb(255 255 255 / 0.16);
   --scrim: rgb(5 6 10 / 0.58);
   --scroll-shadow: rgb(0 0 0 / 0.5);
 
-  /* Text */
-  --text: #f2eee4;
-  --text-2: #c5bfb1;
-  --text-3: #999386;
+  /* Ink & readable text */
+  --text: #f0ece1;
+  --text-2: #bfb9ab;
+  --text-3: #9e988c;
 
-  /* Accents */
+  /* 6 AIM Brand Accents */
   --acc-brass: #d8aa5f;
   --acc-embers: #e5784f;
   --acc-arcane: #a486ff;
@@ -45,48 +30,73 @@
   --acc-rose: #e37fa4;
   --accent: var(--acc-brass);
   --accent-ink: #191105;
-  --accent-soft: color-mix(in oklab, var(--accent) 16%, transparent);
+  --accent-soft: color-mix(in oklab, var(--accent) 16%, var(--surface-1));
   --accent-line: color-mix(in oklab, var(--accent) 46%, transparent);
 
-  /* Status & semantics */
+  /* Semantic statuses & WCAG-safe surface mixes (never transparent-only inside surface-2 rows) */
   --hp: #ea7670;
-  --heal: #62c78e;
-  --temp: #5faee8;
-  --arcane: #a486ff;
-  --warn: #eab450;
+  --hp-soft: color-mix(in oklab, var(--hp) 16%, var(--surface-1));
+  --hp-line: color-mix(in oklab, var(--hp) 48%, transparent);
 
-  /* Geometry (one consistent radius family) */
-  --r-xs: 4px;
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 18px;
+  --heal: #62c78e;
+  --heal-soft: color-mix(in oklab, var(--heal) 16%, var(--surface-1));
+  --heal-line: color-mix(in oklab, var(--heal) 48%, transparent);
+
+  --temp: #5faee8;
+  --temp-soft: color-mix(in oklab, var(--temp) 16%, var(--surface-1));
+  --temp-line: color-mix(in oklab, var(--temp) 48%, transparent);
+
+  --arcane: #a486ff;
+  --arcane-soft: color-mix(in oklab, var(--arcane) 16%, var(--surface-1));
+  --arcane-line: color-mix(in oklab, var(--arcane) 48%, transparent);
+
+  --warn: #eab450;
+  --warn-soft: color-mix(in oklab, var(--warn) 16%, var(--surface-1));
+  --warn-line: color-mix(in oklab, var(--warn) 48%, transparent);
+
+  /* Spacing & concentric radius rhythm */
   --s1: 4px;
   --s2: 8px;
   --s3: 12px;
   --s4: 16px;
   --s5: 24px;
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-pill: 99px;
 
-  /* Typography scale (AIM typography + rem-based steps for zoom respect) */
-  --font-ui: "Onest Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "WAIFU Display", var(--font-ui);
-  --font-num: "Onest Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* Comfortable density metrics */
+  --row-h: 44px;
+  --tile: 36px;
+  --ctrl-h: 32px;
+  --ctrl-sm: 26px;
 
-  --t-xs: 0.75rem;
-  --t-sm: 0.8125rem;
+  /* Unified bi-script typography (Onest Variable covers Latin + Cyrillic) */
+  --font-ui: "Onest Variable", "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-ui);
+  --font-num: var(--font-ui);
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --t-xs: 0.6875rem;
+  --t-sm: 0.75rem;
+  --t-md: 0.78125rem;
   --t-base: 0.8125rem;
-  --t-md: 0.875rem;
-  --t-lg: 1.0625rem;
+  --t-title: 0.875rem;
+  --t-lg: 1rem;
+  --t-kpi: 1.25rem;
   --t-xl: 1.375rem;
 
   /* Motion */
   --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --d-fast: 140ms;
   --d-base: 240ms;
   --d-slow: 420ms;
 
+  /* 3-tier top edge highlight + ambient drop shadow */
   --shadow-card: 0 1px 0 rgb(255 255 255 / 0.045) inset, 0 2px 6px rgb(0 0 0 / 0.22);
   --shadow-1: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 8px 24px rgb(0 0 0 / 0.36);
   --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 18px 40px rgb(0 0 0 / 0.52);
@@ -122,9 +132,29 @@
   --acc-frost: #175783;
   --acc-rose: #a01c4c;
 
+  --accent-soft: color-mix(in oklab, var(--accent) 14%, var(--surface-1));
+  --hp-soft: color-mix(in oklab, var(--hp) 14%, var(--surface-1));
+  --heal-soft: color-mix(in oklab, var(--heal) 14%, var(--surface-1));
+  --temp-soft: color-mix(in oklab, var(--temp) 14%, var(--surface-1));
+  --arcane-soft: color-mix(in oklab, var(--arcane) 14%, var(--surface-1));
+  --warn-soft: color-mix(in oklab, var(--warn) 14%, var(--surface-1));
+
   --shadow-card: 0 1px 0 rgb(255 255 255 / 0.72) inset, 0 1px 3px rgb(65 42 14 / 0.08);
   --shadow-1: 0 1px 0 rgb(255 255 255 / 0.78) inset, 0 6px 18px rgb(65 42 14 / 0.12);
   --shadow-lift: 0 16px 36px rgb(65 42 14 / 0.2);
+}
+
+.waifu-root[data-density="compact"] {
+  --row-h: 34px;
+  --tile: 28px;
+  --ctrl-h: 28px;
+  --ctrl-sm: 24px;
+}
+
+.waifu-root[data-motion="off"] {
+  --d-fast: 0ms;
+  --d-base: 0ms;
+  --d-slow: 0ms;
 }
 
 .waifu-root[data-accent="brass"] { --accent: var(--acc-brass); }

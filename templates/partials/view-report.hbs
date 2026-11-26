@@ -1,0 +1,163 @@
+<div class="waifu-toolbar">
+  <span class="waifu-mono">{{localize "WAIFU.Report.Subtitle"}}</span>
+  <div class="waifu-toolbar-tools">
+    <button type="button" class="waifu-btn is-sm is-primary" data-action="exportHtml" {{#unless hasReport}}disabled{{/unless}}>
+      <i class="fa-solid fa-file-waveform" aria-hidden="true"></i>
+      .html
+    </button>
+    <button type="button" class="waifu-btn is-sm" data-action="exportMarkdown" {{#unless hasReport}}disabled{{/unless}}>
+      <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+      .md
+    </button>
+    <button type="button" class="waifu-btn is-sm" data-action="exportJson" {{#unless hasReport}}disabled{{/unless}}>
+      <i class="fa-solid fa-file-code" aria-hidden="true"></i>
+      .json
+    </button>
+    <button type="button" class="waifu-btn is-sm" data-action="copyMarkdown" {{#unless hasReport}}disabled{{/unless}}>
+      <i class="fa-solid fa-copy" aria-hidden="true"></i>
+      {{localize "WAIFU.Report.BtnCopyShort"}}
+    </button>
+    <button type="button" class="waifu-btn is-sm" data-action="saveJournalReport" {{#unless hasReport}}disabled{{/unless}}>
+      <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+      {{localize "WAIFU.Hub.BtnJournalShort"}}
+    </button>
+  </div>
+</div>
+
+<div class="waifu-studio-grid">
+  <section class="waifu-card">
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.Report.PreviewHeadingStudio"}}</h3>
+      {{#if hasReport}}
+        <div class="waifu-mode-switch" role="group" aria-label="{{localize 'WAIFU.Report.ViewModeLabel'}}">
+          <button
+            type="button"
+            class="waifu-chip"
+            data-action="setReportMode"
+            data-mode="visual"
+            aria-pressed="{{#if isReportVisual}}true{{else}}false{{/if}}"
+          >{{localize "WAIFU.Report.ModeVisualShort"}}</button>
+          <button
+            type="button"
+            class="waifu-chip"
+            data-action="setReportMode"
+            data-mode="markdown"
+            aria-pressed="{{#if isReportMarkdown}}true{{else}}false{{/if}}"
+          >Markdown</button>
+          <button
+            type="button"
+            class="waifu-chip"
+            data-action="setReportMode"
+            data-mode="journal"
+            aria-pressed="{{#if isReportJournal}}true{{else}}false{{/if}}"
+          >{{localize "WAIFU.Hub.BtnJournalShort"}}</button>
+        </div>
+      {{/if}}
+    </div>
+
+    {{#if hasReport}}
+      {{#if isReportVisual}}
+        <div class="waifu-report-scroll">
+          {{{visualReportHtml}}}
+        </div>
+      {{else if isReportMarkdown}}
+        <pre class="waifu-report-pre">{{markdownPreview}}</pre>
+      {{else}}
+        <div class="waifu-journal-preview">{{{journalPreviewHtml}}}</div>
+      {{/if}}
+    {{else}}
+      <p class="waifu-empty">{{localize "WAIFU.Overview.RunFirst"}}</p>
+    {{/if}}
+  </section>
+
+  <section class="waifu-card" data-thresholds-studio>
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.Studio.ThresholdsTitle"}}</h3>
+      <button type="button" class="waifu-link-btn" data-action="openFoundrySettings">
+        {{localize "WAIFU.Dialogs.BtnFoundrySettings"}}
+      </button>
+    </div>
+
+    <div class="waifu-threshold-grid">
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Settings.MaxTextureResolution.Name"}}</span>
+        <input type="number" data-threshold-field="maxTextureResolution" min="256" step="256" value="{{thresholds.maxTextureResolution}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Settings.MaxMegapixels.Name"}}</span>
+        <input type="number" data-threshold-field="maxMegapixels" min="1" step="1" value="{{thresholds.maxMegapixels}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Studio.MaxAssetMb"}}</span>
+        <input type="number" data-threshold-field="maxAssetMb" min="1" step="1" value="{{inlineThresholds.maxAssetMb}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Settings.MaxWalls.Name"}}</span>
+        <input type="number" data-threshold-field="maxWalls" min="10" step="10" value="{{thresholds.maxWalls}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Settings.MaxLights.Name"}}</span>
+        <input type="number" data-threshold-field="maxLights" min="1" step="5" value="{{thresholds.maxLights}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Settings.MaxAnimations.Name"}}</span>
+        <input type="number" data-threshold-field="maxAnimations" min="1" step="1" value="{{thresholds.maxAnimations}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Settings.NearDuplicateWallTolerance.Name"}}</span>
+        <input type="number" data-threshold-field="nearDuplicateWallTolerance" min="0" max="10" step="1" value="{{thresholds.nearDuplicateWallTolerance}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Settings.WebpQuality.Name"}}</span>
+        <input type="number" data-threshold-field="webpQuality" min="0.5" max="1" step="0.05" value="{{thresholds.webpQuality}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Studio.MaxSettingKb"}}</span>
+        <input type="number" data-threshold-field="maxSettingKb" min="1" step="1" value="{{inlineThresholds.maxSettingKb}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Studio.MaxFlagKb"}}</span>
+        <input type="number" data-threshold-field="maxFlagKb" min="1" step="1" value="{{inlineThresholds.maxFlagKb}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Settings.UuidMinAutoConfidence.Name"}}</span>
+        <input type="number" data-threshold-field="uuidMinAutoConfidence" min="0.75" max="1" step="0.05" value="{{thresholds.uuidMinAutoConfidence}}">
+      </label>
+      <label class="waifu-threshold-cell">
+        <span>{{localize "WAIFU.Settings.MaxChatMessages.Name"}}</span>
+        <input type="number" data-threshold-field="maxChatMessages" min="100" step="100" value="{{thresholds.maxChatMessages}}">
+      </label>
+    </div>
+
+    <div class="waifu-switch-list">
+      <label class="waifu-switch-row">
+        <span>{{localize "WAIFU.Settings.SkipLargerWebp.Name"}}</span>
+        <span class="waifu-switch">
+          <input type="checkbox" data-threshold-field="skipLargerWebp" {{#if thresholds.skipLargerWebp}}checked{{/if}}>
+          <span class="waifu-switch-track"><span class="waifu-switch-thumb"></span></span>
+        </span>
+      </label>
+      <label class="waifu-switch-row">
+        <span>{{localize "WAIFU.Settings.DownscaleOnConvert.Name"}}</span>
+        <span class="waifu-switch">
+          <input type="checkbox" data-threshold-field="downscaleOnConvert" {{#if thresholds.downscaleOnConvert}}checked{{/if}}>
+          <span class="waifu-switch-track"><span class="waifu-switch-thumb"></span></span>
+        </span>
+      </label>
+      <label class="waifu-switch-row">
+        <span>{{localize "WAIFU.Settings.IncludeChatMessages.Name"}}</span>
+        <span class="waifu-switch">
+          <input type="checkbox" data-threshold-field="includeChatMessages" {{#if thresholds.includeChatMessages}}checked{{/if}}>
+          <span class="waifu-switch-track"><span class="waifu-switch-thumb"></span></span>
+        </span>
+      </label>
+    </div>
+
+    <div class="waifu-row-actions" style="justify-content:flex-end;">
+      <button type="button" class="waifu-btn is-sm is-primary" data-action="saveInlineThresholds" {{#if busy}}disabled{{/if}}>
+        <i class="fa-solid fa-check" aria-hidden="true"></i>
+        {{localize "WAIFU.Dialogs.BtnSaveAndAudit"}}
+      </button>
+    </div>
+  </section>
+</div>

@@ -90,7 +90,91 @@
       "Forest": "Лес",
       "Frost": "Иней",
       "Rose": "Роза",
-      "Appearance": "Оформление"
+      "Appearance": "Оформление",
+      "ContrastHint": "Все 6 акцентов адаптированы под WCAG AA >= 4.5:1 в Ночи и Пергаменте."
+    },
+    "Nav": {
+      "BreadcrumbLabel": "Навигация по разделам",
+      "BackToHub": "Все окна",
+      "RootCrumb": "Центр аудита",
+      "DomainSwitcher": "Быстрый переход между окнами"
+    },
+    "Domains": {
+      "HealthFull": "1 · Индекс целостности и тренд",
+      "HealthShort": "Здоровье",
+      "AutofixFull": "2 · Автофикс и обслуживание",
+      "AutofixShort": "Автофикс",
+      "ScenesFull": "3 · Сцены и медиафайлы",
+      "ScenesShort": "Сцены",
+      "UuidsFull": "4 · Ссылки @UUID и якоря",
+      "UuidsShort": "@UUID",
+      "StorageFull": "5 · Хранилище БД и флаги",
+      "StorageShort": "БД",
+      "ReportFull": "6 · Студия отчёта и пороги",
+      "ReportShort": "Отчёт"
+    },
+    "Hub": {
+      "EmptyTitle": "Мир готов к первому аудиту",
+      "DetailCta": "Детализация",
+      "PtsUnit": "б.",
+      "W1Title": "1 · Индекс целостности и тренд",
+      "W1Cta": "Аналитика",
+      "W1PenaltyLabel": "Штрафы к индексу",
+      "W1Footer": "Матрица доменов • Распределения Min/Med/P95/Max",
+      "SparkTitle": "Динамика за {count} скан.",
+      "W2Title": "2 · Автофикс и обслуживание",
+      "W2Sub": "{fixes} безопасных правок • {alerts} системных алертов",
+      "W2Cta": "Центр правок",
+      "W2Footer": "Dry-run превью перед каждым действием",
+      "W2Action": "Автофикс всё",
+      "W3Title": "3 · Сцены и медиафайлы",
+      "W3Action": "Все -> WebP",
+      "WithIssuesWord": "с проблемами",
+      "CritShort": "критич.",
+      "WarnShort": "предупр.",
+      "W4Title": "4 · Ссылки @UUID и якоря",
+      "W4Action": "Заменить точные",
+      "LinksScanned": "ссылок • Журналы, Loreframe, Актёры",
+      "ValidWord": "валидны",
+      "BrokenWord": "битых",
+      "ExactWord": "точных",
+      "W5Title": "5 · Хранилище БД и флаги",
+      "W5Action": "Очистить сирот",
+      "W5Footer": "Бэкап и восстановление JSON",
+      "BtnBackupShort": "Бэкап",
+      "OrphanSettingsWord": "сирот-настроек",
+      "OrphanFlagsWord": "групп флагов",
+      "W6Title": "6 · Отчёт, экспорт и пороги",
+      "W6Sub": "Схема v2 • HTML / MD / JSON / Пороги",
+      "W6Cta": "Студия отчёта",
+      "W6Footer": "Предпросмотр HTML, Markdown и настройки порогов",
+      "W6Action": "Пороги (15)",
+      "TileTex": "Лимит текстур",
+      "TileGeo": "Геометрия сцен",
+      "TileDb": "Пороги БД",
+      "BtnJournalShort": "В журнал",
+      "LimitsWord": "параметров аудита"
+    },
+    "Autofix": {
+      "QueueTitle": "Очередь безопасного автофикса (Dry-Run)",
+      "SelectedCount": "Выбрано {selected} из {total}",
+      "ApplySelected": "Применить выбранное",
+      "MaintenanceTitle": "Обслуживание мира и исключения",
+      "BtnCleanShort": "Очистить",
+      "BtnShow": "Показать",
+      "BtnList": "Список",
+      "BtnManage": "Управлять"
+    },
+    "Drawer": {
+      "BtnInspector": "Инспектор",
+      "AssetsTitle": "Уровни и текстуры (Levels & Tiles)",
+      "GeometryTitle": "Геометрия и токены"
+    },
+    "Studio": {
+      "ThresholdsTitle": "Пороги и параметры аудита (15)",
+      "MaxAssetMb": "Макс. вес файла (MB)",
+      "MaxSettingKb": "Порог Setting (KB)",
+      "MaxFlagKb": "Порог Flags (KB)"
     },
     "Masthead": {
       "RunAudit": "Запустить аудит",
@@ -127,7 +211,11 @@
       "BrokenMediaTitle": "Битые 404-медиа вне сцен",
       "BrokenMediaHint": "Отсутствующие портреты актёров, токенов, предметов и аудио в плейлистах (HTTP 404)",
       "UnusedOptimizedTitle": "Неиспользуемые файлы в waifu-optimized",
-      "UnusedOptimizedHint": "Эти WebP-файлы в папке мира больше не используются ни одним проверенным документом."
+      "UnusedOptimizedHint": "Эти WebP-файлы в папке мира больше не используются ни одним проверенным документом.",
+      "ChatShort": "Чат",
+      "CombatsShort": "Пустых боёв",
+      "Broken404Short": "404 вне сцен",
+      "BtnPruneShort": "Архивировать"
     },
     "Progress": {
       "Scanning": "Сканирование мира...",
@@ -208,7 +296,14 @@
       "MetricRes": "Разрешение (MP)",
       "MetricWalls": "Стены",
       "MetricLights": "Источники света",
-      "MetricAnims": "Анимации"
+      "MetricAnims": "Анимации",
+      "DomainCol": "Домен",
+      "WallsCountShort": "стен",
+      "LevelsShort": "уров.",
+      "ScenesWord": "сцен",
+      "LightsShort": "свет.",
+      "TexturesShort": "Текстуры",
+      "AnimLights": "Анимации света"
     },
     "Rail": {
       "HealthTitle": "Целостность мира",
@@ -293,7 +388,8 @@
       "BtnFocusCanvas": "Фокус на холсте",
       "BtnOpenScene": "Настроить сцену",
       "ExtraMissingMedia": "битых токен/рис./звук 404",
-      "MoreAssets": "ещё текстур"
+      "MoreAssets": "ещё текстур",
+      "OrphanTokensShort": "Осирот. токены"
     },
     "Uuids": {
       "SearchPlaceholder": "Фильтр по документу, UUID или тексту...",
@@ -351,8 +447,10 @@
         "orphaned": "Удалённый модуль",
         "inactive": "Отключённый модуль",
         "bloated": "Раздутый активный",
+        "core": "Ядро",
         "ok": "Активен"
       },
+      "FlagsShort": "Флаги док-тов",
       "BtnInspect": "Просмотр",
       "BtnDelete": "Удалить"
     },
@@ -369,7 +467,10 @@
       "ModeMarkdown": "Markdown",
       "ModeJournal": "Предпросмотр журнала",
       "PreviewHeading": "Предпросмотр отчёта Markdown",
-      "JournalPreviewHeading": "Предпросмотр HTML для журнала Foundry"
+      "JournalPreviewHeading": "Предпросмотр HTML для журнала Foundry",
+      "BtnCopyShort": "Копировать",
+      "PreviewHeadingStudio": "Предпросмотр отчёта",
+      "ModeVisualShort": "Визуальный"
     },
     "Dialogs": {
       "ConfirmTitle": "Подтверждение автоисправления WAIFU",

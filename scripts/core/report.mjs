@@ -1099,16 +1099,6 @@ export function formatReportHtml(report, options = {}) {
   const bodyHtml = formatReportHtmlBody(report, { lang });
 
   const standaloneCss = `
-@font-face {
-  font-family: "WAIFU Display"; font-weight: 400;
-  src: local("Palatino Linotype"), local("PalatinoLinotype-Roman"), local("Book Antiqua"), local("Palatino"), local("Palatino-Roman");
-  unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F;
-}
-@font-face {
-  font-family: "WAIFU Display"; font-weight: 700;
-  src: local("Palatino Linotype Bold"), local("PalatinoLinotype-Bold"), local("Book Antiqua Bold"), local("Palatino Bold"), local("Palatino-Bold");
-  unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F;
-}
 :root { color-scheme: dark; }
 .waifu-root {
   --surface-0: #0e1016; --surface-1: #151821; --surface-2: #1c202c; --surface-3: #252a38;
@@ -1117,15 +1107,15 @@ export function formatReportHtml(report, options = {}) {
   --acc-brass: #d8aa5f; --acc-embers: #e5784f; --acc-arcane: #a486ff;
   --acc-forest: #63c393; --acc-frost: #72baea; --acc-rose: #e37fa4;
   --accent: var(--acc-brass); --accent-ink: #191105;
-  --accent-soft: color-mix(in oklab, var(--accent) 16%, transparent);
+  --accent-soft: color-mix(in oklab, var(--accent) 16%, var(--surface-1));
   --accent-line: color-mix(in oklab, var(--accent) 46%, transparent);
   --hp: #ea7670; --heal: #62c78e; --temp: #5faee8; --arcane: #a486ff; --warn: #eab450;
   --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;
   --font-ui: "Onest Variable", "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "WAIFU Display", var(--font-ui);
-  --font-num: "Onest Variable", "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-display: var(--font-ui);
+  --font-num: var(--font-ui);
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
   --shadow-1: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 8px 24px rgb(0 0 0 / 0.36);
 }
 .waifu-root[data-theme="parchment"] {

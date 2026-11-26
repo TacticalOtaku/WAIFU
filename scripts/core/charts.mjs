@@ -459,6 +459,98 @@ export function getChartLabels(lang = "en") {
 }
 
 /**
+ * Render a compact multi-segment bar without legend (for tight telemetry headers).
+ * @param {Array<{ label: string, value: number, displayValue?: string, tone: string }>} segments
+ * @param {{ ariaLabel?: string, totalMax?: number }} options
+ * @returns {string}
+ */
+export function renderCompactBarHtml(segments, options = {}) {
+  const clean = (segments ?? []).map((seg) => ({
+    label: String(seg.label ?? ""),
+    value: Math.max(0, Number(seg.value) || 0),
+    displayValue: seg.displayValue ?? String(Math.max(0, Number(seg.value) || 0)),
+    tone: seg.tone || "accent"
+  }));
+  const sum = clean.reduce((acc, s) => acc + s.value, 0);
+  const scaleTotal = Math.max(Number(options.totalMax) || 0, sum, 1);
+  const ariaLabel = escapeHtml(options.ariaLabel || "Breakdown");
+
+  const fills =
+    sum > 0
+      ? clean
+          .filter((s) => s.value > 0)
+          .map((s) => {
+            const pct = Math.max(2, (s.value / scaleTotal) * 100).toFixed(2);
+            const color = resolveToneColor(s.tone);
+            return `<span class="waifu-seg-fill" style="width:${pct}%;background:${color}" title="${escapeHtml(s.label)}: ${escapeHtml(s.displayValue)}"></span>`;
+          })
+          .join("")
+      : `<span class="waifu-seg-fill is-empty" style="width:100%"></span>`;
+
+  return `<div class="waifu-segbar" role="img" aria-label="${ariaLabel}">${fills}</div>`;
+}
+
+/**
+ * Render a compact sparkline SVG for the Hub Window 1 telemetry card.
+ * @param {Array<{ generatedAt?: string, healthScore: number }>} history
+ * @param {number} fallbackScore
+ * @param {{ ariaLabel?: string }} options
+ * @returns {string}
+ */
+export function renderCompactSparklineSvg(history = [], fallbackScore = 100, options = {}) {
+  const entries = (history ?? []).filter((e) => Number.isFinite(Number(e?.healthScore)));
+  const pointsSource =
+    entries.length >= 2
+      ? entries.slice(-8)
+      : [
+          { healthScore: Number.isFinite(Number(fallbackScore)) ? Number(fallbackScore) : 100 },
+          { healthScore: Number.isFinite(Number(fallbackScore)) ? Number(fallbackScore) : 100 }
+        ];
+
+  const width = 380;
+  const height = 42;
+  const padX = 10;
+  const padY = 9;
+  const plotW = width - padX * 2;
+  const plotH = height - padY * 2;
+
+  const scores = pointsSource.map((e) => Math.max(0, Math.min(100, Number(e.healthScore))));
+  const minS = Math.max(0, Math.min(...scores) - 8);
+  const maxS = Math.min(100, Math.max(...scores, minS + 10));
+  const span = Math.max(10, maxS - minS);
+
+  const coords = pointsSource.map((entry, idx) => {
+    const x = padX + (pointsSource.length === 1 ? plotW / 2 : (idx / (pointsSource.length - 1)) * plotW);
+    const ratio = (Math.max(0, Math.min(100, Number(entry.healthScore))) - minS) / span;
+    const y = padY + (1 - ratio) * plotH;
+    return { x, y, score: Math.round(Number(entry.healthScore)) };
+  });
+
+  const polylinePts = coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+  const last = coords[coords.length - 1];
+  const lastTone = last.score < 60 ? "critical" : last.score < 85 ? "warning" : "ok";
+  const dotColor = resolveToneColor(lastTone);
+  const lineColor = resolveToneColor("ok");
+
+  const dots = coords
+    .map((c, idx) => {
+      const isLast = idx === coords.length - 1;
+      return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isLast ? 4 : 3}" fill="${isLast ? dotColor : lineColor}" />`;
+    })
+    .join("");
+
+  const ariaLabel = escapeHtml(options.ariaLabel || "Health Sparkline");
+  return [
+    `<svg class="waifu-spark-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${ariaLabel}">`,
+    `<title>${ariaLabel}</title>`,
+    `<line x1="${padX}" y1="${(height / 2).toFixed(1)}" x2="${padX + plotW}" y2="${(height / 2).toFixed(1)}" stroke="var(--line)" stroke-width="1" />`,
+    `<polyline points="${polylinePts}" fill="none" stroke="${lineColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />`,
+    dots,
+    `</svg>`
+  ].join("");
+}
+
+/**
  * Render an inline SVG health score trend sparkline across audit history entries.
  * @param {Array<{ generatedAt: string, healthScore: number, totalIssues?: number }>} history
  * @param {{ ariaLabel?: string, emptyLabel?: string }} options
@@ -471,7 +563,7 @@ export function renderHealthTrendSvg(history = [], options = {}) {
   }
 
   const width = 540;
-  const height = 104;
+  const height = 112;
   const padX = 28;
   const padTop = 18;
   const padBottom = 22;
@@ -496,16 +588,24 @@ export function renderHealthTrendSvg(history = [], options = {}) {
   const lastScore = Math.round(Number(last.entry.healthScore));
   const tone = lastScore < 60 ? "critical" : lastScore < 85 ? "warning" : "ok";
   const strokeColor = resolveToneColor(tone);
+  const lineColor = resolveToneColor("ok");
+
+  const gridLines = [0.25, 0.6].map((frac) => {
+    const gy = (padTop + plotH * frac).toFixed(1);
+    return `<line x1="${padX}" y1="${gy}" x2="${padX + plotW}" y2="${gy}" stroke="var(--line)" stroke-width="1" />`;
+  }).join("");
 
   const dots = coords
     .map((c, idx) => {
       const dateStr = String(c.entry.generatedAt ?? "").slice(0, 16).replace("T", " ");
       const tip = `${dateStr}: ${Math.round(c.entry.healthScore)}%`;
-      const isEnd = idx === coords.length - 1 || idx === 0;
+      const isLast = idx === coords.length - 1;
+      const isEnd = isLast || idx === 0;
+      const dotFill = isLast ? strokeColor : lineColor;
       return [
         `<g>`,
         `<title>${escapeHtml(tip)}</title>`,
-        `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isEnd ? 4 : 3}" fill="${strokeColor}" stroke="var(--surface-1)" stroke-width="1.5" />`,
+        `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isEnd ? 4.2 : 3.2}" fill="${dotFill}" stroke="var(--surface-1)" stroke-width="1.5" />`,
         isEnd
           ? `<text x="${c.x.toFixed(1)}" y="${Math.max(12, c.y - 7).toFixed(1)}" text-anchor="${idx === 0 ? "start" : "end"}" class="waifu-hbar-val">${Math.round(c.entry.healthScore)}%</text>`
           : "",
@@ -521,9 +621,10 @@ export function renderHealthTrendSvg(history = [], options = {}) {
   return [
     `<svg class="waifu-hbar-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${ariaLabel}">`,
     `<title>${ariaLabel}</title>`,
+    gridLines,
     `<line x1="${padX}" y1="${padTop + plotH}" x2="${padX + plotW}" y2="${padTop + plotH}" stroke="var(--line-strong)" stroke-width="1" />`,
-    `<polygon points="${areaPts}" fill="${strokeColor}" fill-opacity="0.12" />`,
-    `<polyline points="${polylinePts}" fill="none" stroke="${strokeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />`,
+    `<polygon points="${areaPts}" fill="${lineColor}" fill-opacity="0.11" />`,
+    `<polyline points="${polylinePts}" fill="none" stroke="${lineColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />`,
     dots,
     `<text x="${padX}" y="${height - 4}" text-anchor="start" class="waifu-hbar-limit">${escapeHtml(startStamp)}</text>`,
     `<text x="${padX + plotW}" y="${height - 4}" text-anchor="end" class="waifu-hbar-limit">${escapeHtml(endStamp)}</text>`,
@@ -587,6 +688,10 @@ export function buildReportCharts(report, stats, lang = "en") {
   const penaltyBarHtml = penaltySegments.length
     ? renderStackedBarHtml(penaltySegments, { ariaLabel: "Score penalties" })
     : "";
+  const penaltyCompactBarHtml = renderCompactBarHtml(penaltySegments, {
+    totalMax: 100,
+    ariaLabel: "Score penalties"
+  });
 
   // 4. Texture Format Donut + Stacked Bar
   const formatSegments = [
@@ -602,6 +707,9 @@ export function buildReportCharts(report, stats, lang = "en") {
     { emptyLabel: L.emptyScenes }
   );
   const assetFormatBarHtml = renderStackedBarHtml(formatSegments, {
+    ariaLabel: L.domains.assets
+  });
+  const assetFormatCompactBarHtml = renderCompactBarHtml(formatSegments, {
     ariaLabel: L.domains.assets
   });
 
@@ -657,6 +765,9 @@ export function buildReportCharts(report, stats, lang = "en") {
   const uuidBarHtml = renderStackedBarHtml(uuidHealthSegments, {
     ariaLabel: L.domains.uuids
   });
+  const uuidCompactBarHtml = renderCompactBarHtml(uuidHealthSegments, {
+    ariaLabel: L.domains.uuids
+  });
 
   // 8. Top Offending @UUID Source Documents
   const uuidTopDocsSvg = renderHorizontalBarChartSvg(
@@ -708,6 +819,19 @@ export function buildReportCharts(report, stats, lang = "en") {
     { ariaLabel: L.storage.reclaimable }
   );
 
+  const storageCompactSegments = storageStats.settingsByState.map((st) => ({
+    label: L.storage[st.state] ?? st.state,
+    value: st.bytes,
+    displayValue: st.formattedSize,
+    tone: stateTone[st.state] ?? "accent"
+  }));
+  if (storageStats.totalFlagsBytes > 0 && storageStats.reclaimableFlagsBytes > 0) {
+    storageCompactSegments[3].value += storageStats.reclaimableFlagsBytes;
+  }
+  const storageCompactBarHtml = renderCompactBarHtml(storageCompactSegments, {
+    ariaLabel: L.domains.settings
+  });
+
   // 10. Top Namespaces Horizontal Bars
   const topNamespacesSvg = renderHorizontalBarChartSvg(
     storageStats.topNamespaces.slice(0, 7).map((ns) => ({
@@ -719,28 +843,38 @@ export function buildReportCharts(report, stats, lang = "en") {
     { emptyLabel: L.emptyStorage }
   );
 
-  // 11. Optional Audit History Sparkline
+  // 11. Optional Audit History Sparkline + Hub micro-sparkline
   const healthTrendSvg =
     Array.isArray(report?.history) && report.history.length >= 2
       ? renderHealthTrendSvg(report.history, {
           ariaLabel: lang === "ru" ? "Динамика индекса здоровья" : "Health Score Trend"
         })
       : "";
+  const healthSparklineSvg = renderCompactSparklineSvg(
+    report?.history ?? [],
+    summary.healthScore ?? 100,
+    { ariaLabel: lang === "ru" ? "Динамика индекса здоровья" : "Health Score Trend" }
+  );
 
   return {
     healthGaugeSvg,
     domainMatrixHtml,
     penaltyBarHtml,
+    penaltyCompactBarHtml,
     assetFormatDonutHtml,
     assetFormatBarHtml,
+    assetFormatCompactBarHtml,
     heavySceneBarsSvg,
     sceneResolutionBarsSvg,
     uuidDonutHtml,
     uuidBarHtml,
+    uuidCompactBarHtml,
     uuidTopDocsSvg,
     storageDonutHtml,
     storageStateBarHtml,
+    storageCompactBarHtml,
     topNamespacesSvg,
-    healthTrendSvg
+    healthTrendSvg,
+    healthSparklineSvg
   };
 }

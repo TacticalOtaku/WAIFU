@@ -1,0 +1,134 @@
+<div class="waifu-drill-grid">
+  <section class="waifu-card">
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.History.Title"}}</h3>
+      <div class="waifu-row-actions">
+        <button type="button" class="waifu-btn is-sm" data-action="compareReportFile">
+          <i class="fa-solid fa-code-compare" aria-hidden="true"></i>
+          {{localize "WAIFU.History.CompareBtn"}}
+        </button>
+        {{#if hasCustomComparison}}
+          <button type="button" class="waifu-btn is-sm" data-action="clearComparison">
+            {{localize "WAIFU.History.ClearCompare"}}
+          </button>
+        {{/if}}
+      </div>
+    </div>
+
+    {{#if comparison}}
+      <div class="waifu-row-actions">
+        <span class="waifu-badge {{#if comparison.isHealthUp}}is-ok{{else if comparison.isHealthDown}}is-critical{{/if}}">
+          {{localize "WAIFU.History.HealthDelta"}}: {{comparison.healthDeltaLabel}}
+        </span>
+        <span class="waifu-badge">
+          {{localize "WAIFU.History.IssuesDelta"}}: {{comparison.issuesDeltaLabel}}
+        </span>
+        <span class="waifu-badge">
+          {{localize "WAIFU.History.BrokenUuidDelta"}}: {{comparison.uuidsDeltaLabel}}
+        </span>
+        <span class="waifu-badge">
+          {{localize "WAIFU.History.StorageDelta"}}: {{comparison.reclaimableDelta}}
+        </span>
+      </div>
+    {{/if}}
+
+    {{#if charts.healthTrendSvg}}
+      <div class="waifu-w1-sparkbox">
+        {{{charts.healthTrendSvg}}}
+      </div>
+    {{else}}
+      <p class="waifu-empty">{{localize "WAIFU.History.NeedTwoScans"}}</p>
+    {{/if}}
+  </section>
+
+  <section class="waifu-card">
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.Charts.PenaltyBreakdown"}}</h3>
+      <span class="waifu-mini-metric is-{{summary.healthStateBadge}}">
+        -{{stats.scoreBreakdown.totalDeduction}} / 100 {{localize "WAIFU.Hub.PtsUnit"}}
+      </span>
+    </div>
+
+    <div class="waifu-penalty-list">
+      {{#each penaltyRows}}
+        <div class="waifu-penalty-item">
+          <div class="waifu-penalty-row">
+            <strong>{{this.label}}</strong>
+            <span class="waifu-mini-metric is-{{this.tone}}">{{this.valueLabel}}</span>
+          </div>
+          <div class="waifu-penalty-track">
+            <div class="waifu-penalty-fill" style="width:{{this.widthPct}}%;background:{{this.colorCss}}"></div>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  </section>
+
+  <section class="waifu-card">
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.Charts.DomainMatrix"}}</h3>
+      <span class="waifu-mono">{{summary.totalIssues}} {{localize "WAIFU.Charts.IssuesLabel"}}</span>
+    </div>
+
+    <div class="waifu-table-wrap">
+      <table class="waifu-table waifu-stats-table">
+        <thead>
+          <tr>
+            <th>{{localize "WAIFU.Stats.DomainCol"}}</th>
+            <th>{{localize "WAIFU.Severity.critical"}}</th>
+            <th>{{localize "WAIFU.Severity.warning"}}</th>
+            <th>{{localize "WAIFU.Severity.info"}}</th>
+            <th>{{localize "WAIFU.Severity.ok"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each domainMatrixRows}}
+            <tr>
+              <th scope="row">{{this.label}} ({{this.total}})</th>
+              <td><span class="waifu-mini-metric {{#if this.critical}}is-critical{{/if}}">{{this.critical}}</span></td>
+              <td><span class="waifu-mini-metric {{#if this.warning}}is-warning{{/if}}">{{this.warning}}</span></td>
+              <td><span class="waifu-mini-metric {{#if this.info}}is-info{{/if}}">{{this.info}}</span></td>
+              <td><span class="waifu-mini-metric is-ok">{{this.ok}}</span></td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="waifu-card">
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.Overview.DistributionsTitle"}}</h3>
+      <span class="waifu-mono">{{scenes.totalScenes}} {{localize "WAIFU.Tabs.Scenes"}}</span>
+    </div>
+
+    <div class="waifu-table-wrap">
+      <table class="waifu-table waifu-stats-table">
+        <thead>
+          <tr>
+            <th>{{localize "WAIFU.Stats.Metric"}}</th>
+            <th>{{localize "WAIFU.Stats.Min"}}</th>
+            <th>{{localize "WAIFU.Stats.Avg"}}</th>
+            <th>{{localize "WAIFU.Stats.Median"}}</th>
+            <th>{{localize "WAIFU.Stats.P95"}}</th>
+            <th>{{localize "WAIFU.Stats.Max"}}</th>
+            <th>{{localize "WAIFU.Stats.Total"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each sceneDistributionRows}}
+            <tr>
+              <th scope="row">{{this.label}}</th>
+              <td>{{this.min}}</td>
+              <td>{{this.avg}}</td>
+              <td>{{this.median}}</td>
+              <td>{{this.p95}}</td>
+              <td><strong class="waifu-mini-metric {{#if this.max}}is-warning{{/if}}">{{this.max}}</strong></td>
+              <td>{{this.total}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

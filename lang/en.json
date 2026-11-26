@@ -90,7 +90,91 @@
       "Forest": "Forest",
       "Frost": "Frost",
       "Rose": "Rose",
-      "Appearance": "Appearance"
+      "Appearance": "Appearance",
+      "ContrastHint": "All 6 accents meet WCAG AA >= 4.5:1 across Night and Parchment."
+    },
+    "Nav": {
+      "BreadcrumbLabel": "Navigation Trail",
+      "BackToHub": "All Windows",
+      "RootCrumb": "Audit Hub",
+      "DomainSwitcher": "Quick Switch Domains"
+    },
+    "Domains": {
+      "HealthFull": "1 · Integrity Score & Trend",
+      "HealthShort": "Health",
+      "AutofixFull": "2 · Auto-Fix & Maintenance",
+      "AutofixShort": "Auto-Fix",
+      "ScenesFull": "3 · Scenes & Media",
+      "ScenesShort": "Scenes",
+      "UuidsFull": "4 · @UUID Links & Anchors",
+      "UuidsShort": "@UUID",
+      "StorageFull": "5 · Database Storage & Flags",
+      "StorageShort": "Storage",
+      "ReportFull": "6 · Report Studio & Thresholds",
+      "ReportShort": "Report"
+    },
+    "Hub": {
+      "EmptyTitle": "World Ready for First Audit",
+      "DetailCta": "Inspect",
+      "PtsUnit": "pts",
+      "W1Title": "1 · Integrity Score & Trend",
+      "W1Cta": "Analytics",
+      "W1PenaltyLabel": "Score deductions",
+      "W1Footer": "Domain matrix • Min/Med/P95/Max distributions",
+      "SparkTitle": "Trend over {count} scan(s)",
+      "W2Title": "2 · Auto-Fix & Maintenance",
+      "W2Sub": "{fixes} safe fixes • {alerts} system alerts",
+      "W2Cta": "Fix Center",
+      "W2Footer": "Dry-run preview before every mutation",
+      "W2Action": "Auto-Fix All",
+      "W3Title": "3 · Scenes & Media",
+      "W3Action": "All -> WebP",
+      "WithIssuesWord": "with issues",
+      "CritShort": "crit",
+      "WarnShort": "warn",
+      "W4Title": "4 · @UUID Links & Anchors",
+      "W4Action": "Replace Exact",
+      "LinksScanned": "refs • Journals, Loreframe, Actors",
+      "ValidWord": "valid",
+      "BrokenWord": "broken",
+      "ExactWord": "exact",
+      "W5Title": "5 · Database Storage & Flags",
+      "W5Action": "Clean Orphans",
+      "W5Footer": "JSON backup & restore",
+      "BtnBackupShort": "Backup",
+      "OrphanSettingsWord": "orphan settings",
+      "OrphanFlagsWord": "flag groups",
+      "W6Title": "6 · Report, Export & Thresholds",
+      "W6Sub": "Schema v2 • HTML / MD / JSON / Thresholds",
+      "W6Cta": "Report Studio",
+      "W6Footer": "HTML, Markdown preview & thresholds",
+      "W6Action": "Thresholds (15)",
+      "TileTex": "Texture limit",
+      "TileGeo": "Scene geometry",
+      "TileDb": "DB thresholds",
+      "BtnJournalShort": "To Journal",
+      "LimitsWord": "audit limits"
+    },
+    "Autofix": {
+      "QueueTitle": "Safe Auto-Fix Queue (Dry-Run)",
+      "SelectedCount": "{selected} of {total} selected",
+      "ApplySelected": "Apply Selected",
+      "MaintenanceTitle": "World Maintenance & Exclusions",
+      "BtnCleanShort": "Clean",
+      "BtnShow": "Show",
+      "BtnList": "List",
+      "BtnManage": "Manage"
+    },
+    "Drawer": {
+      "BtnInspector": "Inspector",
+      "AssetsTitle": "Levels & Textures (Levels & Tiles)",
+      "GeometryTitle": "Geometry & Tokens"
+    },
+    "Studio": {
+      "ThresholdsTitle": "Audit Thresholds & Options (15)",
+      "MaxAssetMb": "Max asset weight (MB)",
+      "MaxSettingKb": "Setting threshold (KB)",
+      "MaxFlagKb": "Flag threshold (KB)"
     },
     "Masthead": {
       "RunAudit": "Run Audit",
@@ -127,7 +211,11 @@
       "BrokenMediaTitle": "Broken 404 Non-Scene Media",
       "BrokenMediaHint": "Missing Actor, Token, Item, or Playlist audio files returning HTTP 404",
       "UnusedOptimizedTitle": "Unreferenced Files in waifu-optimized",
-      "UnusedOptimizedHint": "These generated WebP files in the world folder are no longer referenced by any audited document."
+      "UnusedOptimizedHint": "These generated WebP files in the world folder are no longer referenced by any audited document.",
+      "ChatShort": "Chat",
+      "CombatsShort": "Empty combats",
+      "Broken404Short": "404 outside scenes",
+      "BtnPruneShort": "Archive"
     },
     "Progress": {
       "Scanning": "Scanning world...",
@@ -208,7 +296,14 @@
       "MetricRes": "Resolution (MP)",
       "MetricWalls": "Walls",
       "MetricLights": "Ambient Lights",
-      "MetricAnims": "Animations"
+      "MetricAnims": "Animations",
+      "DomainCol": "Domain",
+      "WallsCountShort": "walls",
+      "LevelsShort": "lvls",
+      "ScenesWord": "scenes",
+      "LightsShort": "lights",
+      "TexturesShort": "Textures",
+      "AnimLights": "Animated lights"
     },
     "Rail": {
       "HealthTitle": "World Integrity",
@@ -293,7 +388,8 @@
       "BtnFocusCanvas": "Focus on Canvas",
       "BtnOpenScene": "Configure Scene",
       "ExtraMissingMedia": "missing token/drawing/sound 404",
-      "MoreAssets": "more assets"
+      "MoreAssets": "more assets",
+      "OrphanTokensShort": "Orphan tokens"
     },
     "Uuids": {
       "SearchPlaceholder": "Filter by document, UUID, or label...",
@@ -351,8 +447,10 @@
         "orphaned": "Deleted Module",
         "inactive": "Disabled Module",
         "bloated": "Bloated Active",
+        "core": "Core",
         "ok": "Active"
       },
+      "FlagsShort": "Document Flags",
       "BtnInspect": "Inspect",
       "BtnDelete": "Delete"
     },
@@ -369,7 +467,10 @@
       "ModeMarkdown": "Markdown",
       "ModeJournal": "Journal Preview",
       "PreviewHeading": "Markdown Report Preview",
-      "JournalPreviewHeading": "Foundry Journal HTML Preview"
+      "JournalPreviewHeading": "Foundry Journal HTML Preview",
+      "BtnCopyShort": "Copy",
+      "PreviewHeadingStudio": "Report Preview",
+      "ModeVisualShort": "Visual"
     },
     "Dialogs": {
       "ConfirmTitle": "Confirm WAIFU Auto-Fix",

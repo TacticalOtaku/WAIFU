@@ -1,0 +1,387 @@
+{{#unless hasReport}}
+  <div class="waifu-card waifu-empty-card">
+    <div class="waifu-brand-emblem" aria-hidden="true">
+      <i class="fa-solid fa-stethoscope"></i>
+    </div>
+    <h2>{{localize "WAIFU.Hub.EmptyTitle"}}</h2>
+    <p class="waifu-empty">{{localize "WAIFU.Overview.RunFirst"}}</p>
+    <button type="button" class="waifu-btn is-primary" data-action="runAudit" {{#if busy}}disabled{{/if}}>
+      <i class="fa-solid fa-arrows-rotate {{#if busy}}fa-spin{{/if}}" aria-hidden="true"></i>
+      {{localize "WAIFU.Masthead.RunAudit"}}
+    </button>
+  </div>
+{{else}}
+  <div class="waifu-hub-grid">
+    {{!-- Window 1: Integrity Score & Trend --}}
+    <article class="waifu-subwin" data-action="drillDown" data-tab="health" data-tone="{{summary.healthStateBadge}}">
+      <div class="waifu-subwin-head">
+        <div class="waifu-subwin-titlegroup">
+          <div class="waifu-subwin-icon is-warning" aria-hidden="true">
+            <i class="fa-solid fa-wave-square"></i>
+          </div>
+          <div class="waifu-subwin-titles">
+            <h2 class="waifu-subwin-title">{{localize "WAIFU.Hub.W1Title"}}</h2>
+            <span class="waifu-subwin-sub">{{hubMeta.w1Sub}}</span>
+          </div>
+        </div>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="health">
+          {{localize "WAIFU.Hub.W1Cta"}} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="waifu-w1-grid">
+        <div class="waifu-w1-gaugebox">
+          {{{charts.healthGaugeSvg}}}
+          <span class="waifu-mini-metric is-{{summary.healthStateBadge}}">
+            {{healthStateLabel}} • -{{stats.scoreBreakdown.totalDeduction}} {{localize "WAIFU.Hub.PtsUnit"}}
+          </span>
+        </div>
+
+        <div class="waifu-w1-right">
+          <div class="waifu-w1-pen-head">
+            <span>{{localize "WAIFU.Hub.W1PenaltyLabel"}} ({{stats.scoreBreakdown.totalDeduction}} / 100)</span>
+            <span class="waifu-mono">{{hubMeta.w1PenaltySummary}}</span>
+          </div>
+          {{{charts.penaltyCompactBarHtml}}}
+
+          <div class="waifu-w1-sparkbox">
+            <div class="waifu-w1-spark-head">
+              <span>{{hubMeta.sparkTitle}}</span>
+              <div class="waifu-row-actions">
+                {{#if comparison}}
+                  <span class="waifu-badge {{#if comparison.isHealthUp}}is-ok{{else if comparison.isHealthDown}}is-critical{{/if}}">
+                    {{comparison.healthDeltaLabel}}
+                  </span>
+                  <span class="waifu-badge">
+                    {{comparison.issuesDeltaLabel}} {{localize "WAIFU.Charts.IssuesLabel"}}
+                  </span>
+                {{else}}
+                  <span class="waifu-badge is-{{summary.healthStateBadge}}">{{summary.healthScore}}%</span>
+                {{/if}}
+              </div>
+            </div>
+            {{{charts.healthSparklineSvg}}}
+          </div>
+        </div>
+      </div>
+
+      <div class="waifu-subwin-footer">
+        <span>{{localize "WAIFU.Hub.W1Footer"}}</span>
+        <button type="button" class="waifu-btn is-sm" data-action="compareReportFile">
+          {{localize "WAIFU.History.CompareBtn"}}
+        </button>
+      </div>
+    </article>
+
+    {{!-- Window 2: Safe Auto-Fix & Maintenance --}}
+    <article class="waifu-subwin" data-action="drillDown" data-tab="autofix" data-tone="{{#if summary.totalFixable}}ok{{else}}info{{/if}}">
+      <div class="waifu-subwin-head">
+        <div class="waifu-subwin-titlegroup">
+          <div class="waifu-subwin-icon is-heal" aria-hidden="true">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <div class="waifu-subwin-titles">
+            <h2 class="waifu-subwin-title">{{localize "WAIFU.Hub.W2Title"}}</h2>
+            <span class="waifu-subwin-sub">{{hubMeta.w2Sub}}</span>
+          </div>
+        </div>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="autofix">
+          {{localize "WAIFU.Hub.W2Cta"}} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="waifu-subwin-body">
+        {{#if hubAutofixPreview.length}}
+          <div class="waifu-mini-rows">
+            {{#each hubAutofixPreview}}
+              <div class="waifu-mini-row">
+                <div class="waifu-mini-row-left">
+                  <strong class="waifu-mini-row-title">{{this.label}}</strong>
+                  <span class="waifu-mini-row-sub">{{this.detail}}</span>
+                </div>
+                <button
+                  type="button"
+                  class="waifu-btn is-sm {{#if this.primary}}is-accent-outline{{/if}}"
+                  data-action="{{this.action}}"
+                  {{#if @root.busy}}disabled{{/if}}
+                >{{this.btnText}}</button>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <p class="waifu-empty">{{localize "WAIFU.Overview.NoIssues"}}</p>
+        {{/if}}
+
+        <div class="waifu-row-actions">
+          <span class="waifu-badge {{#if extras.chatBloated}}is-warning{{/if}}">
+            {{localize "WAIFU.Extras.ChatShort"}}: {{extras.chatMessagesCount}} / {{extras.maxChatMessages}}
+          </span>
+          <span class="waifu-badge {{#if extras.staleCombatsCount}}is-warning{{/if}}">
+            {{localize "WAIFU.Extras.CombatsShort"}}: {{extras.staleCombatsCount}}
+          </span>
+          <span class="waifu-badge {{#if extras.brokenMediaCount}}is-critical{{/if}}">
+            {{localize "WAIFU.Extras.Broken404Short"}}: {{extras.brokenMediaCount}}
+          </span>
+        </div>
+      </div>
+
+      <div class="waifu-subwin-footer">
+        <span>{{localize "WAIFU.Hub.W2Footer"}}</span>
+        <button
+          type="button"
+          class="waifu-btn is-sm is-heal"
+          data-action="fixAllRecommended"
+          {{#unless hasAnyFixable}}disabled{{/unless}}
+          {{#if busy}}disabled{{/if}}
+        >
+          {{localize "WAIFU.Hub.W2Action"}} ({{summary.totalFixable}})
+        </button>
+      </div>
+    </article>
+
+    {{!-- Window 3: Scenes & Media --}}
+    <article class="waifu-subwin" data-action="drillDown" data-tab="scenes" data-tone="{{#if scenes.criticalCount}}critical{{else if scenes.heavyScenesCount}}warning{{else}}ok{{/if}}">
+      <div class="waifu-subwin-head">
+        <div class="waifu-subwin-titlegroup">
+          <div class="waifu-subwin-icon is-critical" aria-hidden="true">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div class="waifu-subwin-titles">
+            <h2 class="waifu-subwin-title">{{localize "WAIFU.Hub.W3Title"}}</h2>
+            <span class="waifu-subwin-sub">{{hubMeta.w3Sub}}</span>
+          </div>
+        </div>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="scenes">
+          {{localize "WAIFU.Hub.DetailCta"}} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="waifu-subwin-body">
+        <div class="waifu-kpi-line">
+          <div class="waifu-kpi-main">
+            <strong class="waifu-kpi-num">{{stats.sceneStats.healthyScenes}} / {{stats.sceneStats.totalScenes}}</strong>
+            <span class="waifu-kpi-unit">{{hubMeta.w3HealthyUnit}}</span>
+          </div>
+          <span class="waifu-kpi-right is-ok">{{stats.sceneStats.assetFormats.webpRasterPercent}}% WebP • {{scenes.pngAssetsCount}} PNG</span>
+        </div>
+
+        {{{charts.assetFormatCompactBarHtml}}}
+
+        <div class="waifu-mini-rows">
+          {{#each hubTopScenes}}
+            <div class="waifu-mini-row">
+              <div class="waifu-mini-row-left">
+                <button type="button" class="waifu-link-btn waifu-mini-row-title" data-action="openSceneDrawer" data-scene-id="{{this.id}}" style="text-align:start;color:var(--text);">
+                  {{this.title}}
+                </button>
+              </div>
+              <span class="waifu-mini-metric is-{{this.tone}}">{{this.metric}}</span>
+            </div>
+          {{else}}
+            <p class="waifu-empty">{{localize "WAIFU.Overview.NoIssues"}}</p>
+          {{/each}}
+        </div>
+      </div>
+
+      <div class="waifu-subwin-footer">
+        <span>{{hubMeta.w3Footer}}</span>
+        <button
+          type="button"
+          class="waifu-btn is-sm is-accent-outline"
+          data-action="batchConvertWebp"
+          {{#unless scenes.unoptimizedAssetsCount}}disabled{{/unless}}
+          {{#if busy}}disabled{{/if}}
+        >
+          {{localize "WAIFU.Hub.W3Action"}} ({{scenes.unoptimizedAssetsCount}})
+        </button>
+      </div>
+    </article>
+
+    {{!-- Window 4: @UUID References & Anchors --}}
+    <article class="waifu-subwin" data-action="drillDown" data-tab="uuids" data-tone="{{#if uuids.brokenCount}}arcane{{else}}ok{{/if}}">
+      <div class="waifu-subwin-head">
+        <div class="waifu-subwin-titlegroup">
+          <div class="waifu-subwin-icon is-arcane" aria-hidden="true">
+            <i class="fa-solid fa-link-slash"></i>
+          </div>
+          <div class="waifu-subwin-titles">
+            <h2 class="waifu-subwin-title">{{localize "WAIFU.Hub.W4Title"}}</h2>
+            <span class="waifu-subwin-sub">{{hubMeta.w4Sub}}</span>
+          </div>
+        </div>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="uuids">
+          {{localize "WAIFU.Hub.DetailCta"}} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="waifu-subwin-body">
+        <div class="waifu-kpi-line">
+          <div class="waifu-kpi-main">
+            <strong class="waifu-kpi-num">{{stats.uuidStats.validPercent}}%</strong>
+            <span class="waifu-kpi-unit">{{hubMeta.w4ValidUnit}}</span>
+          </div>
+          <span class="waifu-kpi-right">{{hubMeta.w4Breakdown}}</span>
+        </div>
+
+        {{{charts.uuidCompactBarHtml}}}
+
+        <div class="waifu-mini-rows">
+          {{#each hubTopUuidDocs}}
+            <div class="waifu-mini-row">
+              <div class="waifu-mini-row-left">
+                <strong class="waifu-mini-row-title">{{this.title}}</strong>
+              </div>
+              <span class="waifu-mini-metric is-{{this.tone}}">{{this.metric}}</span>
+            </div>
+          {{else}}
+            <p class="waifu-empty">{{localize "WAIFU.Uuids.Empty"}}</p>
+          {{/each}}
+        </div>
+      </div>
+
+      <div class="waifu-subwin-footer">
+        <span>{{hubMeta.w4Footer}}</span>
+        <button
+          type="button"
+          class="waifu-btn is-sm is-accent-outline"
+          data-action="batchApplyExactUuids"
+          {{#unless uuidsAutoCount}}disabled{{/unless}}
+          {{#if busy}}disabled{{/if}}
+        >
+          {{localize "WAIFU.Hub.W4Action"}} ({{uuidsAutoCount}})
+        </button>
+      </div>
+    </article>
+
+    {{!-- Window 5: DB Storage & Flags --}}
+    <article class="waifu-subwin" data-action="drillDown" data-tab="storage" data-tone="{{#if stats.storageStats.totalReclaimableBytes}}warning{{else}}ok{{/if}}">
+      <div class="waifu-subwin-head">
+        <div class="waifu-subwin-titlegroup">
+          <div class="waifu-subwin-icon is-warning" aria-hidden="true">
+            <i class="fa-solid fa-database"></i>
+          </div>
+          <div class="waifu-subwin-titles">
+            <h2 class="waifu-subwin-title">{{localize "WAIFU.Hub.W5Title"}}</h2>
+            <span class="waifu-subwin-sub">{{hubMeta.w5Sub}}</span>
+          </div>
+        </div>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="storage">
+          {{localize "WAIFU.Hub.DetailCta"}} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="waifu-subwin-body">
+        <div class="waifu-kpi-line">
+          <div class="waifu-kpi-main">
+            <strong class="waifu-kpi-num">{{stats.storageStats.formattedReclaimableTotal}}</strong>
+            <span class="waifu-kpi-unit">{{hubMeta.w5ReclaimUnit}}</span>
+          </div>
+          <span class="waifu-kpi-right is-warning">{{hubMeta.w5Breakdown}}</span>
+        </div>
+
+        {{{charts.storageCompactBarHtml}}}
+
+        <div class="waifu-mini-rows">
+          {{#each hubTopNamespaces}}
+            <div class="waifu-mini-row">
+              <div class="waifu-mini-row-left">
+                <strong class="waifu-mini-row-title">{{this.title}}</strong>
+              </div>
+              <span class="waifu-mini-metric is-{{this.tone}}">{{this.metric}}</span>
+            </div>
+          {{else}}
+            <p class="waifu-empty">{{localize "WAIFU.Storage.EmptySettings"}}</p>
+          {{/each}}
+        </div>
+      </div>
+
+      <div class="waifu-subwin-footer">
+        <span>{{localize "WAIFU.Hub.W5Footer"}}</span>
+        <div class="waifu-row-actions">
+          <button type="button" class="waifu-btn is-sm" data-action="backupStorage">
+            {{localize "WAIFU.Hub.BtnBackupShort"}}
+          </button>
+          <button
+            type="button"
+            class="waifu-btn is-sm is-danger"
+            data-action="cleanupAllOrphans"
+            {{#unless hubHasOrphans}}disabled{{/unless}}
+            {{#if busy}}disabled{{/if}}
+          >
+            {{localize "WAIFU.Hub.W5Action"}}
+          </button>
+        </div>
+      </div>
+    </article>
+
+    {{!-- Window 6: Report, Export & Thresholds --}}
+    <article class="waifu-subwin" data-action="drillDown" data-tab="report" data-tone="info">
+      <div class="waifu-subwin-head">
+        <div class="waifu-subwin-titlegroup">
+          <div class="waifu-subwin-icon is-info" aria-hidden="true">
+            <i class="fa-solid fa-file-lines"></i>
+          </div>
+          <div class="waifu-subwin-titles">
+            <h2 class="waifu-subwin-title">{{localize "WAIFU.Hub.W6Title"}}</h2>
+            <span class="waifu-subwin-sub">{{localize "WAIFU.Hub.W6Sub"}}</span>
+          </div>
+        </div>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="report">
+          {{localize "WAIFU.Hub.W6Cta"}} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="waifu-subwin-body">
+        <div class="waifu-mini-tiles">
+          <div class="waifu-mini-tile">
+            <span>{{localize "WAIFU.Hub.TileTex"}}</span>
+            <b>{{thresholds.maxTextureResolution}} px / {{thresholds.maxMegapixels}} MP</b>
+          </div>
+          <div class="waifu-mini-tile">
+            <span>{{localize "WAIFU.Hub.TileGeo"}}</span>
+            <b>{{thresholds.maxWalls}}w / {{thresholds.maxLights}}l / {{thresholds.maxAnimations}}a</b>
+          </div>
+          <div class="waifu-mini-tile">
+            <span>{{localize "WAIFU.Hub.TileDb"}}</span>
+            <b>{{formattedThresholdBytes}} / {{formattedFlagThresholdBytes}}</b>
+          </div>
+        </div>
+
+        <div class="waifu-export-strip">
+          <button type="button" class="waifu-btn is-sm is-primary" data-action="exportHtml">
+            <i class="fa-solid fa-download" aria-hidden="true"></i> .html
+          </button>
+          <button type="button" class="waifu-btn is-sm" data-action="exportMarkdown">
+            Markdown
+          </button>
+          <button type="button" class="waifu-btn is-sm" data-action="exportJson">
+            JSON
+          </button>
+          <button type="button" class="waifu-btn is-sm" data-action="saveJournalReport">
+            <i class="fa-solid fa-book-open" aria-hidden="true"></i> {{localize "WAIFU.Hub.BtnJournalShort"}}
+          </button>
+        </div>
+      </div>
+
+      <div class="waifu-subwin-footer">
+        <span>{{localize "WAIFU.Hub.W6Footer"}}</span>
+        <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="report">
+          <i class="fa-solid fa-sliders" aria-hidden="true"></i> {{localize "WAIFU.Hub.W6Action"}}
+        </button>
+      </div>
+    </article>
+  </div>
+
+  {{!-- Compact stacked hub cards for narrow Foundry windows (<860px) --}}
+  <div class="waifu-hub-compact-list">
+    {{#each narrowHubCards}}
+      <button type="button" class="waifu-narrow-card" data-action="selectTab" data-tab="{{this.tab}}" data-tone="{{this.tone}}">
+        <div class="waifu-cell-stack">
+          <strong>{{this.title}}</strong>
+          <span class="waifu-mini-metric is-{{this.tone}}">{{this.summary}}</span>
+        </div>
+        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+      </button>
+    {{/each}}
+  </div>
+{{/unless}}

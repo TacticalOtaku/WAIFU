@@ -1,10 +1,10 @@
 {{#if hasReport}}
   <div class="waifu-analytics-strip">
     <section class="waifu-card">
-      <h3>
-        <span>{{localize "WAIFU.Charts.TextureFormats"}}</span>
+      <div class="waifu-card-head">
+        <h3>{{localize "WAIFU.Charts.TextureFormats"}}</h3>
         <span class="waifu-mono">{{stats.sceneStats.assetFormats.webpRasterPercent}}% WebP</span>
-      </h3>
+      </div>
       {{{charts.assetFormatBarHtml}}}
       <div class="waifu-inline-stats">
         <span><b>{{stats.sceneStats.geometryTotals.totalLevels}}</b> {{localize "WAIFU.Stats.Levels"}}</span>
@@ -16,10 +16,10 @@
     </section>
 
     <section class="waifu-card">
-      <h3>
-        <span>{{localize "WAIFU.Charts.SceneResolution"}}</span>
+      <div class="waifu-card-head">
+        <h3>{{localize "WAIFU.Charts.SceneResolution"}}</h3>
         <span class="waifu-mono">{{thresholds.maxMegapixels}} MP limit</span>
-      </h3>
+      </div>
       {{{charts.sceneResolutionBarsSvg}}}
     </section>
   </div>
@@ -36,18 +36,6 @@
       placeholder="{{localize 'WAIFU.Scenes.SearchPlaceholder'}}"
       data-filter-input="scenes"
     >
-  </div>
-
-  <div class="waifu-filters" role="group" aria-label="{{localize 'WAIFU.Tabs.Scenes'}}">
-    {{#each sceneFilterChips}}
-      <button
-        type="button"
-        class="waifu-chip"
-        data-action="setSceneFilter"
-        data-filter="{{this.id}}"
-        aria-pressed="{{#if this.active}}true{{else}}false{{/if}}"
-      >{{this.label}}</button>
-    {{/each}}
   </div>
 
   <div class="waifu-toolbar-tools">
@@ -96,7 +84,19 @@
   </div>
 </div>
 
-{{#if scenes.items.length}}
+<div class="waifu-filters" role="group" aria-label="{{localize 'WAIFU.Tabs.Scenes'}}">
+  {{#each sceneFilterChips}}
+    <button
+      type="button"
+      class="waifu-chip"
+      data-action="setSceneFilter"
+      data-filter="{{this.id}}"
+      aria-pressed="{{#if this.active}}true{{else}}false{{/if}}"
+    >{{this.label}}</button>
+  {{/each}}
+</div>
+
+{{#if sceneRows.length}}
   <div tabindex="0" role="region" aria-labelledby="waifu-scenes-caption" class="waifu-table-wrap">
     <table class="waifu-table" data-waifu-table="scenes">
       <caption id="waifu-scenes-caption">{{localize "WAIFU.Tabs.Scenes"}}</caption>
@@ -132,7 +132,14 @@
           <tr data-waifu-row="scene" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
             <th scope="row">
               <div class="waifu-cell-stack">
-                <span class="waifu-ellipsis" title="{{this.name}}">{{this.name}}</span>
+                <button
+                  type="button"
+                  class="waifu-link-btn waifu-ellipsis"
+                  data-action="openSceneDrawer"
+                  data-scene-id="{{this.id}}"
+                  title="{{this.name}}"
+                  style="text-align:start;color:var(--text);font-size:inherit;"
+                >{{this.name}}</button>
                 <span class="waifu-mono">Levels: {{this.levelsCount}} • Tiles: {{this.tilesCount}}</span>
               </div>
             </th>
@@ -245,6 +252,12 @@
             </td>
             <td>
               <div class="waifu-row-actions">
+                <button
+                  type="button"
+                  class="waifu-btn is-sm is-accent-outline"
+                  data-action="openSceneDrawer"
+                  data-scene-id="{{this.id}}"
+                >{{localize "WAIFU.Drawer.BtnInspector"}} ↗</button>
                 {{#if this.redundantWallIds.length}}
                   <button
                     type="button"
@@ -293,7 +306,8 @@
                   class="waifu-btn is-sm"
                   data-action="openDocumentSheet"
                   data-uuid="{{this.uuid}}"
-                >{{localize "WAIFU.Scenes.BtnOpenScene"}}</button>
+                  title="{{localize 'WAIFU.Scenes.BtnOpenScene'}}"
+                ><i class="fa-solid fa-gear" aria-hidden="true"></i></button>
                 <button
                   type="button"
                   class="waifu-btn is-sm"
@@ -315,10 +329,10 @@
 
 {{#if extras.brokenMediaCount}}
   <section class="waifu-card">
-    <h3>
-      <span>{{localize "WAIFU.Extras.BrokenMediaTitle"}}</span>
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.Extras.BrokenMediaTitle"}}</h3>
       <span class="waifu-badge is-critical">{{extras.brokenMediaCount}}</span>
-    </h3>
+    </div>
     <div class="waifu-table-wrap">
       <table class="waifu-table">
         <thead>
@@ -350,10 +364,10 @@
 
 {{#if extras.unusedOptimizedCount}}
   <section class="waifu-card">
-    <h3>
-      <span>{{localize "WAIFU.Extras.UnusedOptimizedTitle"}}</span>
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.Extras.UnusedOptimizedTitle"}}</h3>
       <span class="waifu-badge is-info">{{extras.unusedOptimizedCount}}</span>
-    </h3>
+    </div>
     <p class="waifu-mono">{{localize "WAIFU.Extras.UnusedOptimizedHint"}}</p>
     <div class="waifu-sublist">
       {{#each extras.unusedOptimizedFiles}}

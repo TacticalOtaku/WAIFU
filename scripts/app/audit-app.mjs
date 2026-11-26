@@ -50,7 +50,11 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     super(options);
     this._report = options.report ?? null;
     this._customComparison = null;
-    this._activeTab = "overview";
+    this._activeTab = "hub";
+    this._drawerSceneId = null;
+    this._autofixChecked = new Set();
+    this._autofixQueueStamp = null;
+    this._autofixBackupFirst = true;
     this._reportMode = "visual";
     this._busy = false;
     this._progressPercent = 0;
@@ -85,12 +89,22 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     position: {
       width: 1180,
-      height: 780
+      height: 820
     },
     actions: {
       runAudit: WaifuAuditApp.#onRunAudit,
       cancelOperation: WaifuAuditApp.#onCancelOperation,
       selectTab: WaifuAuditApp.#onSelectTab,
+      drillDown: WaifuAuditApp.#onDrillDown,
+      goHub: WaifuAuditApp.#onGoHub,
+      openSceneDrawer: WaifuAuditApp.#onOpenSceneDrawer,
+      closeSceneDrawer: WaifuAuditApp.#onCloseSceneDrawer,
+      closeDrawerBackdrop: WaifuAuditApp.#onCloseDrawerBackdrop,
+      toggleAutofixItem: WaifuAuditApp.#onToggleAutofixItem,
+      toggleAutofixBackupFirst: WaifuAuditApp.#onToggleAutofixBackupFirst,
+      executeSelectedAutofixes: WaifuAuditApp.#onExecuteSelectedAutofixes,
+      saveInlineThresholds: WaifuAuditApp.#onSaveInlineThresholds,
+      openFoundrySettings: WaifuAuditApp.#onOpenFoundrySettings,
       setReportMode: WaifuAuditApp.#onSetReportMode,
       toggleAppearanceMenu: WaifuAuditApp.#onToggleAppearanceMenu,
       setTheme: WaifuAuditApp.#onSetTheme,
@@ -144,10 +158,6 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
   static PARTS = {
     masthead: {
       template: `modules/${MODULE_ID}/templates/masthead.hbs`
-    },
-    sidebar: {
-      template: `modules/${MODULE_ID}/templates/sidebar.hbs`,
-      scrollable: [".waifu-sidebar"]
     },
     main: {
       template: `modules/${MODULE_ID}/templates/main.hbs`,
@@ -300,64 +310,28 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const installedModules = game.modules?.size ?? 0;
 
     const storageIssuesTotal = settings.flaggedCount + flags.groupsCount;
-    const navTabs = [
-      {
-        id: "overview",
-        icon: "fa-solid fa-chart-line",
-        label: this.#t("WAIFU.Tabs.Overview"),
-        subline: this.#t("WAIFU.Sidebar.TabSubOverview"),
-        badge: 0,
-        hasBadge: false,
-        badgeTone: ""
-      },
-      {
-        id: "scenes",
-        icon: "fa-solid fa-layer-group",
-        label: this.#t("WAIFU.Tabs.Scenes"),
-        subline: this.#t("WAIFU.Sidebar.TabSubScenes", {
-          heavy: scenes.heavyScenesCount,
-          total: scenes.totalScenes,
-          png: scenes.pngAssetsCount
-        }),
-        badge: scenes.heavyScenesCount,
-        hasBadge: scenes.heavyScenesCount > 0,
-        badgeTone: scenes.criticalCount > 0 ? "critical" : "warning"
-      },
-      {
-        id: "uuids",
-        icon: "fa-solid fa-link-slash",
-        label: this.#t("WAIFU.Tabs.Uuids"),
-        subline: this.#t("WAIFU.Sidebar.TabSubUuids", {
-          broken: uuids.brokenCount,
-          scanned: uuids.totalScanned
-        }),
-        badge: uuids.brokenCount,
-        hasBadge: uuids.brokenCount > 0,
-        badgeTone: "critical"
-      },
-      {
-        id: "storage",
-        icon: "fa-solid fa-database",
-        label: this.#t("WAIFU.Tabs.Storage"),
-        subline: this.#t("WAIFU.Sidebar.TabSubStorage", {
-          size: settings.formattedTotalSize,
-          orphans: settings.orphanedCount + flags.orphanedNamespacesCount
-        }),
-        badge: storageIssuesTotal,
-        hasBadge: storageIssuesTotal > 0,
-        badgeTone:
-          settings.orphanedCount + flags.orphanedNamespacesCount > 0 ? "warning" : ""
-      },
-      {
-        id: "report",
-        icon: "fa-solid fa-file-waveform",
-        label: this.#t("WAIFU.Tabs.Report"),
-        subline: this.#t("WAIFU.Sidebar.TabSubReport"),
-        badge: 0,
-        hasBadge: false,
-        badgeTone: ""
-      }
-    ].map((tab) => ({ ...tab, active: tab.id === this._activeTab }));
+    const validDomains = new Set(["health", "autofix", "scenes", "uuids", "storage", "report"]);
+    if (this._activeTab !== "hub" && !validDomains.has(this._activeTab)) {
+      this._activeTab = "hub";
+    }
+
+    const domainMeta = {
+      health: { title: this.#t("WAIFU.Domains.HealthFull") },
+      autofix: { title: this.#t("WAIFU.Domains.AutofixFull") },
+      scenes: { title: this.#t("WAIFU.Domains.ScenesFull") },
+      uuids: { title: this.#t("WAIFU.Domains.UuidsFull") },
+      storage: { title: this.#t("WAIFU.Domains.StorageFull") },
+      report: { title: this.#t("WAIFU.Domains.ReportFull") }
+    };
+
+    const drillPills = [
+      { id: "health", shortLabel: this.#t("WAIFU.Domains.HealthShort"), count: 0, hasCount: false },
+      { id: "autofix", shortLabel: this.#t("WAIFU.Domains.AutofixShort"), count: summary.totalFixable, hasCount: summary.totalFixable > 0 },
+      { id: "scenes", shortLabel: this.#t("WAIFU.Domains.ScenesShort"), count: scenes.heavyScenesCount, hasCount: scenes.heavyScenesCount > 0 },
+      { id: "uuids", shortLabel: this.#t("WAIFU.Domains.UuidsShort"), count: uuids.brokenCount, hasCount: uuids.brokenCount > 0 },
+      { id: "storage", shortLabel: this.#t("WAIFU.Domains.StorageShort"), count: storageIssuesTotal, hasCount: storageIssuesTotal > 0 },
+      { id: "report", shortLabel: this.#t("WAIFU.Domains.ReportShort"), count: 0, hasCount: false }
+    ].map((p) => ({ ...p, active: p.id === this._activeTab }));
 
     const mapSceneRow = (scene) => {
       const tags = scene.isIgnored ? ["ignored"] : ["all"];
@@ -555,6 +529,201 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const storageIgnoredCount =
       (settings.ignoredCount ?? 0) + (flags.ignoredGroupsCount ?? 0);
 
+    // Synchronize interactive Dry-Run Autofix Queue when a new audit report arrives
+    const safeRecs = recommendations.filter((rec) =>
+      ["convert-scene-webp", "dedupe-walls", "dedupe-near-walls", "cleanup-orphaned-tokens", "apply-exact-uuids", "cleanup-orphaned-storage"].includes(rec.id)
+    );
+    const stamp = report?.generatedAt ?? "__empty__";
+    if (this._autofixQueueStamp !== stamp) {
+      this._autofixQueueStamp = stamp;
+      this._autofixChecked = new Set(
+        safeRecs.filter((rec) => rec.id !== "dedupe-near-walls").map((rec) => rec.id)
+      );
+    }
+    const tabShortMap = {
+      scenes: this.#t("WAIFU.Domains.ScenesShort"),
+      uuids: this.#t("WAIFU.Domains.UuidsShort"),
+      storage: this.#t("WAIFU.Domains.StorageShort")
+    };
+    const autofixQueue = safeRecs.map((rec) => ({
+      ...rec,
+      tabLabel: tabShortMap[rec.tab] ?? rec.tab,
+      checked: this._autofixChecked.has(rec.id)
+    }));
+    const autofixSelectedCount = autofixQueue.filter((item) => item.checked).length;
+
+    const shortActionLabel = (recId) => {
+      if (recId === "convert-scene-webp") return this.#t("WAIFU.Scenes.BtnConvertWebp");
+      if (recId === "dedupe-walls" || recId === "dedupe-near-walls") return this.#t("WAIFU.Scenes.BtnDedupeWalls");
+      if (recId === "apply-exact-uuids") return this.#t("WAIFU.Uuids.BtnApply");
+      if (recId === "cleanup-orphaned-storage") return this.#t("WAIFU.Hub.W5Action");
+      return this.#t("WAIFU.Autofix.BtnCleanShort");
+    };
+    const hubAutofixPreview = safeRecs.slice(0, 3).map((rec, idx) => ({
+      ...rec,
+      primary: idx === 0,
+      btnText: shortActionLabel(rec.id)
+    }));
+
+    const hubTopScenes = (scenes.items ?? []).slice(0, 2).map((sc) => {
+      const hasRes = sc.maxResolution?.megapixels > 0;
+      const metric = hasRes
+        ? `${sc.maxResolution.megapixels} MP${sc.pngCount ? " • PNG" : ""}${sc.totalKnownAssetBytes ? ` • ${sc.formattedTotalAssetBytes}` : ""}`
+        : `${sc.wallsCount} ${this.#t("WAIFU.Stats.WallsCountShort")}${sc.redundantWallIds?.length ? ` • ${sc.redundantWallIds.length} dup` : ""}`;
+      return {
+        id: sc.id,
+        title: sc.levelsCount > 1 ? `${sc.name} (${sc.levelsCount} ${this.#t("WAIFU.Stats.LevelsShort")})` : sc.name,
+        metric,
+        tone: sc.severity === "critical" ? "critical" : sc.severity === "warning" ? "warning" : "ok"
+      };
+    });
+
+    const hubTopUuidDocs = stats.uuidStats.topOffendingDocs.slice(0, 2).map((d) => ({
+      title: d.rootDocName,
+      metric:
+        d.exactCount > 0
+          ? `${d.count} ${this.#t("WAIFU.Hub.BrokenWord")} • ${d.exactCount} ${this.#t("WAIFU.Hub.ExactWord")}`
+          : `${d.count} ${this.#t("WAIFU.Hub.BrokenWord")}`,
+      tone: d.criticalCount > 0 ? "critical" : "info"
+    }));
+
+    const hubTopNamespaces = stats.storageStats.topNamespaces.slice(0, 2).map((ns) => {
+      const stateKey = ["orphaned", "inactive", "core"].includes(ns.moduleState) ? ns.moduleState : "ok";
+      return {
+        title: `${ns.namespace} (${this.#t(`WAIFU.Storage.Status.${stateKey}`)})`,
+        metric:
+          ns.flagDocsCount > 0
+            ? `${ns.formattedSize} • ${ns.flagDocsCount} doc`
+            : ns.formattedSize,
+        tone: ns.moduleState === "orphaned" ? "critical" : "warning"
+      };
+    });
+
+    const penToneMap = {
+      scenes: { label: this.#t("WAIFU.Domains.ScenesShort"), tone: "critical", colorCss: "var(--hp)", cap: 100 },
+      media: { label: this.#t("WAIFU.Charts.TextureFormats"), tone: "warning", colorCss: "var(--warn)", cap: 25 },
+      uuids: { label: this.#t("WAIFU.Domains.UuidsShort"), tone: "arcane", colorCss: "var(--arcane)", cap: 35 },
+      settings: { label: "World Settings", tone: "info", colorCss: "var(--temp)", cap: 18 },
+      flags: { label: this.#t("WAIFU.Storage.FlagsShort"), tone: "warning", colorCss: "var(--warn)", cap: 20 }
+    };
+    const penaltyRows = stats.scoreBreakdown.categories.map((cat) => {
+      const cfg = penToneMap[cat.id] ?? { label: cat.id, tone: "warning", colorCss: "var(--warn)", cap: 25 };
+      const widthPct = cat.penalty > 0 ? Math.min(100, Math.max(8, Math.round((cat.penalty / cfg.cap) * 100))) : 0;
+      return {
+        label: cfg.label,
+        tone: cat.penalty > 0 ? cfg.tone : "ok",
+        colorCss: cfg.colorCss,
+        widthPct,
+        valueLabel: cat.penalty > 0 ? `-${cat.penalty} ${this.#t("WAIFU.Hub.PtsUnit")}` : `0 ${this.#t("WAIFU.Hub.PtsUnit")} (${this.#t("WAIFU.Severity.ok")})`
+      };
+    });
+
+    const domainLabelMap = {
+      scenes: this.#t("WAIFU.Domains.ScenesShort"),
+      assets: this.#t("WAIFU.Stats.TexturesShort"),
+      uuids: this.#t("WAIFU.Domains.UuidsShort"),
+      settings: "World Settings",
+      flags: this.#t("WAIFU.Storage.FlagsShort")
+    };
+    const domainMatrixRows = stats.domainMatrix.map((row) => ({
+      ...row,
+      label: domainLabelMap[row.id] ?? row.id
+    }));
+
+    const alertsCount =
+      (extras.chatBloated ? 1 : 0) +
+      (extras.staleCombatsCount > 0 ? 1 : 0) +
+      (extras.brokenMediaCount > 0 ? 1 : 0) +
+      (extras.unusedOptimizedCount > 0 ? 1 : 0);
+
+    const penTextParts = stats.scoreBreakdown.categories
+      .filter((c) => c.penalty > 0)
+      .map((c) => `${domainLabelMap[c.id] ?? c.id} -${c.penalty}`);
+
+    const hubMeta = {
+      w1Sub: this.#t("WAIFU.Overview.ExecHealthSub", {
+        critical: summary.criticalCount,
+        warning: summary.warningCount,
+        deduction: stats.scoreBreakdown.totalDeduction
+      }),
+      w1PenaltySummary: penTextParts.length ? penTextParts.join(" • ") : this.#t("WAIFU.Severity.ok"),
+      sparkTitle: this.#t("WAIFU.Hub.SparkTitle", { count: report?.history?.length || 1 }),
+      w2Sub: this.#t("WAIFU.Hub.W2Sub", { fixes: summary.totalFixable, alerts: alertsCount }),
+      w3Sub: `${scenes.totalScenes} ${this.#t("WAIFU.Stats.ScenesWord")} • ${stats.sceneStats.geometryTotals.totalLevels} v14 • ${stats.sceneStats.geometryTotals.totalWalls} ${this.#t("WAIFU.Stats.WallsCountShort")} • ${stats.sceneStats.geometryTotals.totalLights} ${this.#t("WAIFU.Stats.LightsShort")}`,
+      w3HealthyUnit: `${this.#t("WAIFU.Severity.ok").toLowerCase()} (${scenes.heavyScenesCount} ${this.#t("WAIFU.Hub.WithIssuesWord")})`,
+      w3Footer: `${scenes.criticalCount} ${this.#t("WAIFU.Hub.CritShort")} • ${scenes.warningCount} ${this.#t("WAIFU.Hub.WarnShort")} • ${thresholds.maxMegapixels} MP`,
+      w4Sub: `${uuids.totalScanned} ${this.#t("WAIFU.Hub.LinksScanned")}`,
+      w4ValidUnit: `${this.#t("WAIFU.Hub.ValidWord")} (${uuids.brokenCount})`,
+      w4Breakdown: `${uuidsAutoCount} exact • ${stats.uuidStats.byFixability.fuzzy} ~ • ${uuidsUnmatchedCount} ?`,
+      w4Footer: `${uuids.journalCount} J • ${uuids.loreframeCount} Lore • ${uuids.actorCount} A`,
+      w5Sub: `${stats.storageStats.formattedTrackedSize} • World Settings & Flags`,
+      w5ReclaimUnit: `${this.#t("WAIFU.Sidebar.Reclaimable").toLowerCase()} (${stats.storageStats.reclaimablePercent}%)`,
+      w5Breakdown: `${settings.orphanedCount} ${this.#t("WAIFU.Hub.OrphanSettingsWord")} • ${flags.orphanedNamespacesCount} ${this.#t("WAIFU.Hub.OrphanFlagsWord")}`,
+      w6Sub: `schema v2 • HTML / MD / JSON / 15 ${this.#t("WAIFU.Hub.LimitsWord")}`
+    };
+
+    const drawerTarget = this._drawerSceneId
+      ? sceneRows.find((s) => s.id === this._drawerSceneId) ?? null
+      : null;
+    const drawerScene = drawerTarget
+      ? {
+          ...drawerTarget,
+          drawerAssets: (drawerTarget.assets ?? []).map((asset) => ({
+            ...asset,
+            hasIssue: Boolean(asset.isUnoptimizedRaster || asset.isOversized || asset.isMissing || asset.isHeavyBytes),
+            slotHeader: `${asset.slotLabel} (${asset.slotType})`,
+            detailLine: [
+              asset.src,
+              asset.width > 0 ? `${asset.width}×${asset.height} (${asset.megapixels} MP)` : "",
+              asset.formattedByteSize || ""
+            ]
+              .filter(Boolean)
+              .join(" • ")
+          }))
+        }
+      : null;
+
+    const narrowHubCards = [
+      {
+        tab: "health",
+        title: this.#t("WAIFU.Hub.W1Title"),
+        summary: `${summary.healthScore}% • -${stats.scoreBreakdown.totalDeduction} ${this.#t("WAIFU.Hub.PtsUnit")}`,
+        tone: summary.healthStateBadge
+      },
+      {
+        tab: "autofix",
+        title: this.#t("WAIFU.Hub.W2Title"),
+        summary: `${summary.totalFixable} • Chat ${extras.chatMessagesCount} • ${extras.staleCombatsCount} Combats`,
+        tone: summary.totalFixable > 0 ? "ok" : "info"
+      },
+      {
+        tab: "scenes",
+        title: this.#t("WAIFU.Hub.W3Title"),
+        summary: `${stats.sceneStats.healthyScenes}/${stats.sceneStats.totalScenes} OK • ${scenes.pngAssetsCount} PNG • ${scenes.redundantWallsTotal} dup`,
+        tone: scenes.criticalCount > 0 ? "critical" : scenes.heavyScenesCount > 0 ? "warning" : "ok"
+      },
+      {
+        tab: "uuids",
+        title: this.#t("WAIFU.Hub.W4Title"),
+        summary: `${stats.uuidStats.validPercent}% OK • ${uuids.brokenCount} • ${uuidsAutoCount} exact`,
+        tone: uuids.brokenCount > 0 ? "info" : "ok"
+      },
+      {
+        tab: "storage",
+        title: this.#t("WAIFU.Hub.W5Title"),
+        summary: `${stats.storageStats.formattedReclaimableTotal} • ${storageIssuesTotal}`,
+        tone: stats.storageStats.totalReclaimableBytes > 0 ? "warning" : "ok"
+      },
+      {
+        tab: "report",
+        title: this.#t("WAIFU.Hub.W6Title"),
+        summary: "HTML • MD • JSON • Journal",
+        tone: "info"
+      }
+    ];
+
+    const ignoreSummaryLine = `Scenes: ${ignoreRules.scenes.length} • Settings: ${ignoreRules.settings.length} • Flags: ${ignoreRules.flags.length} • @UUID: ${ignoreRules.uuids.length}`;
+
     return {
       ...context,
       hasReport: Boolean(report),
@@ -572,6 +741,7 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
         active: id === accent
       })),
       summary,
+      healthStateLabel: this.#t(`WAIFU.Severity.${summary.healthStateBadge}`),
       stats,
       charts,
       extras,
@@ -585,6 +755,7 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       hasCustomComparison: Boolean(this._customComparison),
       hasTrendOrComparison: Boolean(charts.healthTrendSvg || comparison),
       totalIgnoredCount,
+      ignoreSummaryLine,
       uuidsAutoCount,
       uuidsUnmatchedCount,
       uuidMissingPackCount: stats.uuidStats.byReason["missing-pack"] ?? 0,
@@ -593,6 +764,11 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       settings,
       flags,
       thresholds,
+      inlineThresholds: {
+        maxAssetMb: Math.max(1, Math.round((thresholds.maxAssetBytes || 15 * 1024 * 1024) / (1024 * 1024))),
+        maxSettingKb: Math.max(1, Math.round((thresholds.maxSettingBytes || 16 * 1024) / 1024)),
+        maxFlagKb: Math.max(1, Math.round((thresholds.maxFlagBytes || 32 * 1024) / 1024))
+      },
       formattedThresholdBytes: formatBytes(thresholds.maxSettingBytes),
       formattedFlagThresholdBytes: formatBytes(thresholds.maxFlagBytes),
       worldLine: this.#t("WAIFU.Header.WorldMeta", {
@@ -610,29 +786,13 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
             duration: report.meta?.durationMs ?? 0
           })
         : this.#t("WAIFU.Header.NeverScanned"),
-      execSub: {
-        health: this.#t("WAIFU.Overview.ExecHealthSub", {
-          critical: summary.criticalCount,
-          warning: summary.warningCount,
-          deduction: stats.scoreBreakdown.totalDeduction
-        }),
-        scenes: this.#t("WAIFU.Overview.ExecScenesSub", {
-          healthy: stats.sceneStats.healthyScenes,
-          total: stats.sceneStats.totalScenes,
-          webp: stats.sceneStats.assetFormats.webpRasterPercent
-        }),
-        uuids: this.#t("WAIFU.Overview.ExecUuidsSub", {
-          broken: stats.uuidStats.brokenCount,
-          exact: uuidsAutoCount
-        }),
-        storage: this.#t("WAIFU.Overview.ExecStorageSub", {
-          percent: stats.storageStats.reclaimablePercent,
-          total: stats.storageStats.formattedTrackedSize
-        })
-      },
       hasAnyFixable: summary.totalFixable > 0,
-      navTabs,
-      isOverviewActive: this._activeTab === "overview",
+      drillPills,
+      isDrillDown: this._activeTab !== "hub",
+      activeDomainTitle: domainMeta[this._activeTab]?.title ?? "",
+      isHubActive: this._activeTab === "hub",
+      isHealthActive: this._activeTab === "health",
+      isAutofixActive: this._activeTab === "autofix",
       isScenesActive: this._activeTab === "scenes",
       isUuidsActive: this._activeTab === "uuids",
       isStorageActive: this._activeTab === "storage",
@@ -640,6 +800,19 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       isReportVisual: this._reportMode === "visual",
       isReportMarkdown: this._reportMode === "markdown",
       isReportJournal: this._reportMode === "journal",
+      hubMeta,
+      hubAutofixPreview,
+      hubTopScenes,
+      hubTopUuidDocs,
+      hubTopNamespaces,
+      hubHasOrphans: settings.orphanedCount > 0 || flags.orphanedEntriesCount > 0,
+      narrowHubCards,
+      penaltyRows,
+      domainMatrixRows,
+      autofixQueue,
+      autofixSelectedCount,
+      autofixBackupFirst: this._autofixBackupFirst,
+      drawerScene,
       filters: this._filters,
       sceneFilterChips: [
         { id: "all", label: this.#t("WAIFU.Scenes.FilterAll") },
@@ -714,6 +887,12 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const { theme, accent } = this.#getAppearance();
     this.element.dataset.theme = theme;
     this.element.dataset.accent = accent;
+    const reduced = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    this.element.dataset.motion = reduced
+      ? "off"
+      : document.body?.classList?.contains("performance-low")
+        ? "reduced"
+        : "full";
 
     this.#bindLayoutObserver();
     this.#bindFilterInputs();
@@ -808,19 +987,39 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   #switchTab(tabId) {
-    if (!tabId || this._activeTab === tabId) return;
-    this._activeTab = tabId;
+    const normalized = tabId === "overview" ? "hub" : tabId;
+    if (!normalized || this._activeTab === normalized) return;
+    this._activeTab = normalized;
+    this._drawerSceneId = null;
+
+    const crumbBar = this.element?.querySelector(".waifu-crumb-bar");
+    if (crumbBar) crumbBar.hidden = normalized === "hub";
+    const activeCrumbEl = this.element?.querySelector(".waifu-crumb-active");
+    if (activeCrumbEl) {
+      const titleKeyMap = {
+        health: "WAIFU.Domains.HealthFull",
+        autofix: "WAIFU.Domains.AutofixFull",
+        scenes: "WAIFU.Domains.ScenesFull",
+        uuids: "WAIFU.Domains.UuidsFull",
+        storage: "WAIFU.Domains.StorageFull",
+        report: "WAIFU.Domains.ReportFull"
+      };
+      activeCrumbEl.textContent = titleKeyMap[normalized] ? this.#t(titleKeyMap[normalized]) : "";
+    }
+
+    const drawerEl = this.element?.querySelector(".waifu-drawer-backdrop");
+    if (drawerEl) drawerEl.hidden = true;
 
     for (const tabBtn of this.element.querySelectorAll('[role="tab"]')) {
-      const selected = tabBtn.dataset.tab === tabId;
+      const selected = tabBtn.dataset.tab === normalized;
       tabBtn.setAttribute("aria-selected", selected ? "true" : "false");
       tabBtn.tabIndex = selected ? 0 : -1;
       if (selected) {
         tabBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
       }
     }
-    for (const panel of this.element.querySelectorAll('[role="tabpanel"]')) {
-      panel.hidden = panel.dataset.panel !== tabId;
+    for (const panel of this.element.querySelectorAll("[data-panel]")) {
+      panel.hidden = panel.dataset.panel !== normalized;
     }
   }
 
@@ -907,9 +1106,11 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const bar = this.element.querySelector("[data-waifu-progress]");
     const fill = this.element.querySelector("[data-waifu-progress-fill]");
     const text = this.element.querySelector("[data-waifu-progress-label]");
+    const pctText = this.element.querySelector("[data-waifu-progress-pct]");
     if (bar) bar.hidden = !this._busy;
     if (fill) fill.style.width = `${this._progressPercent}%`;
     if (text) text.textContent = this._progressLabel;
+    if (pctText) pctText.textContent = `${this._progressPercent}%`;
   }
 
   #getDialogRoot(arg1, arg2) {
@@ -1070,6 +1271,204 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static #onSelectTab(_event, target) {
     this.#switchTab(target.dataset.tab);
+  }
+
+  static #onDrillDown(event, target) {
+    if (event.target.closest("button, a, input, select, summary, label")) return;
+    this.#switchTab(target.dataset.tab);
+  }
+
+  static #onGoHub() {
+    this.#switchTab("hub");
+  }
+
+  static #onOpenSceneDrawer(_event, target) {
+    const sceneId = target.dataset.sceneId;
+    if (!sceneId) return;
+    this._drawerSceneId = sceneId;
+    this.render({ parts: ["main"] });
+  }
+
+  static #onCloseSceneDrawer() {
+    if (!this._drawerSceneId) return;
+    this._drawerSceneId = null;
+    this.render({ parts: ["main"] });
+  }
+
+  static #onCloseDrawerBackdrop(event, target) {
+    if (event.target !== target) return;
+    this._drawerSceneId = null;
+    this.render({ parts: ["main"] });
+  }
+
+  static #onToggleAutofixItem(_event, target) {
+    const id = target.dataset.autofixId;
+    if (!id) return;
+    if (target.checked) this._autofixChecked.add(id);
+    else this._autofixChecked.delete(id);
+    this.render({ parts: ["main"] });
+  }
+
+  static #onToggleAutofixBackupFirst(_event, target) {
+    this._autofixBackupFirst = Boolean(target.checked);
+  }
+
+  static async #onExecuteSelectedAutofixes() {
+    if (!this._report || this._busy) return;
+    const selected = new Set(this._autofixChecked);
+    if (!selected.size) {
+      ui.notifications.info(this.#t("WAIFU.Notifications.NothingToFix"));
+      return;
+    }
+
+    const minConfidence = Number(this._report.thresholds?.uuidMinAutoConfidence) || 1.0;
+    const autoUuids = selected.has("apply-exact-uuids")
+      ? this._report.uuids.items.filter(
+          (u) =>
+            u.bestCandidate &&
+            (u.bestCandidate.confidence === "exact" ||
+              (Number(u.bestCandidate.score) || 0) >= minConfidence)
+        )
+      : [];
+    const webpAssets = selected.has("convert-scene-webp") ? this._report.scenes.convertibleAssets : [];
+    const wallScenes = selected.has("dedupe-walls")
+      ? this._report.scenes.items.filter((s) => s.redundantWallIds.length > 0)
+      : [];
+    const nearWallScenes = selected.has("dedupe-near-walls")
+      ? this._report.scenes.items.filter((s) => s.nearDuplicateWallIds?.length > 0)
+      : [];
+    const orphanTokenScenes = selected.has("cleanup-orphaned-tokens")
+      ? this._report.scenes.items.filter((s) => s.orphanedTokenIds?.length > 0)
+      : [];
+    const orphanSettings = selected.has("cleanup-orphaned-storage")
+      ? this._report.settings.items.filter((s) => s.isOrphaned)
+      : [];
+    const orphanFlagGroups = selected.has("cleanup-orphaned-storage")
+      ? this._report.flags.groups.filter((g) => g.isOrphaned)
+      : [];
+
+    const previewLines = [
+      ...webpAssets.slice(0, 4).map((a) => `WebP: ${a.sceneName} -> ${a.src}`),
+      ...wallScenes.slice(0, 3).map((s) => `Walls: ${s.name} (-${s.redundantWallIds.length})`),
+      ...nearWallScenes.slice(0, 3).map((s) => `~Walls: ${s.name} (-${s.nearDuplicateWallIds.length})`),
+      ...orphanTokenScenes.slice(0, 3).map((s) => `Tokens: ${s.name} (-${s.orphanedTokenIds.length})`),
+      ...autoUuids.slice(0, 3).map((u) => `@UUID: ${u.rawUuid} -> ${u.bestCandidate.name}`),
+      ...orphanSettings.slice(0, 3).map((s) => `Setting: ${s.key}`),
+      ...orphanFlagGroups.slice(0, 3).map((g) => `Flags: ${g.namespace} (${g.docCount} docs)`)
+    ];
+
+    if (!previewLines.length) {
+      ui.notifications.info(this.#t("WAIFU.Notifications.NothingToFix"));
+      return;
+    }
+
+    const res = await this.#confirmAction(
+      `${this.#t("WAIFU.Autofix.ApplySelected")} (${selected.size})`,
+      { withBackupOption: false, previewLines }
+    );
+    if (!res?.confirmed) return;
+
+    if (this._autofixBackupFirst) {
+      const deletedWalls = [...wallScenes, ...nearWallScenes]
+        .map((sc) =>
+          snapshotWallsForBackup(sc.id, [
+            ...(selected.has("dedupe-walls") ? sc.redundantWallIds : []),
+            ...(selected.has("dedupe-near-walls") ? sc.nearDuplicateWallIds ?? [] : [])
+          ])
+        )
+        .filter(Boolean);
+      const sceneMedia = webpAssets.map((a) => ({
+        sceneId: a.sceneId,
+        slotType: a.slotType,
+        levelId: a.levelId ?? null,
+        tileId: a.tileId ?? null,
+        oldSrc: a.src
+      }));
+      downloadStorageBackup(this._report, { deletedWalls, sceneMedia });
+    }
+
+    this._busy = true;
+    this._abortController = new AbortController();
+    this.render({ force: false });
+
+    try {
+      if (webpAssets.length) {
+        await convertSceneAssetsToWebp(webpAssets, this._report.thresholds, {
+          signal: this._abortController.signal
+        });
+      }
+      for (const sc of wallScenes) {
+        await cleanupRedundantWalls(sc.id, sc.redundantWallIds);
+      }
+      for (const sc of nearWallScenes) {
+        await cleanupRedundantWalls(sc.id, sc.nearDuplicateWallIds);
+      }
+      for (const sc of orphanTokenScenes) {
+        await removeOrphanedTokens(sc.id, sc.orphanedTokenIds);
+      }
+      if (autoUuids.length) {
+        await batchPatchUuidOccurrences(
+          autoUuids.map((occurrence) => ({
+            occurrence,
+            action: {
+              mode: "replace",
+              newUuid: occurrence.bestCandidate.uuid,
+              newLabel:
+                this._updateUuidLabel && occurrence.reason !== "missing-anchor"
+                  ? occurrence.bestCandidate.name
+                  : undefined
+            }
+          }))
+        );
+      }
+      if (orphanSettings.length) {
+        await deleteWorldSettingsBatch(orphanSettings.map((s) => s.key));
+      }
+      for (const grp of orphanFlagGroups) {
+        await deleteFlagGroup(grp);
+      }
+    } finally {
+      this._busy = false;
+      this._abortController = null;
+    }
+    await this.executeAudit();
+  }
+
+  static #onOpenFoundrySettings() {
+    game.settings.sheet.render(true);
+  }
+
+  static async #onSaveInlineThresholds() {
+    if (this._busy) return;
+    const container = this.element?.querySelector("[data-thresholds-studio]");
+    if (!container) return;
+    const t = readThresholdSettings();
+    const readVal = (name) => container.querySelector(`[data-threshold-field="${name}"]`);
+
+    const values = {
+      maxTextureResolution: Number(readVal("maxTextureResolution")?.value) || t.maxTextureResolution,
+      maxMegapixels: Number(readVal("maxMegapixels")?.value) || t.maxMegapixels,
+      maxAssetBytes: (Number(readVal("maxAssetMb")?.value) || 15) * 1024 * 1024,
+      maxWalls: Number(readVal("maxWalls")?.value) || t.maxWalls,
+      maxLights: Number(readVal("maxLights")?.value) || t.maxLights,
+      maxAnimations: Number(readVal("maxAnimations")?.value) || t.maxAnimations,
+      nearDuplicateWallTolerance: Number.isFinite(Number(readVal("nearDuplicateWallTolerance")?.value))
+        ? Math.max(0, Number(readVal("nearDuplicateWallTolerance").value))
+        : t.nearDuplicateWallTolerance,
+      maxSettingBytes: (Number(readVal("maxSettingKb")?.value) || 16) * 1024,
+      maxFlagBytes: (Number(readVal("maxFlagKb")?.value) || 32) * 1024,
+      webpQuality: Math.min(1, Math.max(0.5, Number(readVal("webpQuality")?.value) || 0.85)),
+      uuidMinAutoConfidence: Math.min(1, Math.max(0.75, Number(readVal("uuidMinAutoConfidence")?.value) || 1)),
+      maxChatMessages: Number(readVal("maxChatMessages")?.value) || t.maxChatMessages,
+      downscaleOnConvert: Boolean(readVal("downscaleOnConvert")?.checked),
+      skipLargerWebp: Boolean(readVal("skipLargerWebp")?.checked),
+      includeChatMessages: Boolean(readVal("includeChatMessages")?.checked)
+    };
+
+    for (const [k, v] of Object.entries(values)) {
+      await game.settings.set(MODULE_ID, k, v);
+    }
+    await this.executeAudit();
   }
 
   static #onSetReportMode(_event, target) {

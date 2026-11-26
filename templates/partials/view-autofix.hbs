@@ -1,0 +1,143 @@
+<div class="waifu-drill-grid waifu-autofix-grid">
+  <section class="waifu-card">
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.Autofix.QueueTitle"}}</h3>
+      <span class="waifu-badge is-ok">
+        {{localize "WAIFU.Autofix.SelectedCount" selected=autofixSelectedCount total=autofixQueue.length}}
+      </span>
+    </div>
+
+    {{#if autofixQueue.length}}
+      <div class="waifu-dryrun-list">
+        {{#each autofixQueue}}
+          <div class="waifu-dryrun-row">
+            <label class="waifu-dryrun-label">
+              <input
+                type="checkbox"
+                data-action="toggleAutofixItem"
+                data-autofix-id="{{this.id}}"
+                {{#if this.checked}}checked{{/if}}
+                {{#if @root.busy}}disabled{{/if}}
+              >
+              <div class="waifu-cell-stack">
+                <strong>{{this.label}}</strong>
+                <span class="waifu-mono">{{this.detail}}</span>
+              </div>
+            </label>
+            <button
+              type="button"
+              class="waifu-btn is-sm"
+              data-action="selectTab"
+              data-tab="{{this.tab}}"
+            >
+              {{this.tabLabel}} →
+            </button>
+          </div>
+        {{/each}}
+      </div>
+
+      <div class="waifu-dryrun-footer">
+        <label class="waifu-check-pill">
+          <input
+            type="checkbox"
+            data-action="toggleAutofixBackupFirst"
+            {{#if autofixBackupFirst}}checked{{/if}}
+            {{#if busy}}disabled{{/if}}
+          >
+          <span>{{localize "WAIFU.Dialogs.DownloadBackupLabel"}}</span>
+        </label>
+
+        <button
+          type="button"
+          class="waifu-btn is-sm is-heal"
+          data-action="executeSelectedAutofixes"
+          {{#unless autofixSelectedCount}}disabled{{/unless}}
+          {{#if busy}}disabled{{/if}}
+        >
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+          {{localize "WAIFU.Autofix.ApplySelected"}} ({{autofixSelectedCount}})
+        </button>
+      </div>
+    {{else}}
+      <p class="waifu-empty">{{localize "WAIFU.Overview.NoIssues"}}</p>
+    {{/if}}
+  </section>
+
+  <section class="waifu-card">
+    <div class="waifu-card-head">
+      <h3>{{localize "WAIFU.Autofix.MaintenanceTitle"}}</h3>
+      <span class="waifu-mono">{{extras.formattedChatBytes}}</span>
+    </div>
+
+    <div class="waifu-rec-list">
+      <div class="waifu-rec-item">
+        <div class="waifu-cell-stack">
+          <strong>{{localize "WAIFU.Extras.ChatTitle"}} ({{extras.chatMessagesCount}})</strong>
+          <span class="waifu-mono">{{extras.formattedChatBytes}} • {{localize "WAIFU.Extras.LimitLabel"}} {{extras.maxChatMessages}}</span>
+        </div>
+        <button
+          type="button"
+          class="waifu-btn is-sm {{#if extras.chatBloated}}is-primary{{/if}}"
+          data-action="archiveChatMessages"
+          {{#unless extras.chatMessagesCount}}disabled{{/unless}}
+          {{#if busy}}disabled{{/if}}
+        >{{localize "WAIFU.Extras.BtnPruneShort"}}</button>
+      </div>
+
+      <div class="waifu-rec-item">
+        <div class="waifu-cell-stack">
+          <strong>{{localize "WAIFU.Extras.StaleCombatsTitle"}} ({{extras.staleCombatsCount}} / {{extras.combatsCount}})</strong>
+          <span class="waifu-mono">{{localize "WAIFU.Extras.StaleCombatsHint"}}</span>
+        </div>
+        <button
+          type="button"
+          class="waifu-btn is-sm is-danger"
+          data-action="cleanStaleCombats"
+          {{#unless extras.staleCombatsCount}}disabled{{/unless}}
+          {{#if busy}}disabled{{/if}}
+        >{{localize "WAIFU.Storage.BtnDelete"}} ({{extras.staleCombatsCount}})</button>
+      </div>
+
+      <div class="waifu-rec-item">
+        <div class="waifu-cell-stack">
+          <strong>{{localize "WAIFU.Extras.BrokenMediaTitle"}} ({{extras.brokenMediaCount}})</strong>
+          <span class="waifu-mono">{{localize "WAIFU.Extras.BrokenMediaHint"}}</span>
+        </div>
+        <button
+          type="button"
+          class="waifu-btn is-sm"
+          data-action="selectTab"
+          data-tab="scenes"
+          {{#unless extras.brokenMediaCount}}disabled{{/unless}}
+        >{{localize "WAIFU.Autofix.BtnShow"}}</button>
+      </div>
+
+      <div class="waifu-rec-item">
+        <div class="waifu-cell-stack">
+          <strong>{{localize "WAIFU.Extras.UnusedOptimizedTitle"}} ({{extras.unusedOptimizedCount}})</strong>
+          <span class="waifu-mono">worlds/{{meta.worldId}}/waifu-optimized</span>
+        </div>
+        <button
+          type="button"
+          class="waifu-btn is-sm"
+          data-action="selectTab"
+          data-tab="scenes"
+          {{#unless extras.unusedOptimizedCount}}disabled{{/unless}}
+        >{{localize "WAIFU.Autofix.BtnList"}}</button>
+      </div>
+
+      <div class="waifu-rec-item">
+        <div class="waifu-cell-stack">
+          <strong>{{localize "WAIFU.Ignore.ManageTitle"}} ({{totalIgnoredCount}})</strong>
+          <span class="waifu-mono">{{ignoreSummaryLine}}</span>
+        </div>
+        <button
+          type="button"
+          class="waifu-btn is-sm"
+          data-action="manageIgnoreRules"
+          {{#unless totalIgnoredCount}}disabled{{/unless}}
+        >{{localize "WAIFU.Autofix.BtnManage"}}</button>
+      </div>
+    </div>
+  </section>
+</div>
