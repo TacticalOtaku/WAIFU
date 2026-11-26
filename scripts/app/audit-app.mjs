@@ -333,6 +333,15 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
       { id: "report", shortLabel: this.#t("WAIFU.Domains.ReportShort"), count: 0, hasCount: false }
     ].map((p) => ({ ...p, active: p.id === this._activeTab }));
 
+    const formatAssetSlotLabel = (asset) =>
+      asset.slotType === "tile"
+        ? "Tile"
+        : asset.levelName
+          ? `${asset.levelName}`
+          : asset.slotType === "scene-foreground"
+            ? "FG"
+            : "BG";
+
     const mapSceneRow = (scene) => {
       const tags = scene.isIgnored ? ["ignored"] : ["all"];
       if (!scene.isIgnored) {
@@ -350,14 +359,7 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
         .filter((asset) => asset.isUnoptimizedRaster || asset.isOversized || asset.isMissing || asset.isHeavyBytes)
         .map((asset) => ({
           ...asset,
-          slotLabel:
-            asset.slotType === "tile"
-              ? "Tile"
-              : asset.levelName
-                ? `${asset.levelName}`
-                : asset.slotType === "scene-foreground"
-                  ? "FG"
-                  : "BG"
+          slotLabel: formatAssetSlotLabel(asset)
         }));
 
       const assetPaths = (scene.assets ?? []).map((a) => a.src).join(" ");
@@ -668,18 +670,22 @@ export class WaifuAuditApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const drawerScene = drawerTarget
       ? {
           ...drawerTarget,
-          drawerAssets: (drawerTarget.assets ?? []).map((asset) => ({
-            ...asset,
-            hasIssue: Boolean(asset.isUnoptimizedRaster || asset.isOversized || asset.isMissing || asset.isHeavyBytes),
-            slotHeader: `${asset.slotLabel} (${asset.slotType})`,
-            detailLine: [
-              asset.src,
-              asset.width > 0 ? `${asset.width}×${asset.height} (${asset.megapixels} MP)` : "",
-              asset.formattedByteSize || ""
-            ]
-              .filter(Boolean)
-              .join(" • ")
-          }))
+          drawerAssets: (drawerTarget.assets ?? []).map((asset) => {
+            const slotLabel = formatAssetSlotLabel(asset);
+            return {
+              ...asset,
+              slotLabel,
+              hasIssue: Boolean(asset.isUnoptimizedRaster || asset.isOversized || asset.isMissing || asset.isHeavyBytes),
+              slotHeader: `${slotLabel} (${asset.slotType})`,
+              detailLine: [
+                asset.src,
+                asset.width > 0 ? `${asset.width}×${asset.height} (${asset.megapixels} MP)` : "",
+                asset.formattedByteSize || ""
+              ]
+                .filter(Boolean)
+                .join(" • ")
+            };
+          })
         }
       : null;
 

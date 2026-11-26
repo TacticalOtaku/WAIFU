@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.1
+
+### Fixed
+
+- **Scene Drawer slot labels:** Resolved missing slot labels (`undefined (level-background)` / `undefined (tile)`) for healthy assets inside the Level 2 Scene Inspector Drawer by sharing `formatAssetSlotLabel` across all scene assets.
+- **Parchment theme heading contrast:** Raised CSS specificity over Foundry v14 `.theme-dark` heading defaults (`h1`–`h4`, card titles, bold labels) with explicit `color: var(--text)` and `text-shadow: none` so Parchment mode maintains high dark-ink contrast.
+- **`@UUID` clean-world chart copy:** Updated the empty-state message in **Top Documents with Broken `@UUID`** when links were scanned with zero broken matches (`No broken @UUID references found.` / `Битых ссылок @UUID не найдено.`).
+- **Threshold grid legibility:** Made the inline 15-threshold editor responsive (`auto-fit`) with clean multi-line label wrapping so longer setting names remain readable on narrower windows.
+
+### Added
+
+- **Foundry v14 runner & auto-fixer integration test suite:** Added [test/autofix-integration.test.mjs](test/autofix-integration.test.mjs) covering multi-level audits, wall/light/token cleanup, `@UUID` replace & unlink, orphaned storage deletion, chat pruning, stale combats, ignore toggles, and JSON backup/restore.
+
 ## 1.2.0
 
 ### Added

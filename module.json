@@ -2,7 +2,7 @@
   "id": "waifu",
   "title": "WAIFU: World Audit & Integrity",
   "description": "Foundry VTT v14 world diagnostics and auto-fix utility: audits heavy scenes (map resolution, PNG vs WebP, walls/lights/animations), broken @UUID references across journals (including Loreframe/flags) and actors, bloated world settings, and orphaned module flags, with JSON/Markdown reporting.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "compatibility": {
     "minimum": "14",
     "verified": "14",
@@ -36,7 +36,7 @@
   ],
   "url": "https://github.com/TacticalOtaku/WAIFU",
   "manifest": "https://github.com/TacticalOtaku/WAIFU/releases/latest/download/module.json",
-  "download": "https://github.com/TacticalOtaku/WAIFU/releases/download/v1.2.0/waifu-v1.2.0.zip",
+  "download": "https://github.com/TacticalOtaku/WAIFU/releases/download/v1.2.1/waifu-v1.2.1.zip",
   "readme": "https://github.com/TacticalOtaku/WAIFU/blob/main/README.md",
   "changelog": "https://github.com/TacticalOtaku/WAIFU/blob/main/CHANGELOG.md",
   "bugs": "https://github.com/TacticalOtaku/WAIFU/issues",

@@ -317,4 +317,12 @@ test("SVG chart helpers handle zero-data and XSS-escaped labels cleanly", () => 
   const spark = renderCompactSparklineSvg([], 74);
   assert.match(spark, /waifu-spark-svg/);
   assert.match(spark, /<polyline/);
+
+  // Healthy UUID scans show non-alarming empty state when 0 are broken
+  const healthyCharts = buildReportCharts(
+    { summary: { healthScore: 100 }, scenes: {}, uuids: { totalScanned: 30, brokenCount: 0, items: [] }, settings: {}, flags: {} },
+    buildReportStatistics({ scenes: {}, uuids: { totalScanned: 30, brokenCount: 0, items: [] }, settings: {}, flags: {} }),
+    "en"
+  );
+  assert.match(healthyCharts.uuidTopDocsSvg, /No broken @UUID references found/);
 });

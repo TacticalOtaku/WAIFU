@@ -411,6 +411,7 @@ export function getChartLabels(lang = "en") {
       emptyScenes: "Проблемных сцен не обнаружено.",
       emptyStorage: "Нет данных о занимаемом объёме.",
       emptyUuids: "Ссылки @UUID не обнаружены.",
+      noBrokenUuids: "Битых ссылок @UUID не найдено.",
       thresholdRes: "Порог"
     };
   }
@@ -454,6 +455,7 @@ export function getChartLabels(lang = "en") {
     emptyScenes: "No scenes available to chart.",
     emptyStorage: "No storage payload data.",
     emptyUuids: "No @UUID references scanned.",
+    noBrokenUuids: "No broken @UUID references found.",
     thresholdRes: "Limit"
   };
 }
@@ -777,7 +779,7 @@ export function buildReportCharts(report, stats, lang = "en") {
       displayValue: d.exactCount > 0 ? `${d.count} (${d.exactCount} exact)` : String(d.count),
       tone: d.criticalCount > 0 ? "critical" : "warning"
     })),
-    { emptyLabel: L.emptyUuids }
+    { emptyLabel: uuidStats.totalScanned > 0 ? L.noBrokenUuids : L.emptyUuids }
   );
 
   // 9. Storage Allocation Donut & Stacked Bar (by Module State across Settings)

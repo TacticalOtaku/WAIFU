@@ -26,11 +26,19 @@
   box-shadow: var(--shadow-lift);
 }
 
-:where(.waifu-root) :is(h1, h2, h3, h4) {
+.waifu-root :is(h1, h2, h3, h4) {
+  margin: 0;
   border: 0;
+  color: var(--text);
   font-family: var(--font-display);
   letter-spacing: -0.015em;
   text-wrap: balance;
+  text-shadow: none;
+}
+
+.waifu-root[data-theme="parchment"] :is(h1, h2, h3, h4, strong, b, th, .waifu-subwin-title) {
+  color: var(--text);
+  text-shadow: none;
 }
 
 :where(.waifu-root) svg {
@@ -1013,20 +1021,15 @@
 /* Thresholds Studio Form inside Drill-Down 6 */
 .waifu-threshold-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: var(--s2);
-}
-
-@media (max-width: 720px) {
-  .waifu-threshold-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 .waifu-threshold-cell {
   display: grid;
-  gap: 4px;
-  padding: 8px 10px;
+  gap: 5px;
+  align-content: space-between;
+  padding: 9px 10px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface-2);
@@ -1034,10 +1037,8 @@
 
 .waifu-threshold-cell > span {
   font-size: var(--t-xs);
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  color: var(--text-2);
 }
 
 .waifu-threshold-cell > input {
