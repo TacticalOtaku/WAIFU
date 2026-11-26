@@ -45,6 +45,12 @@ if (pkg.version !== mod.version) {
   throw new Error(`Version mismatch: package.json=${pkg.version} vs module.json=${mod.version}`);
 }
 
+for (const requiredDoc of ["LICENSE", "CHANGELOG.md", "README.md", "README.ru.md"]) {
+  if (!fs.existsSync(path.join(ROOT, requiredDoc))) {
+    throw new Error(`Missing required repository file: ${requiredDoc}`);
+  }
+}
+
 for (const assetPath of [...(mod.esmodules ?? []), ...(mod.styles ?? [])]) {
   if (!fs.existsSync(path.join(ROOT, assetPath))) {
     throw new Error(`Missing manifest asset: ${assetPath}`);

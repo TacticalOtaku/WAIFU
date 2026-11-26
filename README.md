@@ -1,5 +1,7 @@
 <div align="center">
 
+**English** · [Русский](README.ru.md)
+
 # WAIFU: World Audit & Integrity
 
 **Diagnostic report workspace and safe auto-fix toolkit for Foundry VTT v14+**
@@ -10,7 +12,7 @@ Inspect heavy multi-level scenes, broken `@UUID` references, bloated world setti
 [![Release Workflow](https://img.shields.io/github/actions/workflow/status/TacticalOtaku/WAIFU/release.yml?style=flat-square&label=Release%20CI)](https://github.com/TacticalOtaku/WAIFU/actions/workflows/release.yml)
 [![Foundry VTT](https://img.shields.io/badge/Foundry_VTT-v14-ff6400?style=flat-square)](https://foundryvtt.com/)
 [![Languages](https://img.shields.io/badge/Languages-EN_%7C_RU-2e7d32?style=flat-square)](lang/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-3b82f6?style=flat-square)](module.json)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3b82f6?style=flat-square)](LICENSE)
 
 [Installation](#installation) · [Opening WAIFU](#opening-waifu) · [Workspace](#workspace) · [Diagnostics & Auto-Fix](#diagnostics--auto-fix) · [Reports & Charts](#reports--charts) · [Settings & API](#settings--api) · [Development](#development)
 
@@ -186,11 +188,26 @@ npm run package   # Build dist/waifu-v<version>.zip and dist/module.json
 npm run release   # Run checks and build release archive
 ```
 
+### Project Docs
+
+| Document | Purpose |
+| --- | --- |
+| [CHANGELOG.md](CHANGELOG.md) | Version-by-version release notes |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Issue reporting guidelines |
+
+---
+
+## AI Disclosure
+
+AI-assisted tools were used during development for tasks such as code drafting, refactoring, tests, documentation, and localization drafts. All architecture, code, behavior, user-facing copy, and Russian/English translations are reviewed, tested, and maintained by **TacticalOtaku**, who retains sole authorship and responsibility for the module.
+
+All bundled package assets and user-facing materials comply with Foundry VTT's [AI Content Policy](https://foundryvtt.com/article/ai-policy/) — no pre-generated AI art, audio, or lore assets are included.
+
 ---
 
 ## Feedback & License
 
-Bug reports and feature suggestions are welcome via [GitHub Issues](https://github.com/TacticalOtaku/WAIFU/issues).
+Pull Requests are disabled on this repository; bug reports and feature suggestions are welcome via [GitHub Issues](https://github.com/TacticalOtaku/WAIFU/issues) (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
-Created by [TacticalOtaku](https://github.com/TacticalOtaku) · Licensed under the **MIT License** ([module.json](module.json)).  
+Created by [TacticalOtaku](https://github.com/TacticalOtaku) · Licensed under the **MIT License** ([LICENSE](LICENSE)).  
 Bundled UI typeface (`SIL Open Font License 1.1`): [Onest Variable](assets/fonts/OFL-onest.txt).
