@@ -97,11 +97,87 @@
 </div>
 
 {{#if sceneRows.length}}
+  <div class="waifu-selection-bar" data-selection-bar="scenes" hidden>
+    <span class="waifu-badge is-accent" data-selection-count="scenes">{{localize "WAIFU.Selection.Count" count=0}}</span>
+    <div class="waifu-row-actions">
+      <button
+        type="button"
+        class="waifu-btn is-sm is-primary"
+        data-action="convertSelectedScenesWebp"
+        data-sel-btn="webp"
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-file-image" aria-hidden="true"></i>
+        <span data-sel-label>{{localize "WAIFU.Selection.WebpSelected"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="dedupeSelectedScenesWalls"
+        data-sel-btn="walls"
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-border-none" aria-hidden="true"></i>
+        <span data-sel-label>{{localize "WAIFU.Selection.DedupeWallsSelected"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="dedupeSelectedScenesNearWalls"
+        data-sel-btn="near-walls"
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-wand-sparkles" aria-hidden="true"></i>
+        <span data-sel-label>{{localize "WAIFU.Selection.NearWallsSelected"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="cleanSelectedScenesTokens"
+        data-sel-btn="tokens"
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-user-slash" aria-hidden="true"></i>
+        <span data-sel-label>{{localize "WAIFU.Selection.OrphanTokensSelected"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="disableSelectedScenesLightAnims"
+        data-sel-btn="lights"
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
+        <span data-sel-label>{{localize "WAIFU.Selection.StopLightAnimsSelected"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="ignoreSelectedItems"
+        data-select-kind="scenes"
+        data-sel-btn="ignore"
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+        <span data-sel-label>{{localize "WAIFU.Selection.IgnoreSelected"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="clearSelection"
+        data-select-kind="scenes"
+      >{{localize "WAIFU.Selection.Clear"}}</button>
+    </div>
+  </div>
+
   <div tabindex="0" role="region" aria-labelledby="waifu-scenes-caption" class="waifu-table-wrap">
-    <table class="waifu-table" data-waifu-table="scenes">
+    <table class="waifu-table has-check-col" data-waifu-table="scenes">
       <caption id="waifu-scenes-caption">{{localize "WAIFU.Tabs.Scenes"}}</caption>
       <thead>
         <tr>
+          <th scope="col" class="waifu-col-check">
+            <input type="checkbox" class="waifu-check" data-select-all="scenes" aria-label="{{localize 'WAIFU.Selection.SelectAll'}}">
+          </th>
           <th scope="col" data-type="string">
             <button type="button" data-action="sortTable">{{localize "WAIFU.Scenes.ColScene"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
           </th>
@@ -129,7 +205,10 @@
       </thead>
       <tbody>
         {{#each sceneRows}}
-          <tr data-waifu-row="scene" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+          <tr data-waifu-row="scene" data-select-id="{{this.id}}" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+            <td class="waifu-col-check">
+              <input type="checkbox" class="waifu-check" data-select-row="scenes" data-select-id="{{this.id}}" {{#if this.selected}}checked{{/if}} aria-label="{{this.name}}">
+            </td>
             <th scope="row">
               <div class="waifu-cell-stack">
                 <button

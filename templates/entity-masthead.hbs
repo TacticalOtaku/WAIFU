@@ -1,0 +1,33 @@
+<header class="waifu-masthead">
+  <div class="waifu-masthead-brand">
+    <div class="waifu-brand-mark">
+      <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
+    </div>
+    <div class="waifu-brand-copy">
+      <h1 class="waifu-brand-title">{{localize "WAIFU.EntityAudit.WindowTitle"}}</h1>
+      <span class="waifu-brand-meta">{{localize "WAIFU.EntityAudit.Subheading"}}</span>
+    </div>
+  </div>
+
+  <div class="waifu-masthead-actions">
+    <button
+      type="button"
+      class="waifu-btn is-sm"
+      data-action="openWorldAudit"
+      title="{{localize 'WAIFU.EntityAudit.OpenWorldAudit'}}"
+    >
+      <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+      <span>{{localize "WAIFU.EntityAudit.OpenWorldAudit"}}</span>
+    </button>
+    <button
+      type="button"
+      class="waifu-btn is-sm is-primary"
+      data-action="rescanEntities"
+      {{#unless entityAudit.hasTargets}}disabled{{/unless}}
+      {{#if busy}}disabled{{/if}}
+    >
+      <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+      <span>{{localize "WAIFU.EntityAudit.Rescan"}}</span>
+    </button>
+  </div>
+</header>

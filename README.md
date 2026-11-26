@@ -35,7 +35,7 @@ https://github.com/TacticalOtaku/WAIFU/releases/latest/download/module.json
 
 ## Overview
 
-**WAIFU** inspects your entire Foundry VTT world in seconds, scores overall world integrity (`0–100%`), visualizes bottlenecks with built-in SVG charts and statistical distributions, and offers **safe, reversible auto-fixes** with optional JSON backups before cleanup.
+**WAIFU** inspects your entire Foundry VTT world in seconds, scores overall world integrity (`0–100%`), visualizes bottlenecks with built-in SVG charts and statistical distributions, persists the latest report across reloads/re-logins (running automatically only on first launch when no audit exists yet, with all subsequent scans triggered manually), and offers **safe, reversible auto-fixes** with optional JSON backups and instant local report updates without re-scanning after every cleanup.
 
 > [!NOTE]
 > Built specifically for **Foundry VTT v14** (including multi-level `Scene.levels`, `ApplicationV2`, and **Loreframe** journal blocks) with full **English** and **Русский** localization. Designed in the visual language of **AIM: Actor Window** (`Night` & `Parchment` themes, 6 accent palettes, and bundled **Onest Variable** typography).
@@ -48,10 +48,10 @@ Any **GM** user can open the diagnostic dashboard in four ways:
 
 | Entry Point | Where to find it |
 | --- | --- |
-| **Scene Controls** | Token Tools (`Tokens` layer) → stethoscope icon (**WAIFU: World Audit & Integrity**) |
+| **Scene Controls** | Token Tools (`Tokens` layer) → stethoscope (**WAIFU: World Audit & Integrity**) or boxes icon (**WAIFU: Actors & Items Audit**) |
 | **Settings Sidebar** | Game Settings tab → **Open World Audit (WAIFU)** button |
-| **Module Settings** | Configure Settings → WAIFU → **Open WAIFU Audit** |
-| **Macro / Console** | `game.modules.get("waifu").api.open()` or `WAIFU.open()` |
+| **Module Settings** | Configure Settings → WAIFU → **Open WAIFU Audit** or **Open Actors & Items Audit** |
+| **Macro / Console** | `game.modules.get("waifu").api.open()`, `WAIFU.open()`, or `WAIFU.openEntityAudit()` |
 
 ---
 
@@ -63,10 +63,17 @@ WAIFU uses a **3-level Hub-and-Drilldown workspace** (`Compact Masthead` → `6-
 | --- | --- |
 | **1 · Integrity Score & Trend** | 270° health gauge, score deduction progress bar, scan sparkline & comparison CTA → full Health Trend chart with delta pills, itemized penalty breakdown, Domain Severity Matrix table, and Scene Metric Distributions (`Min / Avg / Median / P95 / Max`). |
 | **2 · Auto-Fix & Maintenance** | Top 3 prioritized safe fixes with 1-click triggers and maintenance alert badges → interactive **Dry-Run Queue** with per-fix checkboxes, default JSON backup checkbox, plus Chat Log archiving, Stale Combats cleanup, Non-Scene 404 Media, Unused `waifu-optimized`, and Ignore Rules manager. |
-| **3 · Scenes & Media** | Clean vs problematic scene KPIs, WebP vs PNG mix bar, top 2 heaviest scenes (click directly opens the **Level 2 Scene Drawer**) → resolution chart (`MP` vs limit), search/filter chips, sortable `Scene.levels` & `Tile` table, canvas focus/ping, orphaned token/wall cleanup, and per-asset/batch WebP conversion. |
-| **4 · `@UUID` Integrity** | Valid link percentage bar and top offending docs → integrity/top-docs charts, extended coverage (`JournalEntry`, `Loreframe`, `Actor`, `Item`, `RollTable`, `Macro`, `Scene`), `#anchor` verification, filters, fuzzy selector, manual catalog picker, optional `{label}` sync, 1-click replace, and safe unlink. |
-| **5 · Database Storage & Flags** | Reclaimable DB footprint bar and top namespaces → allocation donut, top namespaces chart, sortable World Settings & Document Flags tables with interactive JSON inspection, per-document flag deletion, JSON Backup & **JSON Restore**, and Chat/Combat maintenance. |
+| **3 · Scenes & Media** | Clean vs problematic scene KPIs, WebP vs PNG mix bar, top 2 heaviest scenes (click directly opens the **Level 2 Scene Drawer**) → resolution chart (`MP` vs limit), search/filter chips, multi-select checkboxes (`Shift+Click` range & select-all visible) for batch WebP/walls/tokens/lights/ignore actions, sortable `Scene.levels` & `Tile` table, canvas focus/ping, and per-asset/batch WebP conversion. |
+| **4 · `@UUID` Integrity** | Valid link percentage bar and top offending docs → integrity/top-docs charts, extended coverage (`JournalEntry`, `Loreframe`, `Actor`, `Item`, `RollTable`, `Macro`, `Scene`), `#anchor` verification, filters, multi-select replace/unlink/ignore bar, fuzzy selector, manual catalog picker, optional `{label}` sync, 1-click replace, and safe unlink. |
+| **5 · Database Storage & Flags** | Reclaimable DB footprint bar and top namespaces → allocation donut, top namespaces chart, sortable World Settings & Document Flags tables with multi-select checkboxes (`Shift+Click` range & select-all visible) for batch delete/ignore without triggering a re-audit, interactive JSON inspection, per-document flag deletion, JSON Backup & **JSON Restore**, and Chat/Combat maintenance. |
 | **6 · Report Studio & Thresholds** | Quick threshold summary tiles and `.html` / `.md` / `.json` / `Journal` export strip → **Report Preview** switcher (**Visual**, **Markdown**, **Journal**) paired side-by-side with inline editing for all **15 audit thresholds** and toggles. |
+| **7 · Actors & Items JSON Audit** | Inline 7th Hub view & dedicated standalone window (`WAIFU.openEntityAudit()`), **empty by default** — drag and drop any `Actor`, `Item`, `Folder` (recursive subfolders), or `Actor`/`Item` `Compendium` to find and safely clean leftover flags, `prototypeToken` flags, `ActiveEffect.changes`, and residual `@UUID` / `modules/<id>/` strings from deleted or inactive modules without triggering a full world audit. |
+
+### Tinted Busy Progress Overlay & Persistence
+
+- **First Auto-Audit Only**: WAIFU runs a world scan automatically only on first launch (when no saved report exists) and persists the last report across reloads. All subsequent world audits are triggered manually via **Run Audit**.
+- **Instant Local Reconciliation**: Cleaning, deleting, replacing, unlinking, or ignoring items updates the persisted report locally instead of re-running the world audit.
+- **Circular Status Overlay**: Every audit, batch fix, deletion, or JSON cleanup dims the window behind a centered progress ring with live percentage, active stage title, and the exact target key/path being processed (plus **Cancel** for cancellable queues).
 
 ### Themes & Typography
 
@@ -165,8 +172,14 @@ States: **Healthy** (`85–100%`), **Attention / Warning** (`60–84%`), **Criti
 ```js
 const waifu = game.modules.get("waifu").api;
 
-// Open the diagnostic report window (auto-scans on first open)
+// Open the diagnostic report window (auto-scans only on first run; restores saved report afterwards)
 waifu.open();
+
+// Open the standalone empty-by-default drag-and-drop Actors & Items JSON audit window
+waifu.openEntityAudit();
+
+// Read the last persisted audit report without scanning
+const lastReport = waifu.getLastReport();
 
 // Run an audit programmatically (with optional threshold overrides)
 const report = await waifu.runAudit({ maxWalls: 250 });

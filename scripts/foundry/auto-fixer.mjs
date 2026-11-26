@@ -96,7 +96,10 @@ export async function convertSceneAssetsToWebp(assets, thresholds, options = {})
           levelId: usage.levelId ?? null,
           tileId: usage.tileId ?? null,
           oldSrc: src,
-          newSrc: uploaded.targetPath
+          newSrc: uploaded.targetPath,
+          webpBytes: uploaded.webpBytes,
+          width: uploaded.width,
+          height: uploaded.height
         });
       }
 
@@ -290,14 +293,25 @@ export async function patchDocumentUuidOccurrence(occurrence, action) {
 /**
  * Batch-patch multiple broken UUID occurrences sequentially per document to avoid race conditions.
  * @param {Array<{ occurrence: Object, action: { mode: "replace" | "unlink", newUuid?: string } }>} operations
+ * @param {{ signal?: AbortSignal, onProgress?: (info: { current: number, total: number, occurrence: Object }) => void, onPatched?: (op: Object) => void }} options
  * @returns {Promise<number>}
  */
-export async function batchPatchUuidOccurrences(operations) {
+export async function batchPatchUuidOccurrences(operations, options = {}) {
+  const onPatched = typeof options?.onPatched === "function" ? options.onPatched : null;
+  const onProgress = typeof options?.onProgress === "function" ? options.onProgress : null;
+  const signal = options?.signal;
+  const list = operations ?? [];
   let updatedCount = 0;
-  for (const op of operations ?? []) {
+  for (let i = 0; i < list.length; i += 1) {
+    if (signal?.aborted) break;
+    const op = list[i];
+    onProgress?.({ current: i + 1, total: list.length, occurrence: op.occurrence });
     try {
       const changed = await patchDocumentUuidOccurrence(op.occurrence, op.action);
-      if (changed) updatedCount += 1;
+      if (changed) {
+        updatedCount += 1;
+        onPatched?.(op);
+      }
     } catch (error) {
       console.error("WAIFU | Failed to patch @UUID occurrence", op.occurrence, error);
     }
@@ -317,7 +331,10 @@ export function downloadStorageBackup(report, extra = {}) {
   const settingRecords = [];
   if (worldStorage) {
     const allDocs = worldStorage.contents ?? [...worldStorage.values()];
-    const targetKeys = new Set((report?.settings?.items ?? []).map((item) => item.key));
+    const targetKeys = new Set([
+      ...(report?.settings?.items ?? []).map((item) => item.key),
+      ...(report?.settings?.ignoredItems ?? []).map((item) => item.key)
+    ]);
     for (const doc of allDocs) {
       if (targetKeys.has(doc.key)) {
         settingRecords.push({ key: doc.key, value: doc.value });
@@ -326,7 +343,11 @@ export function downloadStorageBackup(report, extra = {}) {
   }
 
   const flagRecords = [];
-  for (const group of report?.flags?.groups ?? []) {
+  const allFlagGroups = [
+    ...(report?.flags?.groups ?? []),
+    ...(report?.flags?.ignoredGroups ?? [])
+  ];
+  for (const group of allFlagGroups) {
     for (const target of group.targets ?? []) {
       flagRecords.push({
         docUuid: target.docUuid,
@@ -396,14 +417,25 @@ export function parseBackupPayload(rawText) {
 /**
  * Restore settings, document flags, scene asset paths, and deleted walls from a parsed WAIFU backup.
  * @param {Object} payload
+ * @param {{ signal?: AbortSignal, onProgress?: (info: { current: number, total: number, detail: string }) => void }} options
  * @returns {Promise<{ restoredSettings: number, restoredFlags: number, restoredScenes: number, restoredWalls: number, errors: string[] }>}
  */
-export async function restoreBackupPayload(payload) {
+export async function restoreBackupPayload(payload, options = {}) {
+  const signal = options?.signal;
+  const onProgress = typeof options?.onProgress === "function" ? options.onProgress : null;
   let restoredSettings = 0;
   let restoredFlags = 0;
   let restoredScenes = 0;
   let restoredWalls = 0;
   const errors = [];
+
+  const settingsList = payload?.settings ?? [];
+  const flagsList = payload?.flagsMeta ?? [];
+  const sceneMediaList = payload?.sceneMedia ?? [];
+  const wallsList = payload?.deletedWalls ?? [];
+  const totalSteps =
+    settingsList.length + flagsList.length + sceneMediaList.length + wallsList.length;
+  let currentStep = 0;
 
   const worldStorage = game.settings?.storage?.get?.("world");
   const existingSettings = worldStorage
@@ -411,8 +443,11 @@ export async function restoreBackupPayload(payload) {
     : [];
   const SettingClass = getDocumentClass?.("Setting") ?? worldStorage?.documentClass;
 
-  for (const rec of payload?.settings ?? []) {
+  for (const rec of settingsList) {
+    if (signal?.aborted) break;
+    currentStep += 1;
     if (!rec?.key) continue;
+    onProgress?.({ current: currentStep, total: totalSteps, detail: `Setting: ${rec.key}` });
     try {
       const existing = existingSettings.find((s) => s.key === rec.key);
       if (existing) {
@@ -427,8 +462,15 @@ export async function restoreBackupPayload(payload) {
     }
   }
 
-  for (const rec of payload?.flagsMeta ?? []) {
+  for (const rec of flagsList) {
+    if (signal?.aborted) break;
+    currentStep += 1;
     if (!rec?.docUuid || !rec?.namespace || rec.value === undefined) continue;
+    onProgress?.({
+      current: currentStep,
+      total: totalSteps,
+      detail: `Flag: ${rec.docName || rec.docUuid} (${rec.namespace})`
+    });
     try {
       const doc = await fromUuid(rec.docUuid);
       if (!doc) continue;
@@ -445,8 +487,11 @@ export async function restoreBackupPayload(payload) {
     }
   }
 
-  for (const slot of payload?.sceneMedia ?? []) {
+  for (const slot of sceneMediaList) {
+    if (signal?.aborted) break;
+    currentStep += 1;
     if (!slot?.sceneId || !slot?.oldSrc) continue;
+    onProgress?.({ current: currentStep, total: totalSteps, detail: `Media: ${slot.oldSrc}` });
     try {
       const scene = game.scenes.get(slot.sceneId);
       if (!scene) continue;
@@ -457,8 +502,15 @@ export async function restoreBackupPayload(payload) {
     }
   }
 
-  for (const entry of payload?.deletedWalls ?? []) {
+  for (const entry of wallsList) {
+    if (signal?.aborted) break;
+    currentStep += 1;
     if (!entry?.sceneId || !Array.isArray(entry?.walls) || !entry.walls.length) continue;
+    onProgress?.({
+      current: currentStep,
+      total: totalSteps,
+      detail: `Walls: ${entry.sceneId} (+${entry.walls.length})`
+    });
     try {
       const scene = game.scenes.get(entry.sceneId);
       if (!scene) continue;
@@ -601,14 +653,25 @@ export async function deleteWorldSettingByKey(key) {
 }
 
 /**
- * Delete multiple world settings by key.
+ * Delete multiple world settings by key with progress and cancellation support.
  * @param {string[]} keys
+ * @param {{ signal?: AbortSignal, onProgress?: (info: { current: number, total: number, key: string }) => void, onDeleted?: (key: string) => void }} options
  * @returns {Promise<number>}
  */
-export async function deleteWorldSettingsBatch(keys) {
+export async function deleteWorldSettingsBatch(keys, options = {}) {
+  const signal = options?.signal;
+  const onProgress = typeof options?.onProgress === "function" ? options.onProgress : null;
+  const onDeleted = typeof options?.onDeleted === "function" ? options.onDeleted : null;
+  const list = [...(keys ?? [])];
   let deleted = 0;
-  for (const key of keys ?? []) {
-    if (await deleteWorldSettingByKey(key)) deleted += 1;
+  for (let i = 0; i < list.length; i += 1) {
+    if (signal?.aborted) break;
+    const key = list[i];
+    onProgress?.({ current: i + 1, total: list.length, key });
+    if (await deleteWorldSettingByKey(key)) {
+      deleted += 1;
+      onDeleted?.(key);
+    }
   }
   return deleted;
 }
@@ -616,14 +679,22 @@ export async function deleteWorldSettingsBatch(keys) {
 /**
  * Delete a module flag namespace from all target documents in a flag group.
  * @param {Object} group
+ * @param {{ signal?: AbortSignal, onProgress?: (info: { current: number, total: number, target: Object }) => void, onDeletedTarget?: (target: Object) => void }} options
  * @returns {Promise<number>}
  */
-export async function deleteFlagGroup(group) {
+export async function deleteFlagGroup(group, options = {}) {
   let removed = 0;
   const namespace = group?.namespace;
   if (!namespace) return 0;
+  const signal = options?.signal;
+  const onProgress = typeof options?.onProgress === "function" ? options.onProgress : null;
+  const onDeletedTarget = typeof options?.onDeletedTarget === "function" ? options.onDeletedTarget : null;
+  const targets = group.targets ?? [];
 
-  for (const target of group.targets ?? []) {
+  for (let i = 0; i < targets.length; i += 1) {
+    if (signal?.aborted) break;
+    const target = targets[i];
+    onProgress?.({ current: i + 1, total: targets.length, target });
     try {
       const doc = await fromUuid(target.docUuid);
       if (!doc || doc.flags?.[namespace] === undefined) continue;
@@ -635,9 +706,217 @@ export async function deleteFlagGroup(group) {
         await doc.update({ "==flags": nextFlags });
       }
       removed += 1;
+      onDeletedTarget?.(target);
     } catch (error) {
       console.error("WAIFU | Failed deleting flag namespace", target.docUuid, namespace, error);
     }
   }
   return removed;
+}
+
+function clearValueAtPath(rootValue, pathSegments) {
+  const cloned = structuredClone(rootValue);
+  if (!pathSegments?.length) return cloned;
+  let cursor = cloned;
+  for (let i = 0; i < pathSegments.length - 1; i += 1) {
+    if (cursor == null || typeof cursor !== "object") return cloned;
+    cursor = cursor[pathSegments[i]];
+  }
+  const leaf = pathSegments[pathSegments.length - 1];
+  if (cursor == null || typeof cursor !== "object") return cloned;
+  if (Array.isArray(cursor) && typeof leaf === "number") {
+    cursor.splice(leaf, 1);
+  } else {
+    cursor[leaf] = "";
+  }
+  return cloned;
+}
+
+async function resolveEntityTargetDocument(finding) {
+  let doc = null;
+  try {
+    doc = await fromUuid(finding.targetUuid);
+  } catch {
+    doc = null;
+  }
+  if (doc) return doc;
+  if (!finding.rootUuid || finding.rootUuid === finding.targetUuid) return null;
+
+  const rootDoc = await fromUuid(finding.rootUuid);
+  if (!rootDoc) return null;
+  const suffix = finding.targetUuid.slice(finding.rootUuid.length + 1);
+  const parts = suffix.split(".");
+  let cursor = rootDoc;
+  for (let i = 0; i + 1 < parts.length; i += 2) {
+    const type = parts[i];
+    const id = parts[i + 1];
+    if (type === "Item") cursor = cursor.items?.get?.(id) ?? null;
+    else if (type === "ActiveEffect") cursor = cursor.effects?.get?.(id) ?? null;
+    else cursor = null;
+    if (!cursor) return null;
+  }
+  return cursor;
+}
+
+/**
+ * Clean one or more residual flags or module strings found on Actors, Items, and their embedded entities.
+ * Safely batches ActiveEffect `changes` removals per effect to avoid array index drift.
+ * @param {Array<Object>} findings
+ * @param {{ signal?: AbortSignal, onProgress?: (info: { current: number, total: number, finding: Object }) => void }} options
+ * @returns {Promise<{ cleanedIds: string[], errors: string[], aborted: boolean }>}
+ */
+export async function cleanEntityFindingsBatch(findings = [], options = {}) {
+  const signal = options?.signal;
+  const onProgress = typeof options?.onProgress === "function" ? options.onProgress : null;
+  const list = (findings ?? []).filter((f) => f && f.canClean && !f.isLocked);
+  const cleanedIds = [];
+  const errors = [];
+  let aborted = false;
+
+  const effectChangesByDoc = new Map();
+  const sequential = [];
+  for (const f of list) {
+    if (f.kind === "effect-change") {
+      if (!effectChangesByDoc.has(f.targetUuid)) effectChangesByDoc.set(f.targetUuid, []);
+      effectChangesByDoc.get(f.targetUuid).push(f);
+    } else {
+      sequential.push(f);
+    }
+  }
+
+  const total = list.length;
+  let current = 0;
+
+  for (const f of sequential) {
+    if (signal?.aborted) {
+      aborted = true;
+      break;
+    }
+    current += 1;
+    onProgress?.({ current, total, finding: f });
+
+    try {
+      const doc = await resolveEntityTargetDocument(f);
+      if (!doc) continue;
+
+      if (f.kind === "flag") {
+        if (doc.flags?.[f.namespace] === undefined) continue;
+        if (!f.namespace.includes(".")) {
+          await doc.update({ [`flags.-=${f.namespace}`]: null });
+        } else {
+          const nextFlags = foundry.utils.deepClone(doc.flags ?? {});
+          delete nextFlags[f.namespace];
+          await doc.update({ "==flags": nextFlags });
+        }
+        cleanedIds.push(f.id);
+      } else if (f.kind === "prototype-flag") {
+        if (doc.prototypeToken?.flags?.[f.namespace] === undefined) continue;
+        if (!f.namespace.includes(".")) {
+          await doc.update({ [`prototypeToken.flags.-=${f.namespace}`]: null });
+        } else {
+          const nextFlags = foundry.utils.deepClone(doc.prototypeToken?.flags ?? {});
+          delete nextFlags[f.namespace];
+          await doc.update({ "==prototypeToken.flags": nextFlags });
+        }
+        cleanedIds.push(f.id);
+      } else if (f.kind === "uuid-string" && f.uuidRef) {
+        const ok = await patchDocumentUuidOccurrence(
+          {
+            targetUuid: f.targetUuid,
+            pathSegments: f.pathSegments,
+            syntax: f.uuidRef.syntax,
+            rawUuid: f.uuidRef.rawUuid
+          },
+          { mode: "unlink" }
+        );
+        if (ok) cleanedIds.push(f.id);
+      } else if (f.kind === "module-path" && Array.isArray(f.pathSegments) && f.pathSegments.length) {
+        const rootKey = f.pathSegments[0];
+        if (f.pathSegments.length === 1 && rootKey === "img") {
+          await doc.update({ img: "" });
+          cleanedIds.push(f.id);
+        } else if (rootKey === "prototypeToken") {
+          const rawProto =
+            typeof doc.prototypeToken?.toObject === "function"
+              ? doc.prototypeToken.toObject()
+              : foundry.utils.deepClone(doc.prototypeToken ?? {});
+          const nextProto = clearValueAtPath(rawProto, f.pathSegments.slice(1));
+          const subKey = f.pathSegments[1];
+          if (subKey === "texture" && f.pathSegments[2] === "src") {
+            await doc.update({ "prototypeToken.texture.src": "" });
+          } else {
+            await doc.update({ "==prototypeToken": nextProto });
+          }
+          cleanedIds.push(f.id);
+        } else if (rootKey === "system") {
+          const rawSys =
+            typeof doc.system?.toObject === "function"
+              ? doc.system.toObject()
+              : foundry.utils.deepClone(doc.system ?? {});
+          const nextSys = clearValueAtPath(rawSys, f.pathSegments.slice(1));
+          const topKey = f.pathSegments[1];
+          if (topKey && !String(topKey).includes(".") && doc.system?.[topKey] !== undefined) {
+            await doc.update({ [`system.==${topKey}`]: nextSys[topKey] });
+          } else {
+            await doc.update({ "==system": nextSys });
+          }
+          cleanedIds.push(f.id);
+        } else {
+          const dotPath = f.pathSegments.join(".");
+          await doc.update({ [dotPath]: "" });
+          cleanedIds.push(f.id);
+        }
+      }
+    } catch (error) {
+      errors.push(`${f.rootName} (${f.fieldPath}): ${error?.message || String(error)}`);
+    }
+  }
+
+  for (const [, groupFindings] of effectChangesByDoc.entries()) {
+    if (signal?.aborted) {
+      aborted = true;
+      break;
+    }
+    const sample = groupFindings[0];
+    current += groupFindings.length;
+    onProgress?.({ current: Math.min(total, current), total, finding: sample });
+
+    try {
+      const effectDoc = await resolveEntityTargetDocument(sample);
+      if (!effectDoc) continue;
+      const existingChanges = Array.isArray(effectDoc.changes)
+        ? effectDoc.changes.map((c) =>
+            typeof c?.toObject === "function" ? c.toObject() : foundry.utils.deepClone(c)
+          )
+        : [];
+      const indicesToRemove = new Set();
+      for (const f of groupFindings) {
+        const idx = f.changeIndex;
+        if (
+          Number.isInteger(idx) &&
+          existingChanges[idx] &&
+          existingChanges[idx].key === f.matchedKey &&
+          !indicesToRemove.has(idx)
+        ) {
+          indicesToRemove.add(idx);
+        } else {
+          const fallbackIdx = existingChanges.findIndex(
+            (c, i) =>
+              !indicesToRemove.has(i) &&
+              c?.key === f.matchedKey &&
+              String(c?.value ?? "") === String(f.matchedValue ?? "")
+          );
+          if (fallbackIdx >= 0) indicesToRemove.add(fallbackIdx);
+        }
+      }
+      if (!indicesToRemove.size) continue;
+      const nextChanges = existingChanges.filter((_c, idx) => !indicesToRemove.has(idx));
+      await effectDoc.update({ changes: nextChanges });
+      for (const f of groupFindings) cleanedIds.push(f.id);
+    } catch (error) {
+      errors.push(`${sample.rootName} (${sample.targetName}): ${error?.message || String(error)}`);
+    }
+  }
+
+  return { cleanedIds, errors, aborted };
 }

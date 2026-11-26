@@ -1,0 +1,46 @@
+<div
+  class="waifu-busy-overlay"
+  data-waifu-progress
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="waifu-busy-title"
+  {{#unless busy}}hidden{{/unless}}
+>
+  <div class="waifu-busy-card">
+    <div class="waifu-busy-ring" aria-hidden="true">
+      <svg class="waifu-busy-svg" viewBox="0 0 96 96" width="96" height="96">
+        <circle class="waifu-busy-track" cx="48" cy="48" r="40" />
+        <circle
+          class="waifu-busy-arc"
+          data-waifu-busy-arc
+          cx="48"
+          cy="48"
+          r="40"
+          stroke-dasharray="251.33"
+          stroke-dashoffset="{{progressDashOffset}}"
+        />
+      </svg>
+      <span class="waifu-busy-pct" data-waifu-progress-pct>{{progressPercent}}%</span>
+    </div>
+
+    <div class="waifu-busy-text">
+      <h3 id="waifu-busy-title" class="waifu-busy-title" data-waifu-progress-label>{{progressLabel}}</h3>
+      <p
+        class="waifu-busy-detail waifu-mono"
+        data-waifu-progress-detail
+        {{#unless progressDetail}}hidden{{/unless}}
+      >{{progressDetail}}</p>
+    </div>
+
+    <button
+      type="button"
+      class="waifu-btn is-sm is-danger"
+      data-action="cancelOperation"
+      data-waifu-cancel-btn
+      {{#unless canCancel}}hidden{{/unless}}
+    >
+      <i class="fa-solid fa-stop" aria-hidden="true"></i>
+      {{localize "Cancel"}}
+    </button>
+  </div>
+</div>

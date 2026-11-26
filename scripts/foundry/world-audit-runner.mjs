@@ -3,11 +3,13 @@ import {
   DEFAULT_IGNORE_RULES,
   DEFAULT_THRESHOLDS,
   IGNORE_RULES_SETTING,
+  LAST_AUDIT_REPORT_SETTING,
   MAX_HISTORY_ENTRIES,
   MODULE_ID,
   WORLD_FLAG_COLLECTIONS
 } from "../constants.mjs";
 import { createAuditReport } from "../core/report.mjs";
+import { auditEntityBatch } from "../core/entity-audit.mjs";
 import { auditScenes, collectSceneImageSlots } from "../core/scene-audit.mjs";
 import {
   auditDocumentFlags,
@@ -125,6 +127,35 @@ export async function toggleIgnoreRule(category, id) {
 }
 
 /**
+ * Add or remove multiple IDs inside the ignore/whitelist setting for a domain category.
+ * @param {"scenes" | "settings" | "flags" | "uuids"} category
+ * @param {string[]} ids
+ * @param {boolean} ignored
+ * @returns {Promise<number>} number of changed entries
+ */
+export async function setIgnoreRules(category, ids, ignored = true) {
+  const rules = readIgnoreRules();
+  if (!Array.isArray(rules[category]) || !Array.isArray(ids) || !ids.length) return 0;
+  const set = new Set(rules[category]);
+  let changed = 0;
+  for (const id of ids) {
+    if (!id) continue;
+    if (ignored) {
+      if (!set.has(id)) {
+        set.add(id);
+        changed += 1;
+      }
+    } else if (set.delete(id)) {
+      changed += 1;
+    }
+  }
+  if (!changed) return 0;
+  rules[category] = [...set];
+  await game.settings.set(MODULE_ID, IGNORE_RULES_SETTING, rules);
+  return changed;
+}
+
+/**
  * Read persisted compact audit history entries.
  * @returns {Array<Object>}
  */
@@ -134,6 +165,41 @@ export function readAuditHistory() {
     return Array.isArray(raw) ? [...raw] : [];
   } catch {
     return [];
+  }
+}
+
+/**
+ * Read the last persisted audit report from hidden world settings.
+ * @returns {Object | null}
+ */
+export function readLastAuditReport() {
+  try {
+    const raw = game.settings.get(MODULE_ID, LAST_AUDIT_REPORT_SETTING);
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    if (!raw.generatedAt || !raw.summary || !raw.scenes || !raw.uuids || !raw.settings || !raw.flags) {
+      return null;
+    }
+    return typeof foundry?.utils?.deepClone === "function"
+      ? foundry.utils.deepClone(raw)
+      : structuredClone(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persist the latest audit report into hidden world settings so it survives reloads/re-logins.
+ * @param {Object | null} report
+ * @returns {Promise<boolean>}
+ */
+export async function saveLastAuditReport(report) {
+  try {
+    const payload = report ? JSON.parse(JSON.stringify(report)) : null;
+    await game.settings.set(MODULE_ID, LAST_AUDIT_REPORT_SETTING, payload);
+    return true;
+  } catch (error) {
+    console.warn("WAIFU | Failed to persist last audit report", error);
+    return false;
   }
 }
 
@@ -720,7 +786,7 @@ export async function runWorldAudit(overrides = {}, runtimeOptions = {}) {
       totalIssues: draftReport.summary.totalIssues,
       reclaimableBytes: draftReport.statistics.storageStats.totalReclaimableBytes
     });
-    return createAuditReport({
+    const finalReport = createAuditReport({
       meta,
       thresholds,
       scenes: scenesReport,
@@ -730,7 +796,114 @@ export async function runWorldAudit(overrides = {}, runtimeOptions = {}) {
       extras,
       history
     });
+    if (runtimeOptions?.persistReport !== false) {
+      await saveLastAuditReport(finalReport);
+    }
+    return finalReport;
   }
 
   return draftReport;
+}
+
+/**
+ * Build active/installed package sets and thresholds for entity JSON auditing.
+ * @returns {{ activeModuleIds: Set<string>, installedModuleIds: Set<string>, systemId: string, maxFlagBytes: number }}
+ */
+export function getPackageAuditContext() {
+  const thresholds = readThresholdSettings();
+  const activeModuleIds = new Set();
+  const installedModuleIds = new Set();
+  for (const mod of game.modules ?? []) {
+    installedModuleIds.add(mod.id);
+    if (mod.active) activeModuleIds.add(mod.id);
+  }
+  return {
+    activeModuleIds,
+    installedModuleIds,
+    systemId: game.system?.id ?? "",
+    maxFlagBytes: thresholds.maxFlagBytes
+  };
+}
+
+/**
+ * Convert a live Foundry Actor or Item document into a normalized plain JSON snapshot for auditing.
+ * @param {Object} doc
+ * @param {string | null} sourceLabel
+ * @returns {Object | null}
+ */
+export function snapshotEntityDocument(doc, sourceLabel = null) {
+  if (!doc) return null;
+  let plain;
+  if (typeof doc.toObject === "function") {
+    plain = doc.toObject();
+  } else {
+    try {
+      plain =
+        typeof foundry?.utils?.deepClone === "function"
+          ? foundry.utils.deepClone(doc)
+          : structuredClone(doc);
+    } catch {
+      plain = JSON.parse(JSON.stringify(doc));
+    }
+  }
+
+  const pack = doc.pack ? game.packs?.get?.(doc.pack) : null;
+  return {
+    ...plain,
+    id: doc.id || plain._id,
+    uuid: doc.uuid,
+    docType: doc.documentName || (Array.isArray(plain.items) ? "Actor" : "Item"),
+    name: doc.name || plain.name || doc.id || doc.uuid,
+    isCompendium: Boolean(doc.pack),
+    isLocked: Boolean(pack?.locked),
+    sourceLabel: sourceLabel || pack?.metadata?.label || (doc.pack ? doc.pack : "World")
+  };
+}
+
+/**
+ * Recursively collect all documents inside a Foundry Folder and all nested child folders.
+ * @param {Object} folder
+ * @param {Set<string>} visited
+ * @returns {Array<Object>}
+ */
+export function collectFolderDocuments(folder, visited = new Set()) {
+  if (!folder || visited.has(folder.id)) return [];
+  visited.add(folder.id);
+
+  const docs = [...(folder.contents ?? [])];
+  for (const child of folder.children ?? []) {
+    const childFolder = child?.folder ?? child;
+    if (childFolder) {
+      docs.push(...collectFolderDocuments(childFolder, visited));
+    }
+  }
+  return docs;
+}
+
+/**
+ * Audit an array of Foundry Actor/Item documents for unused flags and residual module strings.
+ * @param {Array<{ doc: Object, sourceLabel?: string }>} entries
+ * @param {{ signal?: AbortSignal, onProgress?: (info: { current: number, total: number, doc: Object }) => void }} options
+ * @returns {Object}
+ */
+export function auditEntityDocuments(entries = [], options = {}) {
+  const signal = options?.signal;
+  const onProgress = typeof options?.onProgress === "function" ? options.onProgress : null;
+  const context = getPackageAuditContext();
+  const snapshots = [];
+  const list = entries ?? [];
+
+  for (let i = 0; i < list.length; i += 1) {
+    if (signal?.aborted) {
+      throw new DOMException("Entity audit aborted", "AbortError");
+    }
+    const item = list[i];
+    const doc = item?.doc ?? item;
+    if (!doc) continue;
+    onProgress?.({ current: i + 1, total: list.length, doc });
+    const snap = snapshotEntityDocument(doc, item?.sourceLabel ?? null);
+    if (snap) snapshots.push(snap);
+  }
+
+  return auditEntityBatch(snapshots, context);
 }

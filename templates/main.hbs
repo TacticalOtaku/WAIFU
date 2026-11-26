@@ -1,19 +1,7 @@
 <main class="waifu-main">
   <div class="waifu-sr-only" role="status" aria-live="polite" data-waifu-status>{{statusMessage}}</div>
 
-  <div class="waifu-progress" data-waifu-progress {{#unless busy}}hidden{{/unless}}>
-    <span class="waifu-mono">
-      <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-      <span data-waifu-progress-label>{{progressLabel}}</span>
-    </span>
-    <div class="waifu-progress-bar">
-      <div class="waifu-progress-fill" data-waifu-progress-fill style="width:{{progressPercent}}%"></div>
-    </div>
-    <span class="waifu-mono" data-waifu-progress-pct>{{progressPercent}}%</span>
-    <button type="button" class="waifu-btn is-sm is-danger" data-action="cancelOperation">
-      {{localize "Cancel"}}
-    </button>
-  </div>
+  {{> "modules/waifu/templates/partials/busy-overlay.hbs"}}
 
   <nav
     class="waifu-crumb-bar"
@@ -130,6 +118,19 @@
     >
       <div class="waifu-panel-inner">
         {{> "modules/waifu/templates/partials/view-storage.hbs"}}
+      </div>
+    </section>
+
+    <section
+      class="waifu-panel"
+      role="tabpanel"
+      id="waifu-panel-entities"
+      aria-labelledby="waifu-pill-entities"
+      data-panel="entities"
+      {{#unless isEntitiesActive}}hidden{{/unless}}
+    >
+      <div class="waifu-panel-inner">
+        {{> "modules/waifu/templates/partials/view-entities.hbs"}}
       </div>
     </section>
 

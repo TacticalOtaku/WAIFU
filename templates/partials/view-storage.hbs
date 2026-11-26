@@ -69,11 +69,47 @@
   </div>
 
   {{#if settingRows.length}}
+    <div class="waifu-selection-bar" data-selection-bar="settings" hidden>
+      <span class="waifu-badge is-accent" data-selection-count="settings">{{localize "WAIFU.Selection.Count" count=0}}</span>
+      <div class="waifu-row-actions">
+        <button
+          type="button"
+          class="waifu-btn is-sm is-danger"
+          data-action="deleteSelectedSettings"
+          data-sel-btn="delete"
+          {{#if busy}}disabled{{/if}}
+        >
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+          <span data-sel-label>{{localize "WAIFU.Selection.DeleteSelected"}}</span>
+        </button>
+        <button
+          type="button"
+          class="waifu-btn is-sm"
+          data-action="ignoreSelectedItems"
+          data-select-kind="settings"
+          data-sel-btn="ignore"
+          {{#if busy}}disabled{{/if}}
+        >
+          <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+          <span data-sel-label>{{localize "WAIFU.Selection.IgnoreSelected"}}</span>
+        </button>
+        <button
+          type="button"
+          class="waifu-btn is-sm"
+          data-action="clearSelection"
+          data-select-kind="settings"
+        >{{localize "WAIFU.Selection.Clear"}}</button>
+      </div>
+    </div>
+
     <div tabindex="0" role="region" aria-labelledby="waifu-settings-caption" class="waifu-table-wrap">
-      <table class="waifu-table" data-waifu-table="settings">
+      <table class="waifu-table has-check-col" data-waifu-table="settings">
         <caption id="waifu-settings-caption">{{localize "WAIFU.Storage.SettingsHeading"}}</caption>
         <thead>
           <tr>
+            <th scope="col" class="waifu-col-check">
+              <input type="checkbox" class="waifu-check" data-select-all="settings" aria-label="{{localize 'WAIFU.Selection.SelectAll'}}">
+            </th>
             <th scope="col" data-type="string">
               <button type="button" data-action="sortTable">{{localize "WAIFU.Storage.ColNamespace"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
             </th>
@@ -91,7 +127,10 @@
         </thead>
         <tbody>
           {{#each settingRows}}
-            <tr data-waifu-row="setting" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+            <tr data-waifu-row="setting" data-select-id="{{this.key}}" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+              <td class="waifu-col-check">
+                <input type="checkbox" class="waifu-check" data-select-row="settings" data-select-id="{{this.key}}" {{#if this.selected}}checked{{/if}} aria-label="{{this.key}}">
+              </td>
               <th scope="row"><span class="waifu-mono">{{this.namespace}}</span></th>
               <td><span class="waifu-mono waifu-ellipsis" title="{{this.settingKey}}">{{this.settingKey}}</span></td>
               <td><span class="waifu-badge is-{{this.severity}}">{{this.statusLabel}}</span></td>
@@ -141,11 +180,47 @@
   </div>
 
   {{#if flagGroupRows.length}}
+    <div class="waifu-selection-bar" data-selection-bar="flags" hidden>
+      <span class="waifu-badge is-accent" data-selection-count="flags">{{localize "WAIFU.Selection.Count" count=0}}</span>
+      <div class="waifu-row-actions">
+        <button
+          type="button"
+          class="waifu-btn is-sm is-danger"
+          data-action="deleteSelectedFlagGroups"
+          data-sel-btn="delete"
+          {{#if busy}}disabled{{/if}}
+        >
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+          <span data-sel-label>{{localize "WAIFU.Selection.DeleteSelected"}}</span>
+        </button>
+        <button
+          type="button"
+          class="waifu-btn is-sm"
+          data-action="ignoreSelectedItems"
+          data-select-kind="flags"
+          data-sel-btn="ignore"
+          {{#if busy}}disabled{{/if}}
+        >
+          <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+          <span data-sel-label>{{localize "WAIFU.Selection.IgnoreSelected"}}</span>
+        </button>
+        <button
+          type="button"
+          class="waifu-btn is-sm"
+          data-action="clearSelection"
+          data-select-kind="flags"
+        >{{localize "WAIFU.Selection.Clear"}}</button>
+      </div>
+    </div>
+
     <div tabindex="0" role="region" aria-labelledby="waifu-flags-caption" class="waifu-table-wrap">
-      <table class="waifu-table" data-waifu-table="flags">
+      <table class="waifu-table has-check-col" data-waifu-table="flags">
         <caption id="waifu-flags-caption">{{localize "WAIFU.Storage.FlagsHeading"}}</caption>
         <thead>
           <tr>
+            <th scope="col" class="waifu-col-check">
+              <input type="checkbox" class="waifu-check" data-select-all="flags" aria-label="{{localize 'WAIFU.Selection.SelectAll'}}">
+            </th>
             <th scope="col" data-type="string">
               <button type="button" data-action="sortTable">{{localize "WAIFU.Storage.ColNamespace"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
             </th>
@@ -164,7 +239,10 @@
         </thead>
         <tbody>
           {{#each flagGroupRows}}
-            <tr data-waifu-row="flag-group" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+            <tr data-waifu-row="flag-group" data-select-id="{{this.id}}" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+              <td class="waifu-col-check">
+                <input type="checkbox" class="waifu-check" data-select-row="flags" data-select-id="{{this.id}}" {{#if this.selected}}checked{{/if}} aria-label="{{this.namespace}}">
+              </td>
               <th scope="row"><span class="waifu-mono">{{this.namespace}}</span></th>
               <td><span class="waifu-mono waifu-ellipsis">{{this.docTypesLabel}}</span></td>
               <td data-value="{{this.docCount}}">{{this.docCount}}</td>

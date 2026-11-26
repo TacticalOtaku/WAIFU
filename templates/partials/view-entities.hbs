@@ -1,0 +1,355 @@
+<div class="waifu-entity-view" data-entity-dropzone>
+  <div class="waifu-section-head">
+    <div>
+      <h2 class="waifu-section-title">{{localize "WAIFU.EntityAudit.Heading"}}</h2>
+      <p class="waifu-section-sub">{{localize "WAIFU.EntityAudit.Subheading"}}</p>
+    </div>
+    <div class="waifu-section-actions">
+      {{#if entityAudit.showPopout}}
+        <button
+          type="button"
+          class="waifu-btn is-sm"
+          data-action="openEntityAuditWindow"
+          title="{{localize 'WAIFU.EntityAudit.PopoutHint'}}"
+        >
+          <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i>
+          <span>{{localize "WAIFU.EntityAudit.Popout"}}</span>
+        </button>
+      {{/if}}
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="rescanEntities"
+        {{#unless entityAudit.hasTargets}}disabled{{/unless}}
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+        <span>{{localize "WAIFU.EntityAudit.Rescan"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="clearEntityAudit"
+        {{#unless entityAudit.hasTargets}}disabled{{/unless}}
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-broom" aria-hidden="true"></i>
+        <span>{{localize "WAIFU.EntityAudit.ClearList"}}</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="waifu-dropzone-box {{#unless entityAudit.hasTargets}}is-empty{{/unless}}">
+    <div class="waifu-dropzone-head">
+      <div class="waifu-dropzone-icon" aria-hidden="true">
+        <i class="fa-solid fa-boxes-stacked"></i>
+      </div>
+      <div class="waifu-dropzone-copy">
+        <div class="waifu-dropzone-title">{{localize "WAIFU.EntityAudit.DropTitle"}}</div>
+        <div class="waifu-dropzone-hint">{{localize "WAIFU.EntityAudit.DropHint"}}</div>
+      </div>
+    </div>
+
+    {{#if entityAudit.hasTargets}}
+      <div class="waifu-drop-chips">
+        {{#each entityAudit.targets}}
+          <span class="waifu-drop-chip {{#if isLocked}}is-locked{{/if}}">
+            <i class="fa-solid {{icon}}" aria-hidden="true"></i>
+            <span class="waifu-drop-chip-name">{{name}}</span>
+            <span class="waifu-drop-chip-count">{{count}}</span>
+            {{#if isLocked}}
+              <i class="fa-solid fa-lock" title="{{localize 'WAIFU.EntityAudit.LockedBadge'}}" aria-hidden="true"></i>
+            {{/if}}
+            <button
+              type="button"
+              class="waifu-drop-chip-remove"
+              data-action="removeEntityTarget"
+              data-target-key="{{key}}"
+              aria-label="{{localize 'WAIFU.EntityAudit.RemoveTarget'}}"
+              title="{{localize 'WAIFU.EntityAudit.RemoveTarget'}}"
+            >
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </span>
+        {{/each}}
+      </div>
+    {{/if}}
+  </div>
+
+  {{#if entityAudit.hasTargets}}
+    {{#if entityAudit.hasLockedTargets}}
+      <div class="waifu-banner is-warn">
+        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+        <span>{{localize "WAIFU.EntityAudit.LockedNotice"}}</span>
+      </div>
+    {{/if}}
+
+    <div class="waifu-kpi-row">
+      <div class="waifu-kpi">
+        <span class="waifu-kpi-label">{{localize "WAIFU.EntityAudit.KpiObjects"}}</span>
+        <span class="waifu-kpi-value">{{entityAudit.targetsCount}}</span>
+        <span class="waifu-kpi-hint">
+          {{entityAudit.actorsCount}} A / {{entityAudit.itemsCount}} I · +{{entityAudit.embeddedScannedCount}} {{localize "WAIFU.EntityAudit.EmbeddedLabel"}}
+        </span>
+      </div>
+      <div class="waifu-kpi {{#if entityAudit.hasFindings}}is-warn{{else}}is-ok{{/if}}">
+        <span class="waifu-kpi-label">{{localize "WAIFU.EntityAudit.KpiFindings"}}</span>
+        <span class="waifu-kpi-value">{{entityAudit.findingsCount}}</span>
+        <span class="waifu-kpi-hint">
+          {{entityAudit.flagsCount}} {{localize "WAIFU.EntityAudit.FlagsShort"}} · {{entityAudit.stringsCount}} {{localize "WAIFU.EntityAudit.StringsShort"}}
+        </span>
+      </div>
+      <div class="waifu-kpi {{#if entityAudit.orphanedCount}}is-danger{{/if}}">
+        <span class="waifu-kpi-label">{{localize "WAIFU.EntityAudit.KpiOrphaned"}}</span>
+        <span class="waifu-kpi-value">{{entityAudit.orphanedCount}}</span>
+        <span class="waifu-kpi-hint">
+          {{localize "WAIFU.EntityAudit.KpiInactive"}}: {{entityAudit.inactiveCount}}
+        </span>
+      </div>
+      <div class="waifu-kpi">
+        <span class="waifu-kpi-label">{{localize "WAIFU.EntityAudit.KpiSize"}}</span>
+        <span class="waifu-kpi-value">{{entityAudit.formattedTotalSize}}</span>
+        <span class="waifu-kpi-hint">
+          {{localize "WAIFU.EntityAudit.KpiCleanable"}}: {{entityAudit.cleanableCount}}
+        </span>
+      </div>
+    </div>
+
+    {{#if entityAudit.byNamespace.length}}
+      <div class="waifu-ns-strip">
+        {{#each entityAudit.byNamespace}}
+          <span class="waifu-ns-pill {{#if isOrphaned}}is-orphaned{{else}}is-inactive{{/if}}">
+            <span class="waifu-mono">{{namespace}}</span>
+            <span>· {{count}} ({{formattedSize}})</span>
+          </span>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{#if entityAudit.hasFindings}}
+      <div class="waifu-filterbar">
+        <label class="waifu-search">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <input
+            type="search"
+            value="{{entityAudit.searchQuery}}"
+            placeholder="{{localize 'WAIFU.EntityAudit.SearchPlaceholder'}}"
+            data-entity-search
+          />
+        </label>
+
+        <div class="waifu-chip-row">
+          <button
+            type="button"
+            class="waifu-chip {{#if entityAudit.isFilterAll}}is-active{{/if}}"
+            data-action="setEntityFilter"
+            data-entity-tag="all"
+          >
+            {{localize "WAIFU.EntityAudit.FilterAll"}} ({{entityAudit.findingsCount}})
+          </button>
+          <button
+            type="button"
+            class="waifu-chip {{#if entityAudit.isFilterOrphaned}}is-active{{/if}}"
+            data-action="setEntityFilter"
+            data-entity-tag="orphaned"
+          >
+            {{localize "WAIFU.EntityAudit.FilterOrphaned"}} ({{entityAudit.orphanedCount}})
+          </button>
+          <button
+            type="button"
+            class="waifu-chip {{#if entityAudit.isFilterInactive}}is-active{{/if}}"
+            data-action="setEntityFilter"
+            data-entity-tag="inactive"
+          >
+            {{localize "WAIFU.EntityAudit.FilterInactive"}} ({{entityAudit.inactiveCount}})
+          </button>
+          <button
+            type="button"
+            class="waifu-chip {{#if entityAudit.isFilterFlag}}is-active{{/if}}"
+            data-action="setEntityFilter"
+            data-entity-tag="flag"
+          >
+            {{localize "WAIFU.EntityAudit.FilterFlags"}} ({{entityAudit.flagsCount}})
+          </button>
+          <button
+            type="button"
+            class="waifu-chip {{#if entityAudit.isFilterString}}is-active{{/if}}"
+            data-action="setEntityFilter"
+            data-entity-tag="string"
+          >
+            {{localize "WAIFU.EntityAudit.FilterStrings"}} ({{entityAudit.stringsCount}})
+          </button>
+          <button
+            type="button"
+            class="waifu-chip {{#if entityAudit.isFilterCleanable}}is-active{{/if}}"
+            data-action="setEntityFilter"
+            data-entity-tag="cleanable"
+          >
+            {{localize "WAIFU.EntityAudit.FilterCleanable"}} ({{entityAudit.cleanableCount}})
+          </button>
+        </div>
+
+        {{#if entityAudit.cleanableOrphanCount}}
+          <button
+            type="button"
+            class="waifu-btn is-sm is-danger"
+            data-action="cleanAllOrphanEntityFindings"
+            {{#if busy}}disabled{{/if}}
+          >
+            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+            <span>{{localize "WAIFU.EntityAudit.CleanAllOrphaned"}} ({{entityAudit.cleanableOrphanCount}})</span>
+          </button>
+        {{/if}}
+      </div>
+
+      <div class="waifu-selection-bar" data-entity-selection-bar {{#unless entityAudit.selectedCount}}hidden{{/unless}}>
+        <span class="waifu-selection-count" data-entity-selection-count>
+          {{localize "WAIFU.Selection.Count" count=entityAudit.selectedCount}}
+        </span>
+        <div class="waifu-selection-actions">
+          <button
+            type="button"
+            class="waifu-btn is-sm is-danger"
+            data-action="cleanSelectedEntityFindings"
+            {{#if busy}}disabled{{/if}}
+          >
+            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+            <span>{{localize "WAIFU.EntityAudit.CleanSelected"}}</span>
+          </button>
+          <button
+            type="button"
+            class="waifu-btn is-sm is-ghost"
+            data-action="clearEntitySelection"
+          >
+            <span>{{localize "WAIFU.Selection.Clear"}}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="waifu-table-wrap">
+        <table class="waifu-table has-check-col">
+          <thead>
+            <tr>
+              <th class="waifu-col-check">
+                <input
+                  type="checkbox"
+                  data-entity-check-all
+                  aria-label="{{localize 'WAIFU.Selection.SelectAll'}}"
+                />
+              </th>
+              <th>{{localize "WAIFU.EntityAudit.ColTarget"}}</th>
+              <th>{{localize "WAIFU.EntityAudit.ColNamespace"}}</th>
+              <th>{{localize "WAIFU.EntityAudit.ColPath"}}</th>
+              <th>{{localize "WAIFU.EntityAudit.ColSize"}}</th>
+              <th class="waifu-col-actions">{{localize "WAIFU.Storage.ColActions"}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each entityAudit.findings}}
+              <tr
+                data-finding-id="{{id}}"
+                {{#if isSelected}}class="is-selected"{{/if}}
+                {{#if isHiddenByFilter}}hidden{{/if}}
+              >
+                <td class="waifu-col-check">
+                  <input
+                    type="checkbox"
+                    data-entity-check
+                    data-finding-id="{{id}}"
+                    {{#if isSelected}}checked{{/if}}
+                    {{#unless canClean}}disabled title="{{localize 'WAIFU.EntityAudit.LockedWarning'}}"{{/unless}}
+                    aria-label="{{targetName}} · {{fieldPath}}"
+                  />
+                </td>
+                <td>
+                  <div class="waifu-cell-title">
+                    {{#if isEmbedded}}
+                      <span class="waifu-muted">{{rootName}}</span>
+                      <span class="waifu-muted">→</span>
+                      <span>{{targetName}}</span>
+                    {{else}}
+                      <span>{{rootName}}</span>
+                    {{/if}}
+                  </div>
+                  <div class="waifu-cell-sub">
+                    <span>{{targetDocType}}</span>
+                    <span>· {{sourceLabel}}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="waifu-cell-title">
+                    <span class="waifu-mono">{{namespace}}</span>
+                  </div>
+                  <div class="waifu-cell-badges">
+                    {{#if isOrphaned}}
+                      <span class="waifu-badge is-danger">{{statusLabel}}</span>
+                    {{else}}
+                      <span class="waifu-badge is-warn">{{statusLabel}}</span>
+                    {{/if}}
+                    <span class="waifu-badge is-muted">{{kindLabel}}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="waifu-mono waifu-path-line" title="{{fieldPath}}">{{fieldPath}}</div>
+                  <div class="waifu-preview-line" title="{{preview}}">{{preview}}</div>
+                </td>
+                <td class="waifu-mono">{{formattedSize}}</td>
+                <td class="waifu-col-actions">
+                  <div class="waifu-row-actions">
+                    <button
+                      type="button"
+                      class="waifu-ibtn"
+                      data-action="inspectEntityFinding"
+                      data-finding-id="{{id}}"
+                      title="{{localize 'WAIFU.EntityAudit.Inspect'}}"
+                      aria-label="{{localize 'WAIFU.EntityAudit.Inspect'}}"
+                    >
+                      <i class="fa-solid fa-code" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="waifu-ibtn"
+                      data-action="openEntityDocument"
+                      data-uuid="{{targetUuid}}"
+                      title="{{localize 'WAIFU.EntityAudit.OpenSheet'}}"
+                      aria-label="{{localize 'WAIFU.EntityAudit.OpenSheet'}}"
+                    >
+                      <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="waifu-ibtn is-danger"
+                      data-action="cleanSingleEntityFinding"
+                      data-finding-id="{{id}}"
+                      {{#unless canClean}}disabled title="{{localize 'WAIFU.EntityAudit.LockedWarning'}}"{{else}}title="{{localize 'WAIFU.EntityAudit.Clean'}}"{{/unless}}
+                      aria-label="{{localize 'WAIFU.EntityAudit.Clean'}}"
+                    >
+                      <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="waifu-empty" data-entity-empty-filtered {{#unless entityAudit.isFilteredEmpty}}hidden{{/unless}}>
+        <i class="fa-solid fa-filter-circle-xmark" aria-hidden="true"></i>
+        <p>{{localize "WAIFU.EntityAudit.FilteredEmpty"}}</p>
+      </div>
+    {{else}}
+      <div class="waifu-empty is-clean">
+        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        <h3>{{localize "WAIFU.EntityAudit.CleanTitle"}}</h3>
+        <p>{{localize "WAIFU.EntityAudit.CleanHint"}}</p>
+      </div>
+    {{/if}}
+  {{else}}
+    <div class="waifu-empty">
+      <i class="fa-solid fa-hand-pointer" aria-hidden="true"></i>
+      <h3>{{localize "WAIFU.EntityAudit.EmptyTitle"}}</h3>
+      <p>{{localize "WAIFU.EntityAudit.EmptyHint"}}</p>
+    </div>
+  {{/if}}
+</div>

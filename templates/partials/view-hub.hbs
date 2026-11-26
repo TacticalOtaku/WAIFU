@@ -5,10 +5,16 @@
     </div>
     <h2>{{localize "WAIFU.Hub.EmptyTitle"}}</h2>
     <p class="waifu-empty">{{localize "WAIFU.Overview.RunFirst"}}</p>
-    <button type="button" class="waifu-btn is-primary" data-action="runAudit" {{#if busy}}disabled{{/if}}>
-      <i class="fa-solid fa-arrows-rotate {{#if busy}}fa-spin{{/if}}" aria-hidden="true"></i>
-      {{localize "WAIFU.Masthead.RunAudit"}}
-    </button>
+    <div class="waifu-row-actions">
+      <button type="button" class="waifu-btn is-primary" data-action="runAudit" {{#if busy}}disabled{{/if}}>
+        <i class="fa-solid fa-arrows-rotate {{#if busy}}fa-spin{{/if}}" aria-hidden="true"></i>
+        {{localize "WAIFU.Masthead.RunAudit"}}
+      </button>
+      <button type="button" class="waifu-btn" data-action="openEntityAuditWindow">
+        <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
+        {{localize "WAIFU.EntityAudit.OpenWindow"}}
+      </button>
+    </div>
   </div>
 {{else}}
   <div class="waifu-hub-grid">
@@ -368,6 +374,40 @@
         <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="report">
           <i class="fa-solid fa-sliders" aria-hidden="true"></i> {{localize "WAIFU.Hub.W6Action"}}
         </button>
+      </div>
+    </article>
+
+    {{!-- Window 7: Drag-and-Drop Actors & Items JSON Audit --}}
+    <article class="waifu-subwin is-wide" data-action="drillDown" data-tab="entities" data-tone="{{#if entityAudit.orphanedCount}}warning{{else}}info{{/if}}">
+      <div class="waifu-subwin-head">
+        <div class="waifu-subwin-titlegroup">
+          <div class="waifu-subwin-icon is-info" aria-hidden="true">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div class="waifu-subwin-titles">
+            <h2 class="waifu-subwin-title">{{localize "WAIFU.Hub.W7Title"}}</h2>
+            <span class="waifu-subwin-sub">{{localize "WAIFU.Hub.W7Sub"}}</span>
+          </div>
+        </div>
+        <div class="waifu-row-actions">
+          <button type="button" class="waifu-btn is-sm" data-action="openEntityAuditWindow" title="{{localize 'WAIFU.EntityAudit.PopoutHint'}}">
+            <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> {{localize "WAIFU.EntityAudit.Popout"}}
+          </button>
+          <button type="button" class="waifu-btn is-sm" data-action="selectTab" data-tab="entities">
+            {{localize "WAIFU.Hub.W7Cta"}} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="waifu-subwin-footer">
+        {{#if entityAudit.hasTargets}}
+          <span>
+            {{localize "WAIFU.EntityAudit.HubLoadedSummary" targets=entityAudit.targetsCount findings=entityAudit.findingsCount size=entityAudit.formattedTotalSize}}
+          </span>
+        {{else}}
+          <span>{{localize "WAIFU.EntityAudit.HubEmptySummary"}}</span>
+        {{/if}}
+        <span class="waifu-mini-metric is-info">{{localize "WAIFU.EntityAudit.SupportedShort"}}</span>
       </div>
     </article>
   </div>

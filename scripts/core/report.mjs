@@ -161,6 +161,36 @@ export function buildAuditSummary(sections) {
 }
 
 /**
+ * Build comparison deltas against the previous history entry when >= 2 scans exist.
+ * @param {Object} summary
+ * @param {Object} statistics
+ * @param {Array<Object>} history
+ * @param {string} currentGeneratedAt
+ * @returns {Object | null}
+ */
+export function buildComparisonFromHistory(summary, statistics, history, currentGeneratedAt) {
+  if (!Array.isArray(history) || history.length < 2) return null;
+  const prev = history[history.length - 2];
+  if (!prev || !Number.isFinite(prev.healthScore)) return null;
+  const reclaimDelta =
+    (Number(statistics?.storageStats?.totalReclaimableBytes) || 0) -
+    (Number(prev.reclaimableBytes) || 0);
+  return {
+    previousGeneratedAt: prev.generatedAt ?? null,
+    currentGeneratedAt,
+    healthDelta: (Number(summary?.healthScore) || 0) - Number(prev.healthScore),
+    previousHealth: Number(prev.healthScore),
+    currentHealth: Number(summary?.healthScore) || 0,
+    issuesDelta: (Number(summary?.totalIssues) || 0) - (Number(prev.totalIssues) || 0),
+    reclaimableBytesDelta: reclaimDelta,
+    formattedReclaimableDelta:
+      reclaimDelta === 0
+        ? "0 B"
+        : `${reclaimDelta > 0 ? "+" : "-"}${formatBytes(Math.abs(reclaimDelta))}`
+  };
+}
+
+/**
  * Create a complete serializable audit report object with precomputed detailed statistics.
  * @param {Object} params
  * @returns {Object}
@@ -192,27 +222,14 @@ export function createAuditReport({
     ...(comparison ? { comparison } : {})
   };
   base.statistics = buildReportStatistics(base);
-  if (!base.comparison && Array.isArray(history) && history.length >= 2) {
-    const prev = history[history.length - 2];
-    if (prev && Number.isFinite(prev.healthScore)) {
-      base.comparison = {
-        previousGeneratedAt: prev.generatedAt ?? null,
-        currentGeneratedAt: base.generatedAt,
-        healthDelta: summary.healthScore - Number(prev.healthScore),
-        previousHealth: Number(prev.healthScore),
-        currentHealth: summary.healthScore,
-        issuesDelta: summary.totalIssues - (Number(prev.totalIssues) || 0),
-        reclaimableBytesDelta:
-          (Number(base.statistics.storageStats.totalReclaimableBytes) || 0) -
-          (Number(prev.reclaimableBytes) || 0),
-        formattedReclaimableDelta: (() => {
-          const d =
-            (Number(base.statistics.storageStats.totalReclaimableBytes) || 0) -
-            (Number(prev.reclaimableBytes) || 0);
-          return d === 0 ? "0 B" : `${d > 0 ? "+" : "-"}${formatBytes(Math.abs(d))}`;
-        })()
-      };
-    }
+  if (!base.comparison) {
+    const autoComparison = buildComparisonFromHistory(
+      summary,
+      base.statistics,
+      history,
+      base.generatedAt
+    );
+    if (autoComparison) base.comparison = autoComparison;
   }
   return base;
 }

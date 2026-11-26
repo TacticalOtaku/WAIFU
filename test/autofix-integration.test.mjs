@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AUDIT_HISTORY_SETTING, IGNORE_RULES_SETTING, MODULE_ID } from "../scripts/constants.mjs";
+import {
+  AUDIT_HISTORY_SETTING,
+  IGNORE_RULES_SETTING,
+  LAST_AUDIT_REPORT_SETTING,
+  MODULE_ID
+} from "../scripts/constants.mjs";
 import {
   archiveAndPruneChatMessages,
   batchPatchUuidOccurrences,
@@ -15,7 +20,14 @@ import {
   restoreBackupPayload,
   snapshotWallsForBackup
 } from "../scripts/foundry/auto-fixer.mjs";
-import { buildCandidateCatalog, runWorldAudit, toggleIgnoreRule } from "../scripts/foundry/world-audit-runner.mjs";
+import {
+  buildCandidateCatalog,
+  readLastAuditReport,
+  runWorldAudit,
+  saveLastAuditReport,
+  setIgnoreRules,
+  toggleIgnoreRule
+} from "../scripts/foundry/world-audit-runner.mjs";
 
 /**
  * Install minimal in-memory Foundry v14 mocks to verify runner + auto-fixer mutations end-to-end.
@@ -28,6 +40,7 @@ function setupMockFoundry() {
     [`${MODULE_ID}.nearDuplicateWallTolerance`, 2],
     [`${MODULE_ID}.${IGNORE_RULES_SETTING}`, { scenes: [], settings: [], flags: [], uuids: [] }],
     [`${MODULE_ID}.${AUDIT_HISTORY_SETTING}`, []],
+    [`${MODULE_ID}.${LAST_AUDIT_REPORT_SETTING}`, null],
     ["deleted-mod.cachedJson", { blob: "x".repeat(20_000) }],
     ["dnd5e.rules", { version: "5.3.3" }]
   ]);
@@ -324,9 +337,15 @@ test("Foundry v14 runner + auto-fixer integration handles audit, wall/token/ligh
     assert.equal(pruned.deletedCount, 1);
     assert.equal(mocks.chatCollection.length, 1);
 
-    // 5. Ignore toggle + catalog search + backup/restore round-trip
+    // 5. Ignore toggle + batch ignore + persisted last report round-trip
+    assert.equal(readLastAuditReport()?.generatedAt, report.generatedAt);
+    await saveLastAuditReport({ ...report, marker: "persisted" });
+    assert.equal(readLastAuditReport()?.marker, "persisted");
+
     assert.equal(await toggleIgnoreRule("scenes", "sc1"), true);
     assert.equal(await toggleIgnoreRule("scenes", "sc1"), false);
+    assert.equal(await setIgnoreRules("settings", ["deleted-mod.cachedJson", "dnd5e.rules"], true), 2);
+    assert.equal(await setIgnoreRules("settings", ["deleted-mod.cachedJson"], false), 1);
     const catalog = buildCandidateCatalog();
     assert.ok(catalog.some((c) => c.uuid === "Actor.actor1"));
 

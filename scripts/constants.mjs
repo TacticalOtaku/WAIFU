@@ -7,6 +7,7 @@ export const MODULE_TITLE = "WAIFU: World Audit & Integrity";
 
 export const IGNORE_RULES_SETTING = "ignoreRules";
 export const AUDIT_HISTORY_SETTING = "auditHistory";
+export const LAST_AUDIT_REPORT_SETTING = "lastAuditReport";
 export const MAX_HISTORY_ENTRIES = 15;
 
 export const DEFAULT_THRESHOLDS = Object.freeze({

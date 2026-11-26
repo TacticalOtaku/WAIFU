@@ -1,10 +1,12 @@
 import { WaifuAuditApp } from "./app/audit-app.mjs";
+import { WaifuEntityAuditApp } from "./app/entity-audit-app.mjs";
 import {
   ACCENT_OPTIONS,
   AUDIT_HISTORY_SETTING,
   DEFAULT_IGNORE_RULES,
   DEFAULT_THRESHOLDS,
   IGNORE_RULES_SETTING,
+  LAST_AUDIT_REPORT_SETTING,
   MODULE_ID,
   THEME_OPTIONS
 } from "./constants.mjs";
@@ -15,7 +17,11 @@ import {
   formatReportMarkdown
 } from "./core/report.mjs";
 import { parseBackupPayload, restoreBackupPayload } from "./foundry/auto-fixer.mjs";
-import { buildCandidateCatalog, runWorldAudit } from "./foundry/world-audit-runner.mjs";
+import {
+  buildCandidateCatalog,
+  readLastAuditReport,
+  runWorldAudit
+} from "./foundry/world-audit-runner.mjs";
 
 function registerModuleSettings() {
   game.settings.registerMenu(MODULE_ID, "openAuditDashboard", {
@@ -24,6 +30,15 @@ function registerModuleSettings() {
     hint: "WAIFU.Controls.MenuHint",
     icon: "fa-solid fa-stethoscope",
     type: WaifuAuditApp,
+    restricted: true
+  });
+
+  game.settings.registerMenu(MODULE_ID, "openEntityAuditDashboard", {
+    name: "WAIFU.Controls.EntityMenuName",
+    label: "WAIFU.Controls.EntityMenuLabel",
+    hint: "WAIFU.Controls.EntityMenuHint",
+    icon: "fa-solid fa-boxes-stacked",
+    type: WaifuEntityAuditApp,
     restricted: true
   });
 
@@ -179,6 +194,13 @@ function registerModuleSettings() {
     default: []
   });
 
+  game.settings.register(MODULE_ID, LAST_AUDIT_REPORT_SETTING, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: null
+  });
+
   game.settings.register(MODULE_ID, "theme", {
     name: "WAIFU.Settings.Theme.Name",
     hint: "WAIFU.Settings.Theme.Hint",
@@ -208,6 +230,8 @@ function registerModuleSettings() {
 function createPublicApi() {
   return Object.freeze({
     open: (report = null) => WaifuAuditApp.openWindow(report),
+    openEntityAudit: () => WaifuEntityAuditApp.openWindow(),
+    getLastReport: () => readLastAuditReport(),
     runAudit: (overrides = {}, runtimeOptions = {}) => runWorldAudit(overrides, runtimeOptions),
     exportReport: (report, format = "markdown", lang = "en") => {
       if (format === "json") return formatReportJson(report);
@@ -229,12 +253,16 @@ Hooks.once("init", () => {
   loadTemplatesFn?.([
     `modules/${MODULE_ID}/templates/masthead.hbs`,
     `modules/${MODULE_ID}/templates/main.hbs`,
+    `modules/${MODULE_ID}/templates/entity-masthead.hbs`,
+    `modules/${MODULE_ID}/templates/entity-main.hbs`,
+    `modules/${MODULE_ID}/templates/partials/busy-overlay.hbs`,
     `modules/${MODULE_ID}/templates/partials/view-hub.hbs`,
     `modules/${MODULE_ID}/templates/partials/view-health.hbs`,
     `modules/${MODULE_ID}/templates/partials/view-autofix.hbs`,
     `modules/${MODULE_ID}/templates/partials/view-scenes.hbs`,
     `modules/${MODULE_ID}/templates/partials/view-uuids.hbs`,
     `modules/${MODULE_ID}/templates/partials/view-storage.hbs`,
+    `modules/${MODULE_ID}/templates/partials/view-entities.hbs`,
     `modules/${MODULE_ID}/templates/partials/view-report.hbs`,
     `modules/${MODULE_ID}/templates/partials/scene-drawer.hbs`
   ]);
@@ -258,6 +286,15 @@ Hooks.on("getSceneControlButtons", (controls) => {
     button: true,
     visible: true,
     onChange: () => WaifuAuditApp.openWindow()
+  };
+  controls.tokens.tools.waifuEntityAudit = {
+    name: "waifuEntityAudit",
+    title: "WAIFU.Controls.OpenEntityAudit",
+    icon: "fa-solid fa-boxes-stacked",
+    order: Object.keys(controls.tokens.tools).length,
+    button: true,
+    visible: true,
+    onChange: () => WaifuEntityAuditApp.openWindow()
   };
 });
 

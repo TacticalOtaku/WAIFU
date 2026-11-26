@@ -78,11 +78,57 @@
 </div>
 
 {{#if uuidRows.length}}
+  <div class="waifu-selection-bar" data-selection-bar="uuids" hidden>
+    <span class="waifu-badge is-accent" data-selection-count="uuids">{{localize "WAIFU.Selection.Count" count=0}}</span>
+    <div class="waifu-row-actions">
+      <button
+        type="button"
+        class="waifu-btn is-sm is-primary"
+        data-action="replaceSelectedUuids"
+        data-sel-btn="replace"
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-link" aria-hidden="true"></i>
+        <span data-sel-label>{{localize "WAIFU.Selection.ReplaceSelected"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm is-danger"
+        data-action="unlinkSelectedUuids"
+        data-sel-btn="unlink"
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
+        <span data-sel-label>{{localize "WAIFU.Selection.UnlinkSelected"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="ignoreSelectedItems"
+        data-select-kind="uuids"
+        data-sel-btn="ignore"
+        {{#if busy}}disabled{{/if}}
+      >
+        <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+        <span data-sel-label>{{localize "WAIFU.Selection.IgnoreSelected"}}</span>
+      </button>
+      <button
+        type="button"
+        class="waifu-btn is-sm"
+        data-action="clearSelection"
+        data-select-kind="uuids"
+      >{{localize "WAIFU.Selection.Clear"}}</button>
+    </div>
+  </div>
+
   <div tabindex="0" role="region" aria-labelledby="waifu-uuids-caption" class="waifu-table-wrap">
-    <table class="waifu-table" data-waifu-table="uuids">
+    <table class="waifu-table has-check-col" data-waifu-table="uuids">
       <caption id="waifu-uuids-caption">{{localize "WAIFU.Tabs.Uuids"}}</caption>
       <thead>
         <tr>
+          <th scope="col" class="waifu-col-check">
+            <input type="checkbox" class="waifu-check" data-select-all="uuids" aria-label="{{localize 'WAIFU.Selection.SelectAll'}}">
+          </th>
           <th scope="col" data-type="string">
             <button type="button" data-action="sortTable">{{localize "WAIFU.Uuids.ColSource"}} <i class="fa-solid fa-caret-up waifu-sort-icon" aria-hidden="true"></i></button>
           </th>
@@ -99,7 +145,10 @@
       </thead>
       <tbody>
         {{#each uuidRows}}
-          <tr data-waifu-row="uuid" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+          <tr data-waifu-row="uuid" data-select-id="{{this.id}}" data-search="{{this.searchText}}" data-category="{{this.filterTags}}">
+            <td class="waifu-col-check">
+              <input type="checkbox" class="waifu-check" data-select-row="uuids" data-select-id="{{this.id}}" {{#if this.selected}}checked{{/if}} aria-label="{{this.rawUuid}}">
+            </td>
             <th scope="row">
               <div class="waifu-cell-stack">
                 <span class="waifu-ellipsis" title="{{this.sourceTitle}}">{{this.sourceTitle}}</span>

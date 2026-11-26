@@ -1,5 +1,19 @@
-import { CORE_NAMESPACES, DEFAULT_THRESHOLDS, SEVERITY_ORDER } from "../constants.mjs";
+import {
+  AUDIT_HISTORY_SETTING,
+  CORE_NAMESPACES,
+  DEFAULT_THRESHOLDS,
+  IGNORE_RULES_SETTING,
+  LAST_AUDIT_REPORT_SETTING,
+  MODULE_ID,
+  SEVERITY_ORDER
+} from "../constants.mjs";
 import { formatBytes, utf8ByteSize } from "./utils.mjs";
+
+const INTERNAL_WAIFU_SETTINGS = new Set([
+  `${MODULE_ID}.${LAST_AUDIT_REPORT_SETTING}`,
+  `${MODULE_ID}.${AUDIT_HISTORY_SETTING}`,
+  `${MODULE_ID}.${IGNORE_RULES_SETTING}`
+]);
 
 /**
  * Classify a module/system namespace against currently installed & active Foundry packages.
@@ -51,7 +65,7 @@ export function auditWorldSettings(entries, context) {
   let totalBytes = 0;
 
   for (const entry of entries ?? []) {
-    if (!entry?.key) continue;
+    if (!entry?.key || INTERNAL_WAIFU_SETTINGS.has(entry.key)) continue;
     const { namespace, settingKey } = splitSettingKey(entry.key);
     const bytes = utf8ByteSize(entry.value);
     totalBytes += bytes;
@@ -93,7 +107,18 @@ export function auditWorldSettings(entries, context) {
     });
   }
 
-  const flagged = analyzed
+  return summarizeSettingsAudit(analyzed);
+}
+
+/**
+ * Aggregate analyzed world settings into the standard `report.settings` section.
+ * @param {Array<Object>} analyzed
+ * @returns {Object}
+ */
+export function summarizeSettingsAudit(analyzed = []) {
+  const list = [...(analyzed ?? [])];
+  const totalBytes = list.reduce((sum, item) => sum + (Number(item.bytes) || 0), 0);
+  const flagged = list
     .filter((item) => item.status !== "ok" && !item.isIgnored)
     .toSorted(
       (a, b) =>
@@ -101,14 +126,14 @@ export function auditWorldSettings(entries, context) {
         b.bytes - a.bytes ||
         a.key.localeCompare(b.key)
     );
-  const ignoredItems = analyzed
+  const ignoredItems = list
     .filter((item) => item.status !== "ok" && item.isIgnored)
     .toSorted((a, b) => b.bytes - a.bytes || a.key.localeCompare(b.key));
 
-  const byNamespaceMap = Object.groupBy(analyzed, (item) => item.namespace);
+  const byNamespaceMap = Object.groupBy(list, (item) => item.namespace);
   const byNamespace = Object.entries(byNamespaceMap)
     .map(([namespace, items]) => {
-      const nsBytes = items.reduce((sum, i) => sum + i.bytes, 0);
+      const nsBytes = items.reduce((sum, i) => sum + (Number(i.bytes) || 0), 0);
       return {
         namespace,
         moduleState: items[0].moduleState,
@@ -124,19 +149,98 @@ export function auditWorldSettings(entries, context) {
   const bloatedItems = flagged.filter((i) => i.isBloated);
 
   return {
-    totalSettingsCount: analyzed.length,
+    totalSettingsCount: list.length,
     totalBytes,
     formattedTotalSize: formatBytes(totalBytes),
     flaggedCount: flagged.length,
     bloatedCount: bloatedItems.length,
     orphanedCount: orphanedItems.length,
-    orphanedBytes: orphanedItems.reduce((sum, i) => sum + i.bytes, 0),
+    orphanedBytes: orphanedItems.reduce((sum, i) => sum + (Number(i.bytes) || 0), 0),
     inactiveCount: flagged.filter((i) => i.isInactive).length,
     ignoredCount: ignoredItems.length,
     ignoredItems,
     items: flagged,
-    allItems: analyzed.toSorted((a, b) => b.bytes - a.bytes),
+    allItems: list.toSorted((a, b) => b.bytes - a.bytes),
     byNamespace
+  };
+}
+
+/**
+ * Build grouped flag summaries from flat document-flag entries.
+ * @param {Array<Object>} rows
+ * @param {boolean} isIgnored
+ * @returns {Array<Object>}
+ */
+export function buildFlagGroups(rows = [], isIgnored = false) {
+  const groupedByNs = Object.groupBy(rows ?? [], (item) => `${item.namespace}::${item.status}`);
+  return Object.values(groupedByNs)
+    .map((entries) => {
+      const first = entries[0];
+      const groupBytes = entries.reduce((sum, i) => sum + (Number(i.bytes) || 0), 0);
+      const maxSeverity = entries.reduce(
+        (best, i) => (SEVERITY_ORDER[i.severity] > SEVERITY_ORDER[best] ? i.severity : best),
+        "info"
+      );
+      const docTypes = [...new Set(entries.map((e) => e.docType))].sort();
+      return {
+        id: `${first.namespace}::${first.status}`,
+        namespace: first.namespace,
+        moduleState: first.moduleState,
+        status: first.status,
+        severity: maxSeverity,
+        isOrphaned: first.isOrphaned,
+        isInactive: first.isInactive,
+        isBloated: entries.some((e) => e.isBloated),
+        isIgnored,
+        docCount: entries.length,
+        docTypes,
+        bytes: groupBytes,
+        formattedSize: formatBytes(groupBytes),
+        targets: entries.toSorted((a, b) => (Number(b.bytes) || 0) - (Number(a.bytes) || 0))
+      };
+    })
+    .toSorted(
+      (a, b) =>
+        SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
+        b.bytes - a.bytes ||
+        a.namespace.localeCompare(b.namespace)
+    );
+}
+
+/**
+ * Aggregate grouped document flags into the standard `report.flags` section.
+ * @param {Array<Object>} groups
+ * @param {Array<Object>} ignoredGroups
+ * @returns {Object}
+ */
+export function summarizeFlagGroups(groups = [], ignoredGroups = []) {
+  const sortGroups = (list) =>
+    [...(list ?? [])].toSorted(
+      (a, b) =>
+        SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
+        (Number(b.bytes) || 0) - (Number(a.bytes) || 0) ||
+        a.namespace.localeCompare(b.namespace)
+    );
+
+  const sortedGroups = sortGroups(groups);
+  const sortedIgnored = sortGroups(ignoredGroups);
+  const activeEntries = sortedGroups.flatMap((g) => g.targets ?? []);
+  const orphanedEntries = activeEntries.filter((i) => i.isOrphaned);
+  const orphanedBytes = orphanedEntries.reduce((sum, i) => sum + (Number(i.bytes) || 0), 0);
+
+  return {
+    totalFlaggedEntries: activeEntries.length,
+    groupsCount: sortedGroups.length,
+    orphanedEntriesCount: orphanedEntries.length,
+    orphanedNamespacesCount: new Set(orphanedEntries.map((i) => i.namespace)).size,
+    orphanedBytes,
+    formattedOrphanedSize: formatBytes(orphanedBytes),
+    inactiveEntriesCount: activeEntries.filter((i) => i.isInactive).length,
+    bloatedEntriesCount: activeEntries.filter((i) => i.isBloated).length,
+    ignoredGroupsCount: sortedIgnored.length,
+    ignoredGroups: sortedIgnored,
+    groups: sortedGroups,
+    items: activeEntries.toSorted((a, b) => (Number(b.bytes) || 0) - (Number(a.bytes) || 0))
   };
 }
 
@@ -218,60 +322,9 @@ export function auditDocumentFlags(flagEntries, context) {
     else analyzed.push(row);
   }
 
-  const buildGroups = (rows, isIgnored) => {
-    const groupedByNs = Object.groupBy(rows, (item) => `${item.namespace}::${item.status}`);
-    return Object.values(groupedByNs)
-      .map((entries) => {
-        const first = entries[0];
-        const groupBytes = entries.reduce((sum, i) => sum + i.bytes, 0);
-        const maxSeverity = entries.reduce(
-          (best, i) => (SEVERITY_ORDER[i.severity] > SEVERITY_ORDER[best] ? i.severity : best),
-          "info"
-        );
-        const docTypes = [...new Set(entries.map((e) => e.docType))].sort();
-        return {
-          id: `${first.namespace}::${first.status}`,
-          namespace: first.namespace,
-          moduleState: first.moduleState,
-          status: first.status,
-          severity: maxSeverity,
-          isOrphaned: first.isOrphaned,
-          isInactive: first.isInactive,
-          isBloated: entries.some((e) => e.isBloated),
-          isIgnored,
-          docCount: entries.length,
-          docTypes,
-          bytes: groupBytes,
-          formattedSize: formatBytes(groupBytes),
-          targets: entries.toSorted((a, b) => b.bytes - a.bytes)
-        };
-      })
-      .toSorted(
-        (a, b) =>
-          SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
-          b.bytes - a.bytes ||
-          a.namespace.localeCompare(b.namespace)
-      );
-  };
-
-  const groups = buildGroups(analyzed, false);
-  const ignoredGroups = buildGroups(ignoredAnalyzed, true);
-  const orphanedEntries = analyzed.filter((i) => i.isOrphaned);
-
-  return {
-    totalFlaggedEntries: analyzed.length,
-    groupsCount: groups.length,
-    orphanedEntriesCount: orphanedEntries.length,
-    orphanedNamespacesCount: new Set(orphanedEntries.map((i) => i.namespace)).size,
-    orphanedBytes: orphanedEntries.reduce((sum, i) => sum + i.bytes, 0),
-    formattedOrphanedSize: formatBytes(orphanedEntries.reduce((sum, i) => sum + i.bytes, 0)),
-    inactiveEntriesCount: analyzed.filter((i) => i.isInactive).length,
-    bloatedEntriesCount: analyzed.filter((i) => i.isBloated).length,
-    ignoredGroupsCount: ignoredGroups.length,
-    ignoredGroups,
-    groups,
-    items: analyzed.toSorted((a, b) => b.bytes - a.bytes)
-  };
+  const groups = buildFlagGroups(analyzed, false);
+  const ignoredGroups = buildFlagGroups(ignoredAnalyzed, true);
+  return summarizeFlagGroups(groups, ignoredGroups);
 }
 
 /**

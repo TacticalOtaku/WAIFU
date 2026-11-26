@@ -154,3 +154,23 @@ test("storage ignore rules and auditWorldHealthExtras handle ignored namespaces 
   assert.equal(extras.brokenMediaCount, 1);
   assert.equal(extras.unusedOptimizedCount, 1);
 });
+
+test("auditWorldSettings ignores internal WAIFU persistence settings so cached reports never self-bloat", () => {
+  const report = auditWorldSettings(
+    [
+      { key: "waifu.lastAuditReport", value: { huge: "x".repeat(50_000) } },
+      { key: "waifu.auditHistory", value: Array.from({ length: 15 }, () => ({ healthScore: 90 })) },
+      { key: "waifu.ignoreRules", value: { scenes: [], settings: [], flags: [], uuids: [] } },
+      { key: "other-mod.data", value: "y".repeat(3_000) }
+    ],
+    {
+      activeModuleIds: new Set(["waifu", "other-mod"]),
+      installedModuleIds: new Set(["waifu", "other-mod"]),
+      maxSettingBytes: 1024
+    }
+  );
+
+  assert.equal(report.totalSettingsCount, 1);
+  assert.equal(report.items.length, 1);
+  assert.equal(report.items[0].key, "other-mod.data");
+});

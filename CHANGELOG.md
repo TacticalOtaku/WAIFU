@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.0
+
+### Added
+
+- **Persistent audit report & manual subsequent scans:** Persists the latest world audit in the `lastAuditReport` world setting so reloads restore the previous report immediately; automatic scanning now runs only on the very first launch when no saved report exists, while all subsequent world audits are triggered manually.
+- **Local report reconciliation & multi-select bulk actions:** Cleaning, deleting, replacing, unlinking, or ignoring items now reconciles the saved report in place (`scripts/core/report-sync.mjs`) without re-running the world audit, paired with `Select All` / `Shift+Click` range multi-select bars across Scenes, `@UUID` References, World Settings, and Document Flags.
+- **Tinted circular progress overlay:** Replaced the inline top progress bar with a dimmed modal-style overlay (`WaifuBaseApp` + `templates/partials/busy-overlay.hbs`) featuring a circular SVG progress arc, percentage readout, active operation stage, exact target key/document/path detail text, and cancellation support during audits, cleanups, deletions, WebP conversions, and backup restores.
+- **Drag-and-drop Actors & Items JSON Audit (`WaifuEntityAuditApp` & Hub Tab 7):** Empty-by-default inspection view (standalone window via masthead, Scene Controls, Module Settings, or `WAIFU.openEntityAudit()`, plus integrated Hub card/tab) accepting dragged `Actor`, `Item`, `Folder` (with recursive subfolders), and `Compendium` packs (`Actor`/`Item`) to detect and safely clean orphaned or inactive module flags, `prototypeToken.flags`, embedded `Item`/`ActiveEffect` flags, `ActiveEffect.changes`, residual `@UUID` links, and `modules/<id>/` strings while skipping `_stats`, `flags.core`, and locked compendiums without scanning the world.
+- **Expanded automated tests:** Added [test/entity-audit.test.mjs](test/entity-audit.test.mjs), [test/report-sync.test.mjs](test/report-sync.test.mjs), and [test/app-lifecycle.test.mjs](test/app-lifecycle.test.mjs) covering JSON entity inspection, atomic effect cleanup, report persistence, local reconciliation, and progress overlay behavior.
+
+### Changed
+
+- **Shared window architecture:** Extracted common localization, theme, dialog, and progress-overlay mechanics into `WaifuBaseApp` (`scripts/app/base-app.mjs`) and shared entity-drop logic into `EntityAuditController` (`scripts/app/entity-audit-controller.mjs`).
+- **Documentation & localization:** Updated synchronized English and Russian translations (`538` keys) and expanded `README.md` / `README.ru.md`.
+
 ## 1.2.1
 
 ### Fixed

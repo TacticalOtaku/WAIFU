@@ -932,7 +932,31 @@ export async function auditUuidReferences(worldDocs, hooks) {
     });
   }
 
-  const sortedBroken = broken.toSorted(
+  return summarizeUuidAudit(broken, ignoredBroken, occurrences.length, minAutoConfidence);
+}
+
+/**
+ * Aggregate broken and ignored @UUID occurrences into the standard `report.uuids` section.
+ * @param {Array<Object>} brokenItems
+ * @param {Array<Object>} ignoredItems
+ * @param {number} totalScanned
+ * @param {number} minAutoConfidence
+ * @returns {Object}
+ */
+export function summarizeUuidAudit(
+  brokenItems = [],
+  ignoredItems = [],
+  totalScanned = 0,
+  minAutoConfidence = 1.0
+) {
+  const safeMinConfidence = Math.min(1, Math.max(0.5, Number(minAutoConfidence) || 1.0));
+  const sortedBroken = [...(brokenItems ?? [])].toSorted(
+    (a, b) =>
+      SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
+      a.rootDocName.localeCompare(b.rootDocName) ||
+      a.rawUuid.localeCompare(b.rawUuid)
+  );
+  const sortedIgnored = [...(ignoredItems ?? [])].toSorted(
     (a, b) =>
       SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
       a.rootDocName.localeCompare(b.rootDocName) ||
@@ -946,13 +970,13 @@ export async function auditUuidReferences(worldDocs, hooks) {
     (item) =>
       item.bestCandidate &&
       (item.bestCandidate.confidence === "exact" ||
-        (Number(item.bestCandidate.score) || 0) >= minAutoConfidence)
+        (Number(item.bestCandidate.score) || 0) >= safeMinConfidence)
   ).length;
   const withCandidateCount = sortedBroken.filter((i) => Boolean(i.bestCandidate)).length;
   const unmatchedCount = sortedBroken.filter((i) => !i.bestCandidate).length;
 
   return {
-    totalScanned: occurrences.length,
+    totalScanned: Number(totalScanned) || 0,
     brokenCount: sortedBroken.length,
     journalCount: sortedBroken.filter((i) => i.sourceCategory === "journal").length,
     loreframeCount: sortedBroken.filter((i) => i.sourceCategory === "loreframe").length,
@@ -961,11 +985,11 @@ export async function auditUuidReferences(worldDocs, hooks) {
     missingAnchorCount: sortedBroken.filter((i) => i.reason === "missing-anchor").length,
     exactMatchCount,
     autoMatchCount,
-    minAutoConfidence,
+    minAutoConfidence: safeMinConfidence,
     withCandidateCount,
     unmatchedCount,
-    ignoredCount: ignoredBroken.length,
-    ignoredItems: ignoredBroken,
+    ignoredCount: sortedIgnored.length,
+    ignoredItems: sortedIgnored,
     items: sortedBroken
   };
 }

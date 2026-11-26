@@ -158,6 +158,130 @@ export function findRedundantWalls(walls, options = {}) {
 }
 
 /**
+ * Evaluate flags, severity, and heaviness score for an already-collected scene snapshot.
+ * @param {Object} sceneData
+ * @param {Partial<typeof DEFAULT_THRESHOLDS>} customThresholds
+ * @returns {Object}
+ */
+export function evaluateSceneMetrics(sceneData, customThresholds = {}) {
+  const thresholds = { ...DEFAULT_THRESHOLDS, ...customThresholds };
+  const assets = Array.isArray(sceneData.assets) ? sceneData.assets : [];
+  const extraMissingMedia = Array.isArray(sceneData.extraMissingMedia)
+    ? sceneData.extraMissingMedia
+    : [];
+  const redundantWallIds = Array.isArray(sceneData.redundantWallIds)
+    ? sceneData.redundantWallIds
+    : [];
+  const nearDuplicateWallIds = Array.isArray(sceneData.nearDuplicateWallIds)
+    ? sceneData.nearDuplicateWallIds
+    : [];
+  const orphanedTokenIds = Array.isArray(sceneData.orphanedTokenIds)
+    ? sceneData.orphanedTokenIds
+    : [];
+  const wallsCount = Number(sceneData.wallsCount) || 0;
+  const lightsCount = Number(sceneData.lightsCount) || 0;
+  const animationsCount = Number(sceneData.animationsCount) || 0;
+  const isIgnored = Boolean(sceneData.isIgnored);
+
+  const maxAsset = assets.reduce(
+    (best, item) => (item.maxEdge > best.maxEdge || item.megapixels > best.megapixels ? item : best),
+    { width: 0, height: 0, maxEdge: 0, megapixels: 0 }
+  );
+
+  const pngAssets = assets.filter((asset) => asset.isPng);
+  const unoptimizedAssets = assets.filter((asset) => asset.isUnoptimizedRaster);
+  const oversizedAssets = assets.filter((asset) => asset.isOversized);
+  const missingAssets = assets.filter((asset) => asset.isMissing);
+  const heavyBytesAssets = assets.filter((asset) => asset.isHeavyBytes);
+  const totalKnownAssetBytes = assets.reduce(
+    (sum, asset) => sum + (Number.isFinite(asset.byteSize) && asset.byteSize > 0 ? asset.byteSize : 0),
+    0
+  );
+  const missingMediaCount = missingAssets.length + extraMissingMedia.length;
+
+  const flags = {
+    hasPng: pngAssets.length > 0,
+    hasUnoptimizedRaster: unoptimizedAssets.length > 0,
+    hasOversizedAsset: oversizedAssets.length > 0,
+    hasMissingAsset: missingMediaCount > 0,
+    hasHeavyBytes: heavyBytesAssets.length > 0,
+    excessiveWalls: wallsCount > thresholds.maxWalls,
+    excessiveLights: lightsCount > thresholds.maxLights,
+    excessiveAnimations: animationsCount > thresholds.maxAnimations,
+    hasRedundantWalls: redundantWallIds.length > 0,
+    hasNearDuplicateWalls: nearDuplicateWallIds.length > 0,
+    hasOrphanedTokens: orphanedTokenIds.length > 0
+  };
+
+  let severity = "ok";
+  const hasSevereDimensions = oversizedAssets.some(
+    (asset) =>
+      asset.maxEdge > thresholds.maxTextureResolution * 1.5 ||
+      asset.megapixels > thresholds.maxMegapixels * 1.5
+  );
+  const hasSeverePng = pngAssets.some((asset) => asset.maxEdge >= 2048 || asset.isOversized);
+  const hasSevereBytes = heavyBytesAssets.some(
+    (asset) => asset.byteSize > (Number(thresholds.maxAssetBytes) || 15 * 1024 * 1024) * 2
+  );
+  const hasSeverePlaceables =
+    wallsCount > thresholds.maxWalls * 1.5 ||
+    lightsCount > thresholds.maxLights * 1.5 ||
+    animationsCount > thresholds.maxAnimations * 1.5;
+
+  if (!isIgnored) {
+    if (missingMediaCount > 0 || hasSevereDimensions || hasSeverePng || hasSevereBytes || hasSeverePlaceables) {
+      severity = "critical";
+    } else if (
+      flags.hasUnoptimizedRaster ||
+      flags.hasOversizedAsset ||
+      flags.hasHeavyBytes ||
+      flags.excessiveWalls ||
+      flags.excessiveLights ||
+      flags.excessiveAnimations ||
+      flags.hasRedundantWalls ||
+      flags.hasNearDuplicateWalls ||
+      flags.hasOrphanedTokens
+    ) {
+      severity = "warning";
+    }
+  }
+
+  // Compute deterministic heaviness score for sorting worst offenders first
+  const score =
+    (maxAsset.megapixels || 0) * 3 +
+    pngAssets.length * 18 +
+    (unoptimizedAssets.length - pngAssets.length) * 8 +
+    missingMediaCount * 24 +
+    heavyBytesAssets.length * 10 +
+    Math.max(0, wallsCount - thresholds.maxWalls) * 0.2 +
+    Math.max(0, lightsCount - thresholds.maxLights) * 1.5 +
+    Math.max(0, animationsCount - thresholds.maxAnimations) * 3 +
+    redundantWallIds.length * 0.5 +
+    nearDuplicateWallIds.length * 0.3 +
+    orphanedTokenIds.length * 1;
+
+  return {
+    maxResolution: {
+      width: maxAsset.width,
+      height: maxAsset.height,
+      maxEdge: maxAsset.maxEdge,
+      megapixels: maxAsset.megapixels
+    },
+    missingMediaCount,
+    heavyBytesCount: heavyBytesAssets.length,
+    totalKnownAssetBytes,
+    formattedTotalAssetBytes: totalKnownAssetBytes > 0 ? formatBytes(totalKnownAssetBytes) : "",
+    pngCount: pngAssets.length,
+    unoptimizedCount: unoptimizedAssets.length,
+    oversizedCount: oversizedAssets.length,
+    flags,
+    severity,
+    heavinessScore: Number(score.toFixed(1)),
+    hasIssues: !isIgnored && severity !== "ok"
+  };
+}
+
+/**
  * Audit a single normalized Scene snapshot against configured performance thresholds.
  * @param {Object} scene
  * @param {Map<string, { width: number, height: number, byteSize: number | null, estimated?: boolean }>} assetMetaMap
@@ -257,21 +381,6 @@ export function analyzeScene(scene, assetMetaMap = new Map(), customThresholds =
     videoDrawingsCount +
     (hasWeather ? 1 : 0);
 
-  const maxAsset = assets.reduce(
-    (best, item) => (item.maxEdge > best.maxEdge || item.megapixels > best.megapixels ? item : best),
-    { width: 0, height: 0, maxEdge: 0, megapixels: 0 }
-  );
-
-  const pngAssets = assets.filter((asset) => asset.isPng);
-  const unoptimizedAssets = assets.filter((asset) => asset.isUnoptimizedRaster);
-  const oversizedAssets = assets.filter((asset) => asset.isOversized);
-  const missingAssets = assets.filter((asset) => asset.isMissing);
-  const heavyBytesAssets = assets.filter((asset) => asset.isHeavyBytes);
-  const totalKnownAssetBytes = assets.reduce(
-    (sum, asset) => sum + (Number.isFinite(asset.byteSize) && asset.byteSize > 0 ? asset.byteSize : 0),
-    0
-  );
-
   const extraMissingMedia = [];
   for (const token of tokens) {
     if (token?.textureSrc && assetMetaMap.get(token.textureSrc)?.missing) {
@@ -288,70 +397,22 @@ export function analyzeScene(scene, assetMetaMap = new Map(), customThresholds =
       extraMissingMedia.push({ slotType: "sound", id: sound.id, src: sound.path });
     }
   }
-  const missingMediaCount = missingAssets.length + extraMissingMedia.length;
 
   const isIgnored = Boolean(customThresholds.ignoredSceneIds?.has?.(scene.id));
-
-  const flags = {
-    hasPng: pngAssets.length > 0,
-    hasUnoptimizedRaster: unoptimizedAssets.length > 0,
-    hasOversizedAsset: oversizedAssets.length > 0,
-    hasMissingAsset: missingMediaCount > 0,
-    hasHeavyBytes: heavyBytesAssets.length > 0,
-    excessiveWalls: walls.length > thresholds.maxWalls,
-    excessiveLights: lights.length > thresholds.maxLights,
-    excessiveAnimations: animationsCount > thresholds.maxAnimations,
-    hasRedundantWalls: redundantWallIds.length > 0,
-    hasNearDuplicateWalls: nearDuplicateIds.length > 0,
-    hasOrphanedTokens: orphanedTokenIds.length > 0
-  };
-
-  let severity = "ok";
-  const hasSevereDimensions = oversizedAssets.some(
-    (asset) =>
-      asset.maxEdge > thresholds.maxTextureResolution * 1.5 ||
-      asset.megapixels > thresholds.maxMegapixels * 1.5
+  const evaluated = evaluateSceneMetrics(
+    {
+      assets,
+      extraMissingMedia,
+      wallsCount: walls.length,
+      lightsCount: lights.length,
+      animationsCount,
+      redundantWallIds,
+      nearDuplicateWallIds: nearDuplicateIds,
+      orphanedTokenIds,
+      isIgnored
+    },
+    thresholds
   );
-  const hasSeverePng = pngAssets.some((asset) => asset.maxEdge >= 2048 || asset.isOversized);
-  const hasSevereBytes = heavyBytesAssets.some(
-    (asset) => asset.byteSize > (Number(thresholds.maxAssetBytes) || 15 * 1024 * 1024) * 2
-  );
-  const hasSeverePlaceables =
-    walls.length > thresholds.maxWalls * 1.5 ||
-    lights.length > thresholds.maxLights * 1.5 ||
-    animationsCount > thresholds.maxAnimations * 1.5;
-
-  if (!isIgnored) {
-    if (missingMediaCount > 0 || hasSevereDimensions || hasSeverePng || hasSevereBytes || hasSeverePlaceables) {
-      severity = "critical";
-    } else if (
-      flags.hasUnoptimizedRaster ||
-      flags.hasOversizedAsset ||
-      flags.hasHeavyBytes ||
-      flags.excessiveWalls ||
-      flags.excessiveLights ||
-      flags.excessiveAnimations ||
-      flags.hasRedundantWalls ||
-      flags.hasNearDuplicateWalls ||
-      flags.hasOrphanedTokens
-    ) {
-      severity = "warning";
-    }
-  }
-
-  // Compute deterministic heaviness score for sorting worst offenders first
-  const score =
-    (maxAsset.megapixels || 0) * 3 +
-    pngAssets.length * 18 +
-    (unoptimizedAssets.length - pngAssets.length) * 8 +
-    missingMediaCount * 24 +
-    heavyBytesAssets.length * 10 +
-    Math.max(0, walls.length - thresholds.maxWalls) * 0.2 +
-    Math.max(0, lights.length - thresholds.maxLights) * 1.5 +
-    Math.max(0, animationsCount - thresholds.maxAnimations) * 3 +
-    redundantWallIds.length * 0.5 +
-    nearDuplicateIds.length * 0.3 +
-    orphanedTokenIds.length * 1;
 
   return {
     id: scene.id,
@@ -382,79 +443,59 @@ export function analyzeScene(scene, assetMetaMap = new Map(), customThresholds =
       videoDrawings: videoDrawingsCount,
       weather: hasWeather ? 1 : 0
     },
-    maxResolution: {
-      width: maxAsset.width,
-      height: maxAsset.height,
-      maxEdge: maxAsset.maxEdge,
-      megapixels: maxAsset.megapixels
-    },
     assets,
     extraMissingMedia,
-    missingMediaCount,
-    heavyBytesCount: heavyBytesAssets.length,
-    totalKnownAssetBytes,
-    formattedTotalAssetBytes: totalKnownAssetBytes > 0 ? formatBytes(totalKnownAssetBytes) : "",
-    pngCount: pngAssets.length,
-    unoptimizedCount: unoptimizedAssets.length,
-    oversizedCount: oversizedAssets.length,
-    flags,
-    severity,
-    heavinessScore: Number(score.toFixed(1)),
-    hasIssues: !isIgnored && severity !== "ok"
+    ...evaluated
   };
 }
 
 /**
- * Audit all scenes in a world and return sorted scene diagnostics plus aggregates.
- * @param {Array<Object>} scenes
- * @param {Map<string, Object>} assetMetaMap
- * @param {Partial<typeof DEFAULT_THRESHOLDS> & { ignoredSceneIds?: Set<string> }} customThresholds
+ * Aggregate an array of analyzed scene objects into the standard `report.scenes` section.
+ * @param {Array<Object>} scenesList
  * @returns {Object}
  */
-export function auditScenes(scenes, assetMetaMap = new Map(), customThresholds = {}) {
-  const allResults = (scenes ?? [])
-    .map((scene) => analyzeScene(scene, assetMetaMap, customThresholds))
-    .toSorted(
-      (a, b) =>
-        Number(a.isIgnored) - Number(b.isIgnored) ||
-        SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
-        b.heavinessScore - a.heavinessScore ||
-        a.name.localeCompare(b.name)
-    );
+export function summarizeScenes(scenesList) {
+  const allResults = [...(scenesList ?? [])].toSorted(
+    (a, b) =>
+      Number(a.isIgnored) - Number(b.isIgnored) ||
+      SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity] ||
+      b.heavinessScore - a.heavinessScore ||
+      a.name.localeCompare(b.name)
+  );
 
   const results = allResults.filter((scene) => !scene.isIgnored);
   const ignoredItems = allResults.filter((scene) => scene.isIgnored);
   const heavyScenes = results.filter((scene) => scene.hasIssues);
   const convertibleAssets = results.flatMap((scene) =>
-    scene.assets
+    (scene.assets ?? [])
       .filter((asset) => asset.canAutoConvert)
       .map((asset) => ({ ...asset, sceneId: scene.id, sceneName: scene.name }))
   );
   const pngAssets = convertibleAssets.filter((asset) => asset.isPng);
   const oversizedAssets = results.flatMap((scene) =>
-    scene.assets
+    (scene.assets ?? [])
       .filter((asset) => asset.isOversized)
       .map((asset) => ({ ...asset, sceneId: scene.id, sceneName: scene.name }))
   );
 
   const redundantWallsTotal = results.reduce(
-    (sum, scene) => sum + scene.redundantWallIds.length,
+    (sum, scene) => sum + (scene.redundantWallIds?.length ?? 0),
     0
   );
   const nearDuplicateWallsTotal = results.reduce(
-    (sum, scene) => sum + scene.nearDuplicateWallIds.length,
+    (sum, scene) => sum + (scene.nearDuplicateWallIds?.length ?? 0),
     0
   );
   const missingMediaTotal = results.reduce(
-    (sum, scene) => sum + scene.missingMediaCount,
+    (sum, scene) => sum + (scene.missingMediaCount ?? 0),
     0
   );
   const orphanedTokensTotal = results.reduce(
-    (sum, scene) => sum + scene.orphanedTokenIds.length,
+    (sum, scene) => sum + (scene.orphanedTokenIds?.length ?? 0),
     0
   );
   const heavyBytesAssetsTotal = results.reduce(
-    (sum, scene) => sum + scene.heavyBytesCount,
+    (sum, scene) => sum + (scene.heavyBytesCount ?? 0),
     0
   );
 
@@ -473,11 +514,23 @@ export function auditScenes(scenes, assetMetaMap = new Map(), customThresholds =
     redundantWallsTotal,
     nearDuplicateWallsTotal,
     orphanedTokensTotal,
-    totalWalls: results.reduce((sum, s) => sum + s.wallsCount, 0),
-    totalLights: results.reduce((sum, s) => sum + s.lightsCount, 0),
-    totalAnimations: results.reduce((sum, s) => sum + s.animationsCount, 0),
+    totalWalls: results.reduce((sum, s) => sum + (s.wallsCount ?? 0), 0),
+    totalLights: results.reduce((sum, s) => sum + (s.lightsCount ?? 0), 0),
+    totalAnimations: results.reduce((sum, s) => sum + (s.animationsCount ?? 0), 0),
     items: results,
     allItems: allResults,
     convertibleAssets
   };
+}
+
+/**
+ * Audit all scenes in a world and return sorted scene diagnostics plus aggregates.
+ * @param {Array<Object>} scenes
+ * @param {Map<string, Object>} assetMetaMap
+ * @param {Partial<typeof DEFAULT_THRESHOLDS> & { ignoredSceneIds?: Set<string> }} customThresholds
+ * @returns {Object}
+ */
+export function auditScenes(scenes, assetMetaMap = new Map(), customThresholds = {}) {
+  const analyzed = (scenes ?? []).map((scene) => analyzeScene(scene, assetMetaMap, customThresholds));
+  return summarizeScenes(analyzed);
 }
