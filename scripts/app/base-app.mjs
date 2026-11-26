@@ -16,6 +16,16 @@ export function yieldToUi() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function resetBusyArcToZero(arc) {
+  if (!arc) return;
+  arc.style.transition = "none";
+  arc.style.strokeDashoffset = BUSY_RING_CIRCUMFERENCE.toFixed(2);
+  if (typeof arc.getBoundingClientRect === "function") {
+    void arc.getBoundingClientRect();
+  }
+  arc.style.transition = "";
+}
+
 /**
  * Shared ApplicationV2 base class providing AIM theming, DialogV2 helpers, and the tinted circular busy overlay.
  */
@@ -90,6 +100,9 @@ export class WaifuBaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (detail !== undefined && detail !== null) this._progressDetail = String(detail);
 
     if (!this.element) return;
+    if (this._busy) this.element.dataset.busy = "true";
+    else delete this.element.dataset.busy;
+
     const overlay = this.element.querySelector("[data-waifu-progress]");
     const arc = this.element.querySelector("[data-waifu-busy-arc]");
     const text = this.element.querySelector("[data-waifu-progress-label]");
@@ -115,27 +128,64 @@ export class WaifuBaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (this._busy) return null;
     this._busy = true;
     this._abortController = cancellable ? new AbortController() : null;
-    this._progressPercent = Math.max(0, Math.min(100, Math.round(initialPercent)));
+    const startPct = Math.max(0, Math.min(100, Math.round(initialPercent)));
+    this._progressPercent = 0;
     this._progressLabel = label;
     this._progressDetail = detail;
-    if (this.rendered) this.render({ force: false });
+
+    const overlay = this.element?.querySelector?.("[data-waifu-progress]") ?? null;
+    const arc = this.element?.querySelector?.("[data-waifu-busy-arc]") ?? null;
+    const hasLiveOverlay = Boolean(this.rendered && overlay);
+    const hasBrowserRaf = typeof globalThis.requestAnimationFrame === "function";
+    const startedAt = Date.now();
+
+    if (hasLiveOverlay) {
+      this._updateProgressDom(0, label, detail);
+      resetBusyArcToZero(arc);
+      if (hasBrowserRaf) {
+        await yieldToUi();
+      }
+      this._updateProgressDom(startPct, label, detail);
+    } else if (this.rendered) {
+      this._progressPercent = startPct;
+      await this.render({ force: false });
+    } else {
+      this._progressPercent = startPct;
+    }
 
     const update = (percent, nextLabel = this._progressLabel, nextDetail = "") => {
       this._updateProgressDom(percent, nextLabel, nextDetail);
     };
 
     try {
-      return await fn({
+      const result = await fn({
         signal: this._abortController?.signal ?? null,
         update
       });
+      if (hasLiveOverlay && hasBrowserRaf && !this._abortController?.signal?.aborted) {
+        if (this._progressPercent < 100) {
+          this._updateProgressDom(100, this._progressLabel, this._progressDetail);
+        }
+        const elapsed = Date.now() - startedAt;
+        if (elapsed < 140) {
+          await new Promise((resolve) => setTimeout(resolve, 140 - elapsed));
+        } else {
+          await yieldToUi();
+        }
+      }
+      return result;
     } finally {
       this._busy = false;
       this._abortController = null;
       this._progressPercent = 0;
       this._progressLabel = "";
       this._progressDetail = "";
-      if (this.rendered) this.render({ force: false });
+      if (hasLiveOverlay) {
+        resetBusyArcToZero(arc);
+        this._updateProgressDom(0, "", "");
+      } else if (this.rendered) {
+        await this.render({ force: false });
+      }
     }
   }
 

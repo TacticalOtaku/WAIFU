@@ -576,7 +576,9 @@
       "JournalPreviewHeading": "Предпросмотр HTML для журнала Foundry",
       "BtnCopyShort": "Копировать",
       "PreviewHeadingStudio": "Предпросмотр отчёта",
-      "ModeVisualShort": "Визуальный"
+      "ModeVisualShort": "Визуальный",
+      "PreviewDeferredHint": "Предпросмотр отчёта сформируется при открытии этой вкладки.",
+      "PreviewLoading": "Формирование предпросмотра отчёта..."
     },
     "Dialogs": {
       "ConfirmTitle": "Подтверждение автоисправления WAIFU",

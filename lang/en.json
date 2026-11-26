@@ -576,7 +576,9 @@
       "JournalPreviewHeading": "Foundry Journal HTML Preview",
       "BtnCopyShort": "Copy",
       "PreviewHeadingStudio": "Report Preview",
-      "ModeVisualShort": "Visual"
+      "ModeVisualShort": "Visual",
+      "PreviewDeferredHint": "Report preview will render when opening this tab.",
+      "PreviewLoading": "Building report preview..."
     },
     "Dialogs": {
       "ConfirmTitle": "Confirm WAIFU Auto-Fix",

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.1
+
+### Fixed
+
+- **Busy progress ring animation across consecutive deletions:** Removed competing non-awaited `render({ force: false })` calls during active `_runBusyTask` operations in `WaifuBaseApp`, explicitly reset `stroke-dashoffset` to `0%` after un-hiding the overlay (`requestAnimationFrame` transition trigger), awaited post-commit `masthead`/`main` re-renders under `data-busy="true"` in `WaifuAuditApp`, and yielded periodic UI animation frames during batch mutations in `auto-fixer.mjs`.
+- **Standalone Actors & Items window styling & overlay backdrop:** Added `waifu-window` and `waifu-root` classes to `WaifuEntityAuditApp` and replaced an undefined `--canvas` variable in `.waifu-busy-overlay` with `--surface-0` and `--scrim`.
+
+### Changed
+
+- **Deferred report preview rendering & revision caching:** `WaifuAuditApp` now skips generating Visual HTML, Markdown, and Journal report previews while working in other tabs (`Hub`, `Scenes`, `@UUID`, `Storage`, `Actors & Items`), computes only the active preview mode when entering `6 · Report` or switching preview formats asynchronously via `#scheduleDeferredReportPreview()`, and caches output per mutation revision.
+- **Lifecycle regression coverage:** Added automated tests verifying consecutive same-section deletion animations and deferred per-mode report preview rendering (`test/app-lifecycle.test.mjs`).
+
 ## 1.3.0
 
 ### Added

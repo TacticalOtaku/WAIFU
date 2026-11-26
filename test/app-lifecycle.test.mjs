@@ -443,3 +443,173 @@ test("WaifuEntityAuditApp opens empty by default, scans dropped Folders & Compen
     globalThis.ui = prevGlobals.ui;
   }
 });
+
+test("Consecutive deletions in the same section animate overlay from 0%->100% cleanly without overlapping render races", async () => {
+  const prevGlobals = {
+    game: globalThis.game,
+    foundry: globalThis.foundry,
+    fromUuid: globalThis.fromUuid,
+    fromUuidSync: globalThis.fromUuidSync,
+    ui: globalThis.ui,
+    requestAnimationFrame: globalThis.requestAnimationFrame
+  };
+
+  try {
+    const { worldStorageDocs } = installAppTestGlobals();
+    worldStorageDocs.length = 0;
+    for (const key of ["gone.one", "gone.two", "gone.three"]) {
+      const doc = { key, value: "x".repeat(20_000) };
+      doc.delete = async () => {
+        await new Promise((r) => setTimeout(r, 2));
+        const idx = worldStorageDocs.indexOf(doc);
+        if (idx >= 0) worldStorageDocs.splice(idx, 1);
+      };
+      worldStorageDocs.push(doc);
+    }
+
+    globalThis.requestAnimationFrame = (cb) => setTimeout(() => cb(Date.now()), 4);
+
+    const { WaifuAuditApp } = await import("../scripts/app/audit-app.mjs");
+    const app = WaifuAuditApp.openWindow();
+    await new Promise((r) => setTimeout(r, 25));
+
+    // Attach lightweight live overlay DOM element mock to app.element
+    const offsetHistory = [];
+    let renderCalls = 0;
+    const overlay = { hidden: true };
+    const arc = {
+      style: {
+        _offset: "251.33",
+        transition: "",
+        get strokeDashoffset() {
+          return this._offset;
+        },
+        set strokeDashoffset(val) {
+          this._offset = val;
+          offsetHistory.push({ val, hidden: overlay.hidden, transition: this.transition });
+        }
+      },
+      getBoundingClientRect: () => ({ width: 80, height: 80 })
+    };
+    const pctEl = { textContent: "0%" };
+    const labelEl = { textContent: "" };
+    const detailEl = { textContent: "", hidden: true };
+    const cancelBtn = { hidden: true };
+
+    const selectorMap = new Map([
+      ["[data-waifu-progress]", overlay],
+      ["[data-waifu-busy-arc]", arc],
+      ["[data-waifu-progress-pct]", pctEl],
+      ["[data-waifu-progress-label]", labelEl],
+      ["[data-waifu-progress-detail]", detailEl],
+      ["[data-waifu-cancel-btn]", cancelBtn]
+    ]);
+
+    app.element = {
+      dataset: {},
+      querySelector: (sel) => selectorMap.get(sel) ?? null
+    };
+    const origRender = app.render.bind(app);
+    app.render = async function (...args) {
+      renderCalls += 1;
+      await new Promise((r) => setTimeout(r, 4));
+      return origRender(...args);
+    };
+
+    for (const key of ["gone.one", "gone.two", "gone.three"]) {
+      offsetHistory.length = 0;
+      const rendersBefore = renderCalls;
+      await WaifuAuditApp.DEFAULT_OPTIONS.actions.deleteSingleSetting.call(app, null, {
+        dataset: { settingKey: key }
+      });
+
+      assert.equal(renderCalls - rendersBefore, 1, "Only one awaited post-commit render per deletion");
+      assert.equal(app._busy, false);
+      assert.equal(overlay.hidden, true);
+      assert.equal(app.element.dataset.busy, undefined);
+
+      // Verify clean SVG dashoffset animation progression during visible phase: 251.33 (0%) -> <251.33 (5%) -> 0.00 (100%)
+      const visibleSteps = offsetHistory.filter((e) => !e.hidden);
+      assert.ok(visibleSteps.some((e) => e.val === "251.33"), `Must reset ring to 251.33 (0%) for ${key}`);
+      assert.ok(visibleSteps.some((e) => e.val === "0.00"), `Must animate ring to 0.00 (100%) for ${key}`);
+      assert.equal(pctEl.textContent, "0%");
+    }
+
+    assert.equal(app._report.settings.flaggedCount, 0);
+  } finally {
+    globalThis.game = prevGlobals.game;
+    globalThis.foundry = prevGlobals.foundry;
+    globalThis.fromUuid = prevGlobals.fromUuid;
+    globalThis.fromUuidSync = prevGlobals.fromUuidSync;
+    globalThis.ui = prevGlobals.ui;
+    globalThis.requestAnimationFrame = prevGlobals.requestAnimationFrame;
+  }
+});
+
+test("WaifuAuditApp defers heavy report previews until Report tab is active and builds only selected mode", async () => {
+  const prevGlobals = {
+    game: globalThis.game,
+    foundry: globalThis.foundry,
+    fromUuid: globalThis.fromUuid,
+    fromUuidSync: globalThis.fromUuidSync,
+    ui: globalThis.ui
+  };
+
+  try {
+    installAppTestGlobals();
+    const { WaifuAuditApp } = await import("../scripts/app/audit-app.mjs");
+    const app = WaifuAuditApp.openWindow();
+    await new Promise((r) => setTimeout(r, 25));
+
+    // 1. On Hub / Storage tabs, heavy report preview generation is skipped completely
+    const hubCtx = await app._prepareContext({});
+    assert.equal(hubCtx.hasReport, true);
+    assert.equal(hubCtx.hasReportPreview, false);
+    assert.equal(hubCtx.visualReportHtml, "");
+    assert.equal(hubCtx.markdownPreview, "");
+    assert.equal(hubCtx.journalPreviewHtml, "");
+
+    app._activeTab = "storage";
+    const storageCtx = await app._prepareContext({});
+    assert.equal(storageCtx.hasReportPreview, false);
+    assert.equal(storageCtx.visualReportHtml, "");
+
+    // 2. Switching to Report tab computes ONLY the active mode ("visual" by default)
+    app._activeTab = "report";
+    const reportVisualCtx = await app._prepareContext({});
+    assert.equal(reportVisualCtx.hasReportPreview, true);
+    assert.ok(reportVisualCtx.visualReportHtml.length > 0);
+    assert.equal(reportVisualCtx.markdownPreview, "");
+    assert.equal(reportVisualCtx.journalPreviewHtml, "");
+
+    // 3. Switching preview mode builds ONLY the newly selected mode ("markdown", then "journal")
+    WaifuAuditApp.DEFAULT_OPTIONS.actions.setReportMode.call(app, null, { dataset: { mode: "markdown" } });
+    const reportMdCtx = await app._prepareContext({});
+    assert.equal(reportMdCtx.hasReportPreview, true);
+    assert.ok(reportMdCtx.markdownPreview.includes("# WAIFU"));
+    assert.equal(reportMdCtx.visualReportHtml, "");
+    assert.equal(reportMdCtx.journalPreviewHtml, "");
+
+    WaifuAuditApp.DEFAULT_OPTIONS.actions.setReportMode.call(app, null, { dataset: { mode: "journal" } });
+    const reportJournalCtx = await app._prepareContext({});
+    assert.equal(reportJournalCtx.hasReportPreview, true);
+    assert.ok(reportJournalCtx.journalPreviewHtml.length > 0);
+    assert.equal(reportJournalCtx.markdownPreview, "");
+
+    // 4. Performing a cleanup back in Storage bumps revision, clears cache, and skips preview rebuild
+    app._activeTab = "storage";
+    const revBefore = app._reportRevision;
+    app._selection.settings.add("gone.alpha");
+    await WaifuAuditApp.DEFAULT_OPTIONS.actions.deleteSelectedSettings.call(app);
+    assert.equal(app._reportRevision, revBefore + 1);
+    const postDeleteStorageCtx = await app._prepareContext({});
+    assert.equal(postDeleteStorageCtx.hasReportPreview, false);
+    assert.equal(postDeleteStorageCtx.journalPreviewHtml, "");
+  } finally {
+    globalThis.game = prevGlobals.game;
+    globalThis.foundry = prevGlobals.foundry;
+    globalThis.fromUuid = prevGlobals.fromUuid;
+    globalThis.fromUuidSync = prevGlobals.fromUuidSync;
+    globalThis.ui = prevGlobals.ui;
+  }
+});

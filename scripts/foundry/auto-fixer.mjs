@@ -2,6 +2,14 @@ import { escapeHtml, formatBytes } from "../core/utils.mjs";
 import { applyPatchAtPath } from "../core/uuid-audit.mjs";
 import { convertAndUploadWebp } from "./image-tools.mjs";
 
+async function yieldFrameIfDue(state, minIntervalMs = 36) {
+  if (typeof globalThis.requestAnimationFrame !== "function") return;
+  const now = performance.now();
+  if (state.lastYieldAt !== 0 && now - state.lastYieldAt < minIntervalMs) return;
+  await new Promise((resolve) => globalThis.requestAnimationFrame(() => resolve()));
+  state.lastYieldAt = performance.now();
+}
+
 /**
  * Update a single Scene / Level / Tile image path in Foundry v14.
  * @param {Scene} scene
@@ -302,10 +310,12 @@ export async function batchPatchUuidOccurrences(operations, options = {}) {
   const signal = options?.signal;
   const list = operations ?? [];
   let updatedCount = 0;
+  const frameState = { lastYieldAt: 0 };
   for (let i = 0; i < list.length; i += 1) {
     if (signal?.aborted) break;
     const op = list[i];
     onProgress?.({ current: i + 1, total: list.length, occurrence: op.occurrence });
+    await yieldFrameIfDue(frameState);
     try {
       const changed = await patchDocumentUuidOccurrence(op.occurrence, op.action);
       if (changed) {
@@ -664,10 +674,12 @@ export async function deleteWorldSettingsBatch(keys, options = {}) {
   const onDeleted = typeof options?.onDeleted === "function" ? options.onDeleted : null;
   const list = [...(keys ?? [])];
   let deleted = 0;
+  const frameState = { lastYieldAt: 0 };
   for (let i = 0; i < list.length; i += 1) {
     if (signal?.aborted) break;
     const key = list[i];
     onProgress?.({ current: i + 1, total: list.length, key });
+    await yieldFrameIfDue(frameState);
     if (await deleteWorldSettingByKey(key)) {
       deleted += 1;
       onDeleted?.(key);
@@ -690,11 +702,13 @@ export async function deleteFlagGroup(group, options = {}) {
   const onProgress = typeof options?.onProgress === "function" ? options.onProgress : null;
   const onDeletedTarget = typeof options?.onDeletedTarget === "function" ? options.onDeletedTarget : null;
   const targets = group.targets ?? [];
+  const frameState = { lastYieldAt: 0 };
 
   for (let i = 0; i < targets.length; i += 1) {
     if (signal?.aborted) break;
     const target = targets[i];
     onProgress?.({ current: i + 1, total: targets.length, target });
+    await yieldFrameIfDue(frameState);
     try {
       const doc = await fromUuid(target.docUuid);
       if (!doc || doc.flags?.[namespace] === undefined) continue;
@@ -786,6 +800,7 @@ export async function cleanEntityFindingsBatch(findings = [], options = {}) {
 
   const total = list.length;
   let current = 0;
+  const frameState = { lastYieldAt: 0 };
 
   for (const f of sequential) {
     if (signal?.aborted) {
@@ -794,6 +809,7 @@ export async function cleanEntityFindingsBatch(findings = [], options = {}) {
     }
     current += 1;
     onProgress?.({ current, total, finding: f });
+    await yieldFrameIfDue(frameState);
 
     try {
       const doc = await resolveEntityTargetDocument(f);
@@ -880,6 +896,7 @@ export async function cleanEntityFindingsBatch(findings = [], options = {}) {
     const sample = groupFindings[0];
     current += groupFindings.length;
     onProgress?.({ current: Math.min(total, current), total, finding: sample });
+    await yieldFrameIfDue(frameState);
 
     try {
       const effectDoc = await resolveEntityTargetDocument(sample);

@@ -1865,7 +1865,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--s5);
-  background: color-mix(in srgb, var(--canvas) 78%, rgba(8, 10, 14, 0.85));
+  background: color-mix(in srgb, var(--surface-0) 76%, var(--scrim));
   backdrop-filter: blur(4px);
 }
 
@@ -1906,11 +1906,18 @@
   stroke-width: 7;
 }
 
+.waifu-app[data-busy="true"] .waifu-masthead button,
+.waifu-root[data-busy="true"] .waifu-masthead button {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
 .waifu-busy-arc {
   fill: none;
   stroke: var(--accent);
   stroke-width: 7;
   stroke-linecap: round;
+  will-change: stroke-dashoffset;
   transition: stroke-dashoffset var(--d-fast) ease-out;
 }
 
@@ -2224,6 +2231,17 @@
   white-space: pre-wrap;
   word-break: break-word;
   user-select: text;
+}
+
+.waifu-preview-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-block-size: 160px;
+  padding: var(--s5);
+  color: var(--text-2);
+  font-size: var(--t-sm);
 }
 
 .waifu-check-pill {

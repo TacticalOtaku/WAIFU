@@ -12,7 +12,7 @@ import { EntityAuditController } from "./entity-audit-controller.mjs";
 export class WaifuEntityAuditApp extends WaifuBaseApp {
   static DEFAULT_OPTIONS = {
     id: "waifu-entity-audit-window",
-    classes: ["waifu-app", "waifu-entity-app"],
+    classes: ["waifu-window", "waifu-root", "waifu-app", "waifu-entity-app"],
     tag: "div",
     window: {
       title: "WAIFU.EntityAudit.WindowTitle",

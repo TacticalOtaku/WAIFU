@@ -94,6 +94,9 @@ export class WaifuAuditApp extends WaifuBaseApp {
     this._autofixQueueStamp = null;
     this._autofixBackupFirst = true;
     this._reportMode = "visual";
+    this._reportRevision = 0;
+    this._previewCache = new Map();
+    this._previewRenderSeq = 0;
     this._updateUuidLabel = false;
     this._appearanceOpen = false;
     this._filters = {
@@ -543,9 +546,10 @@ export class WaifuAuditApp extends WaifuBaseApp {
       { label: this._t("WAIFU.Stats.MetricAnims"), ...d.animations }
     ];
 
-    const markdownPreview = report ? formatReportMarkdown(report, lang) : "";
-    const visualReportHtml = report ? formatReportHtmlBody(report, { lang }) : "";
-    const journalPreviewHtml = report ? formatReportJournalHtml(report, lang) : "";
+    const shouldRenderPreview = Boolean(report && this._activeTab === "report");
+    const preview = shouldRenderPreview
+      ? this.#buildReportPreviewPayload(report, this._reportMode, lang)
+      : { visualReportHtml: "", markdownPreview: "", journalPreviewHtml: "", hasReportPreview: false };
 
     const rawComparison = this._customComparison ?? report?.comparison ?? null;
     const formatSigned = (n) => (n > 0 ? `+${n}` : String(n));
@@ -858,6 +862,9 @@ export class WaifuAuditApp extends WaifuBaseApp {
       isStorageActive: this._activeTab === "storage",
       isEntitiesActive: this._activeTab === "entities",
       isReportActive: this._activeTab === "report",
+      reportMode: this._reportMode,
+      reportPreviewRevision: this._reportRevision,
+      hasReportPreview: preview.hasReportPreview,
       isReportVisual: this._reportMode === "visual",
       isReportMarkdown: this._reportMode === "markdown",
       isReportJournal: this._reportMode === "journal",
@@ -911,9 +918,9 @@ export class WaifuAuditApp extends WaifuBaseApp {
       flagGroupRows,
       sceneDistributionRows,
       recommendations,
-      markdownPreview,
-      visualReportHtml,
-      journalPreviewHtml,
+      markdownPreview: preview.markdownPreview,
+      visualReportHtml: preview.visualReportHtml,
+      journalPreviewHtml: preview.journalPreviewHtml,
       statusMessage: this._statusMessage
     };
   }
@@ -1079,6 +1086,98 @@ export class WaifuAuditApp extends WaifuBaseApp {
     for (const panel of this.element.querySelectorAll("[data-panel]")) {
       panel.hidden = panel.dataset.panel !== normalized;
     }
+    if (normalized === "report") {
+      void this.#scheduleDeferredReportPreview();
+    }
+  }
+
+  #invalidateReportPreviewCache() {
+    this._reportRevision += 1;
+    this._previewCache.clear();
+  }
+
+  #buildReportPreviewPayload(report = this._report, mode = this._reportMode, lang = this._getLang()) {
+    if (!report) {
+      return {
+        visualReportHtml: "",
+        markdownPreview: "",
+        journalPreviewHtml: "",
+        hasReportPreview: false
+      };
+    }
+
+    const normalizedMode = ["visual", "markdown", "journal"].includes(mode) ? mode : "visual";
+    const cacheKey = `${this._reportRevision}:${normalizedMode}:${lang}`;
+    const cached = this._previewCache.get(cacheKey);
+    if (cached) return cached;
+
+    const payload = {
+      visualReportHtml: normalizedMode === "visual" ? formatReportHtmlBody(report, { lang }) : "",
+      markdownPreview: normalizedMode === "markdown" ? formatReportMarkdown(report, lang) : "",
+      journalPreviewHtml: normalizedMode === "journal" ? formatReportJournalHtml(report, lang) : "",
+      hasReportPreview: true
+    };
+    this._previewCache.set(cacheKey, payload);
+    return payload;
+  }
+
+  #applyPreviewPayloadToHost(host, mode, payload) {
+    if (!host) return;
+    host.textContent = "";
+    if (mode === "markdown") {
+      const pre = document.createElement("pre");
+      pre.className = "waifu-report-pre";
+      pre.textContent = payload.markdownPreview;
+      host.appendChild(pre);
+    } else if (mode === "journal") {
+      const box = document.createElement("div");
+      box.className = "waifu-journal-preview";
+      box.innerHTML = payload.journalPreviewHtml;
+      host.appendChild(box);
+    } else {
+      const scroll = document.createElement("div");
+      scroll.className = "waifu-report-scroll";
+      scroll.innerHTML = payload.visualReportHtml;
+      host.appendChild(scroll);
+    }
+    host.dataset.previewRev = String(this._reportRevision);
+    host.dataset.previewMode = mode;
+  }
+
+  async #scheduleDeferredReportPreview() {
+    const root = this.element;
+    if (!root) return;
+    for (const btn of root.querySelectorAll('[data-action="setReportMode"]')) {
+      btn.setAttribute("aria-pressed", btn.dataset.mode === this._reportMode ? "true" : "false");
+    }
+
+    const host = root.querySelector("[data-report-preview-body]");
+    if (!host || !this._report) return;
+
+    const mode = this._reportMode;
+    const revStr = String(this._reportRevision);
+    if (host.dataset.previewRev === revStr && host.dataset.previewMode === mode) return;
+
+    const lang = this._getLang();
+    const cacheKey = `${this._reportRevision}:${mode}:${lang}`;
+    const cached = this._previewCache.get(cacheKey);
+    if (cached) {
+      this.#applyPreviewPayloadToHost(host, mode, cached);
+      return;
+    }
+
+    const seq = ++this._previewRenderSeq;
+    host.innerHTML = `<div class="waifu-preview-loading"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>${escapeHtml(this._t("WAIFU.Report.PreviewLoading"))}</span></div>`;
+
+    await yieldToUi();
+    if (seq !== this._previewRenderSeq || this._activeTab !== "report" || !this.rendered || !this._report) {
+      return;
+    }
+
+    const currentHost = this.element?.querySelector("[data-report-preview-body]");
+    if (!currentHost) return;
+    const payload = this.#buildReportPreviewPayload(this._report, mode, this._getLang());
+    this.#applyPreviewPayloadToHost(currentHost, mode, payload);
   }
 
   #applyDomFilters() {
@@ -1325,10 +1424,18 @@ export class WaifuAuditApp extends WaifuBaseApp {
   async #commitLocalMutation() {
     this.#pruneSelection();
     this._lastCheckedIndex = {};
-    if (this._report) {
-      await saveLastAuditReport(this._report);
+    this.#invalidateReportPreviewCache();
+    if (this.element) this.element.dataset.busy = "true";
+    try {
+      if (this._report) {
+        await saveLastAuditReport(this._report);
+      }
+      if (this.rendered) {
+        await this.render({ parts: ["masthead", "main"] });
+      }
+    } finally {
+      if (this.element && !this._busy) delete this.element.dataset.busy;
     }
-    if (this.rendered) this.render({ force: false });
   }
 
   #restoreScrollState() {
@@ -1393,7 +1500,7 @@ export class WaifuAuditApp extends WaifuBaseApp {
   async executeAudit({ silent = false } = {}) {
     if (this._busy) return this._report;
 
-    return this._runBusyTask(
+    const result = await this._runBusyTask(
       {
         label: this._t("WAIFU.Progress.Scanning"),
         detail: this._t("WAIFU.Progress.PreparingQueue"),
@@ -1424,6 +1531,7 @@ export class WaifuAuditApp extends WaifuBaseApp {
             issues: this._report.summary.totalIssues
           });
           this.#clearAllSelections();
+          this.#invalidateReportPreviewCache();
           await saveLastAuditReport(this._report);
           this._statusMessage = msg;
           if (!silent) ui.notifications.info(msg);
@@ -1438,6 +1546,10 @@ export class WaifuAuditApp extends WaifuBaseApp {
         return this._report;
       }
     );
+    if (this.rendered) {
+      await this.render({ parts: ["masthead", "main"] });
+    }
+    return result;
   }
 
   // ── Action Handlers ──────────────────────────────────────────────────
@@ -1732,7 +1844,11 @@ export class WaifuAuditApp extends WaifuBaseApp {
     const mode = target.dataset.mode;
     if (!["visual", "markdown", "journal"].includes(mode) || this._reportMode === mode) return;
     this._reportMode = mode;
-    this.render({ parts: ["main"] });
+    if (this.element?.querySelector("[data-report-preview-body]")) {
+      void this.#scheduleDeferredReportPreview();
+    } else {
+      this.render({ parts: ["main"] });
+    }
   }
 
   static #onToggleAppearanceMenu() {
